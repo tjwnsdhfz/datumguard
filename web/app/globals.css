@@ -129,3 +129,347 @@ footer { display:flex; justify-content:space-between; padding:22px clamp(22px,5v
 @media(max-width:1000px){ .workspace{grid-template-columns:1fr}.preview-column{grid-row:1}.preview-sticky{position:relative;top:0}.preview-canvas{min-height:300px}.form-grid.three{grid-template-columns:repeat(2,1fr)}.boundary{grid-template-columns:1fr;gap:25px} }
 @media(max-width:680px){ nav{display:none}.site-header{height:62px}.hero{padding-top:64px;min-height:auto}.hero h1{font-size:42px}.hero>p{font-size:15px}.workspace,.results{padding-left:16px;padding-right:16px}.plate-presets{grid-template-columns:1fr}.form-grid.two,.form-grid.three{grid-template-columns:1fr}.field.wide{grid-column:auto}.feature-fields{grid-template-columns:repeat(2,1fr)}.section-heading{align-items:flex-start}.section-heading.compact{flex-direction:column;gap:14px}.add-menu{width:100%}.add-menu button{flex:1}.result-banner{grid-template-columns:auto 1fr}.download-button{grid-column:1/-1}.hash-grid{grid-template-columns:1fr}.hash-grid>div+div{border-left:0;border-top:1px solid var(--line)}.violation-list article{grid-template-columns:1fr}.intent-footer{align-items:flex-start;flex-direction:column}.boundary{padding:52px 22px}footer{flex-direction:column;gap:8px} }
 @media(prefers-reduced-motion:reduce){ html{scroll-behavior:auto}.spinner{animation:none} }
+
+/* DatumGuard Mission Control -------------------------------------------------
+   A monochrome engineering-console interpretation of the supplied visual brief.
+   Drawing paper stays light; green and red are reserved for verification meaning. */
+:root {
+  --mission-black: #000000;
+  --mission-night: #0a0a0a;
+  --mission-graphite: #161616;
+  --mission-line-dark: #3a3a3f;
+  --mission-line: #d7d7dc;
+  --mission-line-light: #e0e0e8;
+  --mission-white: #ffffff;
+  --mission-cool-white: #f0f0fa;
+  --mission-muted: #69696f;
+  --mission-pass: #087a55;
+  --mission-pass-soft: #e2f3ec;
+  --mission-fail: #b33a2d;
+  --mission-fail-soft: #fae8e5;
+  --ink: #111116;
+  --muted: var(--mission-muted);
+  --line: var(--mission-line);
+  --paper: #f6f6f7;
+  --panel: var(--mission-white);
+  --green: var(--mission-pass);
+  --green-dark: #075f44;
+  --mint: var(--mission-pass-soft);
+  --red: var(--mission-fail);
+}
+
+body {
+  background: var(--mission-black);
+  color: var(--ink);
+  font-family: "Noto Sans KR", "Arial Narrow", Arial, sans-serif;
+}
+
+body :where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--mission-black);
+  outline-offset: 3px;
+}
+
+.site-header {
+  height: 72px;
+  border-bottom: 1px solid var(--mission-line-dark);
+  background: rgba(0, 0, 0, 0.96);
+  color: var(--mission-white);
+  backdrop-filter: none;
+}
+
+.brand {
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--mission-white);
+  border-radius: 50%;
+  background: transparent;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.site-header nav {
+  align-items: center;
+  gap: 8px;
+  color: #b9b9c1;
+}
+
+.site-header nav a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 32px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.site-header nav a:hover {
+  border-color: var(--mission-line-dark);
+  color: var(--mission-white);
+}
+
+.site-header :where(a,button):focus-visible {
+  outline-color: var(--mission-white);
+}
+
+.hero {
+  min-height: 620px;
+  padding-top: clamp(104px, 12vw, 168px);
+  border-bottom: 1px solid var(--mission-line-dark);
+  background: var(--mission-black);
+  color: var(--mission-white);
+}
+
+.hero::after {
+  width: min(42vw, 560px);
+  height: min(42vw, 560px);
+  right: -9vw;
+  top: 42px;
+  border-color: var(--mission-line-dark);
+  border-radius: 50%;
+  box-shadow: none;
+}
+
+.eyebrow {
+  margin-bottom: 32px;
+  color: #b8b8c0;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+}
+
+.hero h1 {
+  max-width: 1040px;
+  font-size: clamp(48px, 7vw, 92px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+}
+
+.hero h1 em {
+  color: var(--mission-white);
+  text-decoration: underline;
+  text-decoration-color: #77777e;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 12px;
+}
+
+.hero > p {
+  max-width: 720px;
+  color: #b8b8c0;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.hero-proof {
+  gap: 8px;
+}
+
+.hero-proof span {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 16px;
+  border-color: var(--mission-line-dark);
+  border-radius: 32px;
+  background: transparent;
+  color: #b8b8c0;
+  letter-spacing: 0.02em;
+}
+
+.hero-proof b {
+  color: var(--mission-white);
+}
+
+.workspace {
+  max-width: 1500px;
+  gap: 48px;
+  background: #f6f6f7;
+}
+
+.section-heading h2,
+.boundary h2,
+.result-banner h3 {
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.step {
+  border-color: #a5a5ac;
+  color: #24242a;
+  letter-spacing: 0.08em;
+}
+
+.text-button,
+.add-menu button,
+.secondary-button,
+.plate-presets button,
+.download-button,
+.primary-button {
+  min-height: 44px;
+  border-radius: 32px;
+  letter-spacing: 0.04em;
+}
+
+.text-button {
+  padding: 0 14px;
+  border: 1px solid #bdbdc4;
+  background: transparent;
+  color: #24242a;
+}
+
+.plate-presets {
+  gap: 8px;
+}
+
+.plate-presets button {
+  background: transparent;
+  color: #24242a;
+  font-size: 11px;
+}
+
+.plate-presets button:hover,
+.plate-presets button:focus-visible,
+.add-menu button:hover,
+.secondary-button:hover {
+  border-color: var(--mission-black);
+  background: var(--mission-black);
+  color: var(--mission-white);
+}
+
+.card,
+.feature-card,
+.preview-sticky,
+.result-banner,
+.hash-grid,
+.table-wrap {
+  border-color: var(--mission-line);
+  box-shadow: none;
+}
+
+input,
+select,
+textarea {
+  min-height: 44px;
+  border-color: #c8c8ce;
+  border-radius: 0;
+  background: var(--mission-white);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--mission-black);
+  box-shadow: none;
+}
+
+.feature-icon {
+  border-color: #55555c;
+}
+
+.remove {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+}
+
+.preview-sticky {
+  top: 96px;
+  background: #ededf0;
+}
+
+.preview-canvas {
+  border-color: #cfcfd5;
+  background-color: var(--mission-white);
+  background-image: linear-gradient(#eeeeF1 1px, transparent 1px), linear-gradient(90deg, #eeeeF1 1px, transparent 1px);
+}
+
+.live-drawing .plate {
+  fill: #eeeeF1;
+  stroke: #111116;
+}
+
+.live-drawing .cut {
+  stroke: #55555c;
+}
+
+.live-drawing .datum-axis {
+  stroke: #111116;
+}
+
+.primary-button,
+.download-button {
+  border: 1px solid var(--mission-black);
+  background: var(--mission-black);
+  color: var(--mission-white);
+  text-transform: uppercase;
+}
+
+.primary-button:hover,
+.download-button:hover:not(:disabled) {
+  background: var(--mission-white);
+  color: var(--mission-black);
+}
+
+.results {
+  border-top-color: var(--mission-line);
+}
+
+.result-banner.passed {
+  border-color: #93c7b4;
+  background: var(--mission-pass-soft);
+}
+
+.result-banner.failed {
+  border-color: #d8a29b;
+  background: var(--mission-fail-soft);
+}
+
+.boundary {
+  border-top: 1px solid var(--mission-line-dark);
+  background: var(--mission-black);
+}
+
+.boundary span {
+  color: #b8b8c0;
+}
+
+.boundary p {
+  color: #a9a9b1;
+}
+
+footer {
+  border-top: 1px solid #242429;
+  background: var(--mission-black);
+  color: #77777f;
+}
+
+@media (max-width: 680px) {
+  .hero {
+    min-height: auto;
+  }
+
+  .hero h1 {
+    font-size: clamp(38px, 12vw, 54px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

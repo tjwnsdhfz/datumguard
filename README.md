@@ -153,6 +153,7 @@ npm run test:e2e
 - [Architecture Demo Guide](docs/demo.md)
 - [Piping Demo Guide](docs/piping-demo.md)
 - [Engineering Domains](docs/engineering-domains.md)
+- [Mission Control Design System](docs/design-system.md)
 - [Deployment Guide](docs/deployment.md)
 - [현재 구현·배포 Handoff](docs/HANDOFF.md)
 - [개발 프롬프트 실행 순서](prompts/INDEX.md)
