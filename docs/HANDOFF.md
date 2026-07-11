@@ -39,12 +39,11 @@ Piping의 route length, maximum support gap, minimum equipment clearance도 seri
 
 ## 공개 배포에 남은 외부 단계
 
-현재 폴더에는 `.git`과 GitHub remote가 없다. GitHub CLI는 `tjwnsdhfz` 계정으로 인증되어 있지만 `tjwnsdhfz/datumguard` 저장소는 존재하지 않는다. 공개 저장소 생성은 외부 공개 쓰기이므로 저장소 이름·공개 범위를 확정한 뒤 진행한다.
+공개 GitHub 저장소 `https://github.com/tjwnsdhfz/datumguard`와 `origin` remote가 생성되었고 `main`의 초기 CI는 backend, web, Playwright, backend/web Docker image build를 모두 통과했다.
 
-1. 이 폴더를 Git 저장소로 초기화하고 공개 GitHub remote를 만든다.
-2. Backend는 루트 `render.yaml` 또는 `Dockerfile`로 배포하고 `DATUMGUARD_CORS_ORIGINS`를 web origin으로 설정한다.
-3. Frontend는 Vercel Root Directory를 `web/`으로 지정한다.
-4. `NEXT_PUBLIC_DATUMGUARD_API_URL`과 `NEXT_PUBLIC_GITHUB_URL`을 설정한 뒤 frontend를 rebuild한다.
-5. `docs/demo.md`와 `docs/piping-demo.md`의 hosted demo 항목을 실행한다.
+1. Backend는 README의 Render button 또는 루트 `render.yaml`로 배포하고 `DATUMGUARD_CORS_ORIGINS`를 web origin으로 설정한다.
+2. Frontend는 README의 Vercel button을 사용하거나 Root Directory를 `web/`으로 지정한다.
+3. `NEXT_PUBLIC_DATUMGUARD_API_URL`과 `NEXT_PUBLIC_GITHUB_URL`을 설정한 뒤 frontend를 rebuild한다.
+4. `docs/demo.md`와 `docs/piping-demo.md`의 hosted demo 항목을 실행한다.
 
-현재 환경에는 Vercel/Render 인증과 Docker CLI가 없어 원격 URL 및 container build의 로컬 실행 검증은 완료하지 않았다. GitHub Actions의 container job은 두 Dockerfile을 build하도록 구성되어 있다.
+현재 환경에는 Vercel/Render 인증이 없어 원격 URL 생성은 완료하지 않았다. 로컬 Docker CLI는 없지만 GitHub Actions의 container job에서 두 Dockerfile의 실제 build가 통과했다.

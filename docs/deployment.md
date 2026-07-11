@@ -53,7 +53,7 @@ Scale-to-zero 또는 유휴 sleep을 사용하는 Render plan에서는 첫 healt
 
 `NEXT_PUBLIC_*` 값은 client build에 포함된다. API origin을 변경하면 environment variable만 바꾸고 끝내지 말고 web을 다시 build/deploy한다. Backend secret은 `NEXT_PUBLIC_*` 변수에 넣지 않는다.
 
-공개 repository URL이 확정되기 전에는 README에 동작하지 않는 Deploy button을 넣지 않는다. URL이 생긴 뒤 Vercel Deploy button은 repository URL과 함께 `root-directory=web`, required env `NEXT_PUBLIC_DATUMGUARD_API_URL`을 전달해야 한다. Render는 repository root의 기존 Blueprint를 연결한다. 두 경우 모두 실제 배포 URL을 smoke-test하기 전에는 공개 demo가 배포되었다고 표시하지 않는다.
+공개 repository는 `https://github.com/tjwnsdhfz/datumguard`로 확정되었으며 README의 Render/Vercel Deploy button이 이 저장소를 가리킨다. Vercel button은 `root-directory=web`과 required env `NEXT_PUBLIC_DATUMGUARD_API_URL`, `NEXT_PUBLIC_GITHUB_URL`을 전달한다. Render는 repository root의 기존 Blueprint를 연결한다. 두 경우 모두 실제 배포 URL을 smoke-test하기 전에는 공개 demo가 배포되었다고 표시하지 않는다.
 
 ## 4. 배포 순서
 
