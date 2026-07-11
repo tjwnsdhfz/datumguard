@@ -10,7 +10,7 @@
 | FastAPI backend | `https://datumguard-api.onrender.com` | Render Free health `200 ok` |
 | OpenAPI | `https://datumguard-api.onrender.com/docs` | 공개 접근 가능 |
 
-Vercel에는 `NEXT_PUBLIC_DATUMGUARD_API_URL=https://datumguard-api.onrender.com`과 `NEXT_PUBLIC_GITHUB_URL=https://github.com/tjwnsdhfz/datumguard`를 Production/Preview에 설정했다. Render의 `DATUMGUARD_CORS_ORIGINS`는 `https://datumguard-tjwnsdhfz.vercel.app` exact origin을 허용하며 preflight 응답으로 확인했다.
+Vercel에는 `NEXT_PUBLIC_DATUMGUARD_API_URL=https://datumguard-api.onrender.com`과 `NEXT_PUBLIC_GITHUB_URL=https://github.com/tjwnsdhfz/datumguard`를 Production/Preview에 설정했다. Vercel for GitHub는 `tjwnsdhfz/datumguard`, production branch `main`, Root Directory `web`, Node.js `22.x`로 연결되어 있다. Render는 production exact origin과 프로젝트 전용 Preview regex만 허용한다.
 
 ## 1. 배포 토폴로지
 
@@ -19,6 +19,7 @@ Vercel에는 `NEXT_PUBLIC_DATUMGUARD_API_URL=https://datumguard-api.onrender.com
 | Next.js web | `web/vercel.json`, `web/Dockerfile` | `/`, `/piping`, `/plate` UI와 API 호출 |
 | FastAPI backend | `render.yaml`, 루트 `Dockerfile` | 분야별 contract 검증, DXF 생성·독립 재측정, 승인 bundle |
 | CI | `.github/workflows/ci.yml` | backend, web, Playwright, backend/web Docker image build gate |
+| Deployment smoke | `.github/workflows/deployment-smoke.yml` | Vercel deployment status 이후 web routes, API와 CORS 검사 |
 
 Web과 API는 별도 origin이다. API는 stateless이며 계정, DB, 장기 artifact 저장을 요구하지 않는다.
 
@@ -27,7 +28,8 @@ Web과 API는 별도 origin이다. API는 stateless이며 계정, DB, 장기 art
 1. 저장소 루트의 `render.yaml`을 Blueprint로 사용한다.
 2. 서비스는 `plan: free`로 생성하고 루트 `Dockerfile`을 build하며 `/api/v1/health`를 health check로 사용한다.
 3. Render가 제공하는 `PORT`를 애플리케이션이 읽으므로 고정 public port를 manifest에 넣지 않는다.
-4. `DATUMGUARD_CORS_ORIGINS`를 실제 web origin으로 설정한다.
+4. `DATUMGUARD_CORS_ORIGINS`를 실제 production web origin으로 설정한다.
+5. Preview가 필요하면 `DATUMGUARD_CORS_ORIGIN_REGEX`를 해당 Vercel project prefix로 제한한다.
 
 현재 Blueprint는 Docker 서비스에 `runtime: docker`, `plan: free`, `dockerfilePath`, `dockerContext`, `healthCheckPath`, `autoDeployTrigger: checksPass`를 명시한다. 무료 instance는 유휴 상태에서 중지될 수 있으므로 공개 포트폴리오 시현용으로만 사용한다. 마지막 설정은 연결된 CI check가 통과한 commit만 자동 배포 대상으로 삼는다.
 
@@ -39,7 +41,13 @@ Web과 API는 별도 origin이다. API는 stateless이며 계정, DB, 장기 art
 https://datumguard-tjwnsdhfz.vercel.app,https://example-preview.invalid
 ```
 
-첫 값은 현재 production origin이고 두 번째 값은 preview 형식 예시다. API는 localhost 두 origin을 개발 기본값으로 추가하지만 hosted origin은 자동 추정하지 않는다. Vercel preview URL을 사용하려면 검증할 preview origin을 명시적으로 추가한다. wildcard credential CORS로 완화하지 않는다.
+첫 값은 현재 production origin이고 두 번째 값은 preview 형식 예시다. 기준 Render Blueprint는 아래 project-scoped regex도 설정한다.
+
+```text
+^https://datumguard-tjwnsdhfz-[a-z0-9-]+\.vercel\.app$
+```
+
+API는 localhost 두 origin을 개발 기본값으로 추가하지만 hosted origin은 자동 추정하지 않는다. regex는 DatumGuard project prefix로 시작하는 Vercel Preview만 허용하며 unrelated `vercel.app` origin이나 wildcard credential CORS로 완화하지 않는다.
 
 ### Cold start
 
@@ -63,7 +71,7 @@ Scale-to-zero 또는 유휴 sleep을 사용하는 Render plan에서는 첫 healt
 
 `NEXT_PUBLIC_*` 값은 client build에 포함된다. API origin을 변경하면 environment variable만 바꾸고 끝내지 말고 web을 다시 build/deploy한다. Backend secret은 `NEXT_PUBLIC_*` 변수에 넣지 않는다.
 
-공개 repository는 `https://github.com/tjwnsdhfz/datumguard`로 확정되었으며 README의 Render/Vercel Deploy button이 이 저장소를 가리킨다. Vercel button은 `root-directory=web`과 required env `NEXT_PUBLIC_DATUMGUARD_API_URL`, `NEXT_PUBLIC_GITHUB_URL`을 전달한다. Render는 repository root의 기존 Blueprint를 연결한다. 두 경우 모두 실제 배포 URL을 smoke-test하기 전에는 공개 demo가 배포되었다고 표시하지 않는다.
+공개 repository는 `https://github.com/tjwnsdhfz/datumguard`로 확정되었으며 Vercel project에 직접 연결되어 있다. PR push는 Preview, `main` push는 Production deployment를 만든다. Vercel button은 새 복제용으로 `root-directory=web`과 required env `NEXT_PUBLIC_DATUMGUARD_API_URL`, `NEXT_PUBLIC_GITHUB_URL`을 전달한다. Render는 repository root의 기존 Blueprint를 연결한다. 자세한 GitHub event 흐름은 [GitHub Deployment Guide](github-deployment.md)를 따른다.
 
 ## 4. 배포 순서
 
@@ -71,8 +79,8 @@ Scale-to-zero 또는 유휴 sleep을 사용하는 Render plan에서는 첫 healt
 2. `containers` job에서 backend와 web 두 Dockerfile이 모두 build되는지 확인한다.
 3. Render backend를 배포하고 health endpoint를 확인한다.
 4. Render의 `DATUMGUARD_CORS_ORIGINS=$WEB_ORIGIN`을 설정한다.
-5. Vercel의 `NEXT_PUBLIC_DATUMGUARD_API_URL=$API_ORIGIN`을 설정하고 web을 배포한다.
-6. 세 route와 세 run endpoint를 smoke-test한다.
+5. Vercel의 `NEXT_PUBLIC_DATUMGUARD_API_URL=$API_ORIGIN`을 설정하고 Git repository의 Root Directory를 `web`으로 연결한다.
+6. PR Preview 또는 Production `deployment_status` 이후 `deployment-smoke`로 세 route, API와 CORS를 검사한다.
 
 | Mode | Web | Run endpoint |
 |---|---|---|

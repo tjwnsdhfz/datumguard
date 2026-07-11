@@ -1,6 +1,7 @@
 # DatumGuard
 
 [![CI](https://github.com/tjwnsdhfz/datumguard/actions/workflows/ci.yml/badge.svg)](https://github.com/tjwnsdhfz/datumguard/actions/workflows/ci.yml)
+[![Deployment Smoke](https://github.com/tjwnsdhfz/datumguard/actions/workflows/deployment-smoke.yml/badge.svg)](https://github.com/tjwnsdhfz/datumguard/actions/workflows/deployment-smoke.yml)
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel-000000?logo=vercel)](https://datumguard-tjwnsdhfz.vercel.app)
 [![API Health](https://img.shields.io/badge/API_Health-Render-46e3b7?logo=render&logoColor=000000)](https://datumguard-api.onrender.com/api/v1/health)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Ftjwnsdhfz%2Fdatumguard)
@@ -110,7 +111,7 @@ docker compose up --build
 - Frontend는 Vercel 프로젝트의 Root Directory를 `web/`으로 지정하고, build 전에 `NEXT_PUBLIC_DATUMGUARD_API_URL`을 backend URL로 설정합니다.
 - Backend의 `DATUMGUARD_CORS_ORIGINS`에는 frontend origin을 쉼표로 구분해 설정합니다.
 
-`render.yaml`은 GitHub CI check가 통과한 commit만 backend에 자동 배포하도록 구성되어 있습니다. Vercel에는 `NEXT_PUBLIC_GITHUB_URL`도 실제 저장소 URL로 설정하세요. 정확한 환경변수, CORS, cold start와 smoke-check 순서는 [Deployment Guide](docs/deployment.md)를 따릅니다.
+`render.yaml`은 GitHub CI check가 통과한 commit만 backend에 자동 배포하도록 구성되어 있습니다. Vercel for GitHub는 Root Directory `web/`에서 PR Preview와 `main` Production을 만들며, `deployment-smoke`가 세 route와 API CORS를 확인합니다. 정확한 연결 계약은 [GitHub Deployment Guide](docs/github-deployment.md), 환경변수·cold start 순서는 [Deployment Guide](docs/deployment.md)를 따릅니다.
 
 배포가 끝나면 `$WEB_ORIGIN/`, `$WEB_ORIGIN/piping`, `$WEB_ORIGIN/plate`를 모두 확인합니다. 각 모드는 Architecture, Piping, Plate 전용 run endpoint를 호출하므로 frontend를 build한 뒤 `NEXT_PUBLIC_DATUMGUARD_API_URL`을 바꾸었다면 반드시 rebuild해야 합니다.
 
@@ -167,6 +168,7 @@ npm run test:e2e
 - [Engineering Domains](docs/engineering-domains.md)
 - [Mission Control Design System](docs/design-system.md)
 - [Deployment Guide](docs/deployment.md)
+- [GitHub Deployment Guide](docs/github-deployment.md)
 - [현재 구현·배포 Handoff](docs/HANDOFF.md)
 - [개발 프롬프트 실행 순서](prompts/INDEX.md)
 

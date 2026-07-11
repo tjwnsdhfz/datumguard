@@ -68,6 +68,11 @@ def _origins() -> list[str]:
     return sorted(set(defaults + configured))
 
 
+def _origin_regex() -> str | None:
+    configured = os.getenv("DATUMGUARD_CORS_ORIGIN_REGEX", "").strip()
+    return configured or None
+
+
 app = FastAPI(
     title="DatumGuard API",
     version="0.1.0",
@@ -83,6 +88,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins(),
+    allow_origin_regex=_origin_regex(),
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Accept"],

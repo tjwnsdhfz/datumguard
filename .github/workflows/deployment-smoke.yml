@@ -1,0 +1,81 @@
+name: deployment-smoke
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      deployment_url:
+        description: Vercel deployment origin to verify
+        required: true
+        default: https://datumguard-tjwnsdhfz.vercel.app
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deployment-smoke-${{ github.event.deployment.id || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  web-and-api:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+      endsWith(github.event.deployment_status.environment_url, '.vercel.app'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      DEPLOYMENT_URL: ${{ inputs.deployment_url || github.event.deployment_status.environment_url }}
+      API_URL: https://datumguard-api.onrender.com
+    steps:
+      - name: Validate Vercel deployment target
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${DEPLOYMENT_URL}" in
+            https://*.vercel.app|https://datumguard-tjwnsdhfz.vercel.app) ;;
+            *) echo "Unsupported deployment URL: ${DEPLOYMENT_URL}" >&2; exit 1 ;;
+          esac
+
+      - name: Wake API and verify public registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            --retry 12 --retry-all-errors --retry-delay 5 \
+            --connect-timeout 10 --max-time 60 \
+            "${API_URL}/api/v1/health" >/dev/null
+          curl --fail --silent --show-error \
+            --retry 3 --retry-all-errors --retry-delay 2 \
+            --connect-timeout 10 --max-time 30 \
+            "${API_URL}/api/v1/domains" >/dev/null
+
+      - name: Verify Architecture, Piping, and Plate routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          origin="${DEPLOYMENT_URL%/}"
+          for path in / /piping /plate; do
+            curl --fail --silent --show-error \
+              --retry 6 --retry-all-errors --retry-delay 3 \
+              --connect-timeout 10 --max-time 45 \
+              "${origin}${path}" >/dev/null
+          done
+
+      - name: Verify deployment CORS access
+        shell: bash
+        run: |
+          set -euo pipefail
+          origin="${DEPLOYMENT_URL%/}"
+          headers="$({
+            curl --fail --silent --show-error --dump-header - --output /dev/null \
+              --request OPTIONS \
+              --header "Origin: ${origin}" \
+              --header "Access-Control-Request-Method: POST" \
+              --header "Access-Control-Request-Headers: content-type" \
+              --retry 3 --retry-all-errors --retry-delay 2 \
+              --connect-timeout 10 --max-time 30 \
+              "${API_URL}/api/v1/architecture/designs/run"
+          } | tr -d '\r')"
+          grep --fixed-strings --ignore-case \
+            "access-control-allow-origin: ${origin}" <<<"${headers}"
