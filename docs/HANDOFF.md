@@ -43,7 +43,7 @@ Piping의 route length, maximum support gap, minimum equipment clearance도 seri
 
 ## 공개 배포 상태
 
-공개 GitHub 저장소, Render backend, Vercel frontend가 생성되었다. Render는 `plan: free`, health endpoint `/api/v1/health`, exact production CORS origin을 사용한다. Vercel Production에는 Render API와 GitHub CTA 환경변수를 적용한 재배포가 `Ready` 상태다.
+공개 GitHub 저장소, Render backend, Vercel frontend가 생성되었다. Render는 `plan: free`, health endpoint `/api/v1/health`, exact production CORS와 DatumGuard 전용 Vercel Preview regex를 사용한다. Vercel project는 `tjwnsdhfz/datumguard`, production branch `main`, Root Directory `web`, Node.js `22.x`로 연결되었고 Render API와 GitHub CTA 환경변수를 Production/Preview에 적용한다.
 
 2026-07-11 remote smoke 결과:
 
@@ -53,4 +53,4 @@ Piping의 route length, maximum support gap, minimum equipment clearance도 seri
 - Piping: `VERIFIED`, route 12.0m, max support gap 2,000mm, min clearance 1,975mm, bundle 활성
 - Plate: 모든 필수 치수 deviation 0.000000mm, bundle 활성
 
-현재 Vercel 배포 source는 로그인 세션의 Drop to Deploy로 업로드한 commit `415983d`의 `web/` tree다. GitHub App은 `tjwnsdhfz/datumguard` 단일 저장소 범위로 선택했지만 GitHub sudo-mode 이메일 확인이 남아 있어 자동 배포 연결은 아직 완료되지 않았다. 다음 세션에서는 GitHub 확인 후 Vercel Project Settings의 Git 연결을 완료하고 `main` push 자동 배포를 한 번 검증한다. Render는 이미 GitHub Blueprint와 CI-passed commit 자동 배포를 사용한다.
+초기 Vercel Production은 Drop to Deploy로 생성했지만 현재는 Vercel CLI `git connect`로 GitHub 저장소에 연결했다. `web/.vercel`과 `.env.local`은 ignore하고 공개 client 값만 `.env.example`로 제공한다. `.github/workflows/deployment-smoke.yml`은 성공한 Vercel `deployment_status` 또는 수동 실행에서 Architecture, Piping, Plate route, Render health/domains와 CORS를 검사한다. Render는 GitHub Blueprint와 CI-passed commit 자동 배포를 사용한다.

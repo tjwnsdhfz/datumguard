@@ -10,3 +10,5 @@ services:
     envVars:
       - key: DATUMGUARD_CORS_ORIGINS
         sync: false
+      - key: DATUMGUARD_CORS_ORIGIN_REGEX
+        value: '^https://datumguard-tjwnsdhfz-[a-z0-9-]+\.vercel\.app$'
