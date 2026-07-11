@@ -3,18 +3,20 @@ from __future__ import annotations
 import base64
 import os
 import uuid
-from typing import Any
+from typing import Annotated, Any
 
 import uvicorn
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, File, Query, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import Field
+from starlette.concurrency import run_in_threadpool
 
 from .architecture_models import ArchitecturalPlanContract
 from .architecture_service import run_architecture_design, validate_architecture_contract
+from .artifact_service import MAX_ARTIFACT_BYTES, audit_artifact, compare_artifacts
 from .models import DesignContract, RepairProposal, StrictModel, Violation
 from .piping_models import PipingPlanContract
 from .piping_service import run_piping_design, validate_piping_contract
@@ -30,8 +32,10 @@ from .service import (
     validate_contract,
     verify_only,
 )
+from .solid_models import SolidPartContract
+from .solid_service import run_solid_design
 
-MAX_BODY_BYTES = 2 * 1024 * 1024
+MAX_BODY_BYTES = 48 * 1024 * 1024
 
 
 class DraftRequest(StrictModel):
@@ -75,10 +79,10 @@ def _origin_regex() -> str | None:
 
 app = FastAPI(
     title="DatumGuard API",
-    version="0.1.0",
+    version="0.2.0",
     description=(
-        "Contract-first architecture, plant piping, and plate drawing generation with "
-        "independent serialized-DXF remeasurement. "
+        "Contract-first architecture, plant piping, plate, and 3D solid generation with "
+        "independent serialized-DXF/STEP remeasurement and DXF/STEP/IFC artifact audit. "
         "This MVP does not certify structural safety, codes, or industrial standards."
     ),
     openapi_url="/api/v1/openapi.json",
@@ -115,7 +119,7 @@ async def reject_large_body(request: Request, call_next: Any) -> Any:
                 "evidence": [],
                 "error": {
                     "code": "DG_INPUT_INVALID",
-                    "message": "요청 본문이 2MB 제한을 초과했습니다.",
+                    "message": "요청 본문이 48MB 제한을 초과했습니다.",
                     "details": {"max_bytes": MAX_BODY_BYTES},
                     "correlation_id": str(uuid.uuid4()),
                 },
@@ -181,7 +185,7 @@ async def service_exception_handler(_request: Request, exc: ServiceFailure) -> J
 def root() -> dict[str, str]:
     return {
         "name": "DatumGuard API",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "docs": "/docs",
         "health": "/api/v1/health",
     }
@@ -189,7 +193,7 @@ def root() -> dict[str, str]:
 
 @app.get("/api/v1/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "service": "datumguard", "version": "0.1.0"}
+    return {"status": "ok", "service": "datumguard", "version": "0.2.0"}
 
 
 @app.get("/api/v1/domains")
@@ -212,6 +216,18 @@ def engineering_domains() -> list[dict[str, str]]:
             "design_kind": "plate_panel",
             "web_route": "/plate",
             "run_endpoint": "/api/v1/designs/run",
+        },
+        {
+            "id": "solid_part",
+            "design_kind": "solid_part",
+            "web_route": "/solid",
+            "run_endpoint": "/api/v1/solid/designs/run",
+        },
+        {
+            "id": "artifact_lab",
+            "design_kind": "artifact_audit",
+            "web_route": "/intake",
+            "run_endpoint": "/api/v1/artifacts/audit",
         },
     ]
 
@@ -239,6 +255,11 @@ def piping_plan_contract_schema() -> dict[str, Any]:
 @app.get("/api/v1/piping/schema")
 def piping_schema_alias() -> dict[str, Any]:
     return PipingPlanContract.model_json_schema()
+
+
+@app.get("/api/v1/schema/solid-part-contract")
+def solid_part_contract_schema() -> dict[str, Any]:
+    return SolidPartContract.model_json_schema()
 
 
 @app.post("/api/v1/contracts/draft")
@@ -338,6 +359,35 @@ def architecture_design_run(
 @app.post("/api/v1/piping/designs/run")
 def piping_design_run(contract: PipingPlanContract) -> dict[str, Any]:
     return run_piping_design(contract).model_dump(mode="json")
+
+
+@app.post("/api/v1/solid/designs/run")
+def solid_design_run(contract: SolidPartContract) -> dict[str, Any]:
+    return run_solid_design(contract).model_dump(mode="json")
+
+
+@app.post("/api/v1/artifacts/audit")
+async def artifact_audit(file: Annotated[UploadFile, File()]) -> dict[str, Any]:
+    data = await file.read(MAX_ARTIFACT_BYTES + 1)
+    result = await run_in_threadpool(audit_artifact, file.filename or "artifact", data)
+    return result.model_dump(mode="json")
+
+
+@app.post("/api/v1/artifacts/compare")
+async def artifact_compare(
+    baseline: Annotated[UploadFile, File()],
+    candidate: Annotated[UploadFile, File()],
+) -> dict[str, Any]:
+    baseline_data = await baseline.read(MAX_ARTIFACT_BYTES + 1)
+    candidate_data = await candidate.read(MAX_ARTIFACT_BYTES + 1)
+    result = await run_in_threadpool(
+        compare_artifacts,
+        baseline.filename or "baseline",
+        baseline_data,
+        candidate.filename or "candidate",
+        candidate_data,
+    )
+    return result.model_dump(mode="json")
 
 
 @app.post("/api/v1/exports")

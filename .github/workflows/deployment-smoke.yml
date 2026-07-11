@@ -49,13 +49,17 @@ jobs:
             --retry 3 --retry-all-errors --retry-delay 2 \
             --connect-timeout 10 --max-time 30 \
             "${API_URL}/api/v1/domains" >/dev/null
+          curl --fail --silent --show-error \
+            --retry 3 --retry-all-errors --retry-delay 2 \
+            --connect-timeout 10 --max-time 30 \
+            "${API_URL}/api/v1/schema/solid-part-contract" >/dev/null
 
-      - name: Verify Architecture, Piping, and Plate routes
+      - name: Verify all five engineering workspace routes
         shell: bash
         run: |
           set -euo pipefail
           origin="${DEPLOYMENT_URL%/}"
-          for path in / /piping /plate; do
+          for path in / /piping /plate /solid /intake; do
             curl --fail --silent --show-error \
               --retry 6 --retry-all-errors --retry-delay 3 \
               --connect-timeout 10 --max-time 45 \

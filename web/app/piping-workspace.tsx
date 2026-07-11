@@ -661,6 +661,8 @@ export default function PipingWorkspace() {
         <nav aria-label="Engineering workspaces">
           <Link href="/">Architecture</Link>
           <Link href="/plate">Mechanical / Ship Plate</Link>
+          <Link href="/solid">3D Solid</Link>
+          <Link href="/intake">Artifact Lab</Link>
           <a href="#piping-verification">Evidence</a>
         </nav>
       </header>

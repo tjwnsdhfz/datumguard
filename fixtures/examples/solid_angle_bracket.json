@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "design_kind": "solid_part",
+  "units": "mm",
+  "geometry": {
+    "type": "angle_bracket",
+    "width": 140.0,
+    "base_depth": 80.0,
+    "base_thickness": 8.0,
+    "vertical_height": 90.0,
+    "vertical_thickness": 8.0,
+    "base_holes": [
+      {"id": "base-a", "center": [-45.0, 15.0], "diameter": 12.0},
+      {"id": "base-b", "center": [45.0, 15.0], "diameter": 12.0}
+    ]
+  },
+  "tolerance_mm": 0.001,
+  "metadata": {
+    "project_name": "Ship equipment angle bracket",
+    "revision": "A",
+    "notes": "Synthetic portfolio fixture; no structural or weld certification."
+  },
+  "contract_hash": null
+}

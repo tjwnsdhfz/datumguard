@@ -16,8 +16,8 @@ Vercel에는 `NEXT_PUBLIC_DATUMGUARD_API_URL=https://datumguard-api.onrender.com
 
 | 구성요소 | 기준 manifest | 책임 |
 |---|---|---|
-| Next.js web | `web/vercel.json`, `web/Dockerfile` | `/`, `/piping`, `/plate` UI와 API 호출 |
-| FastAPI backend | `render.yaml`, 루트 `Dockerfile` | 분야별 contract 검증, DXF 생성·독립 재측정, 승인 bundle |
+| Next.js web | `web/vercel.json`, `web/Dockerfile` | `/`, `/piping`, `/plate`, `/solid`, `/intake` UI와 API 호출 |
+| FastAPI backend | `render.yaml`, 루트 `Dockerfile` | contract 기반 DXF/STEP 검증과 외부 DXF·STEP·IFC 감사 |
 | CI | `.github/workflows/ci.yml` | backend, web, Playwright, backend/web Docker image build gate |
 | Deployment smoke | `.github/workflows/deployment-smoke.yml` | Vercel deployment status 이후 web routes, API와 CORS 검사 |
 
@@ -53,7 +53,7 @@ API는 localhost 두 origin을 개발 기본값으로 추가하지만 hosted ori
 
 Scale-to-zero 또는 유휴 sleep을 사용하는 Render plan에서는 첫 health/run 요청이 평상시보다 늦을 수 있다. 이는 검증 실패와 구분해야 한다.
 
-- Web은 architecture, piping, plate 요청 중 loading 상태를 유지하고 timeout/네트워크 오류를 명시적으로 보여준다.
+- Web은 모든 workspace 요청 중 loading 상태를 유지하고 timeout/네트워크 오류를 명시적으로 보여준다.
 - 운영 smoke check는 먼저 `$API_ORIGIN/api/v1/health`를 확인한 뒤 분야별 run을 호출한다.
 - 일정한 first-request latency가 제품 요구사항이면 keep-alive 우회 대신 sleep하지 않는 서비스 plan을 선택한다.
 - cold-start 시간은 plan과 시점에 따라 달라지므로 이 저장소는 고정 SLA를 주장하지 않는다.
@@ -87,6 +87,8 @@ Scale-to-zero 또는 유휴 sleep을 사용하는 Render plan에서는 첫 healt
 | Architecture | `$WEB_ORIGIN/` | `$API_ORIGIN/api/v1/architecture/designs/run` |
 | Piping | `$WEB_ORIGIN/piping` | `$API_ORIGIN/api/v1/piping/designs/run` |
 | Plate | `$WEB_ORIGIN/plate` | `$API_ORIGIN/api/v1/designs/run` |
+| 3D Solid | `$WEB_ORIGIN/solid` | `$API_ORIGIN/api/v1/solid/designs/run` |
+| Artifact Lab | `$WEB_ORIGIN/intake` | `$API_ORIGIN/api/v1/artifacts/audit` |
 
 ## 5. Smoke check
 
@@ -95,7 +97,7 @@ curl --fail --silent "$API_ORIGIN/api/v1/health"
 curl --fail --silent "$API_ORIGIN/api/v1/domains"
 ```
 
-브라우저에서는 `/`, `/piping`, `/plate`가 각각 유지되는지, 실패 preset에서 ZIP이 비활성인지, `passed` 응답과 `bundle_base64`가 함께 있을 때만 ZIP이 활성인지 확인한다. CORS 오류가 나면 browser console의 요청 origin과 `DATUMGUARD_CORS_ORIGINS`를 exact string으로 비교한다.
+브라우저에서는 `/`, `/piping`, `/plate`, `/solid`, `/intake`가 각각 유지되는지, 실패 preset에서 ZIP이 비활성인지, `passed` 응답과 `bundle_base64`가 함께 있을 때만 ZIP이 활성인지 확인한다. CORS 오류가 나면 browser console의 요청 origin과 `DATUMGUARD_CORS_ORIGINS`를 exact string으로 비교한다.
 
 ### 기준 배포 smoke 결과
 
@@ -111,7 +113,7 @@ curl --fail --silent "$API_ORIGIN/api/v1/domains"
 
 - Backend: Ruff format/lint, mypy, pytest
 - Web: npm lockfile install, typecheck, ESLint, production build
-- Browser: 실제 FastAPI와 Next.js를 함께 실행하는 Architecture/Piping/Plate Playwright suite
+- Browser: 실제 FastAPI와 Next.js를 함께 실행하는 5-workspace Playwright suite
 - Containers: 루트 backend image와 `web/` image의 독립 build
 
 CI 성공은 원격 Vercel/Render 배포 성공이나 구조·안전·법규 적합성을 의미하지 않는다. 원격 인증, DNS, plan 선택과 실제 공개 URL 확인은 운영 단계다.

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import base64
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.testclient import TestClient
 
 from datumguard.api import _origin_regex, app
 from datumguard.models import DesignContract
+from datumguard.service import generate_only
 
 client = TestClient(app)
 
@@ -60,10 +63,43 @@ def test_engineering_domain_registry_lists_all_public_workspaces() -> None:
     payload = response.json()
     assert {item["design_kind"] for item in payload} == {
         "architectural_plan",
+        "artifact_audit",
         "piping_plan",
         "plate_panel",
+        "solid_part",
     }
-    assert {item["web_route"] for item in payload} == {"/", "/piping", "/plate"}
+    assert {item["web_route"] for item in payload} == {
+        "/",
+        "/intake",
+        "/piping",
+        "/plate",
+        "/solid",
+    }
+
+
+def test_artifact_audit_endpoint_accepts_real_dxf_upload(
+    sample_contract: DesignContract,
+) -> None:
+    generated = generate_only(sample_contract)
+    dxf_bytes = base64.b64decode(generated.dxf_base64)
+
+    response = client.post(
+        "/api/v1/artifacts/audit",
+        files={"file": ("drawing.dxf", dxf_bytes, "image/vnd.dxf")},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "audited"
+    assert payload["format"] == "dxf"
+    assert payload["artifact_hash"].startswith("sha256:")
+    assert payload["approval_eligible"] is False
+
+
+def test_solid_contract_schema_is_public() -> None:
+    response = client.get("/api/v1/schema/solid-part-contract")
+    assert response.status_code == 200
+    assert response.json()["properties"]["design_kind"]["const"] == "solid_part"
 
 
 def test_run_endpoint_returns_common_envelope(sample_contract: DesignContract) -> None:

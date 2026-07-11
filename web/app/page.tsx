@@ -522,8 +522,8 @@ function PlateWorkspace() {
         <nav aria-label="주요 링크">
           <Link href="/">Architecture</Link>
           <Link href="/piping">Plant Piping</Link>
-          <a href="#designer">설계</a>
-          <a href="#verification">검증 결과</a>
+          <Link href="/solid">3D Solid</Link>
+          <Link href="/intake">Artifact Lab</Link>
           <a href={GITHUB_URL} target="_blank" rel="noreferrer">GitHub</a>
         </nav>
       </header>

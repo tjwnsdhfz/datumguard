@@ -1,0 +1,32 @@
+{
+  "artifact_hash": "sha256:08a4d20b58375a65ff428c93dc3940ba237f39cdf7b8378b152d1740fd67928a",
+  "contract_hash": "sha256:085be6e705f7d50a55aa8513de7044a26ed76d8c218d40bca17f05b8b1461d29",
+  "datumguard_step_reimport": {
+    "bounding_box_mm": {
+      "maximum": [60.0, 40.0, 8.0],
+      "minimum": [-60.0, -40.0, 0.0],
+      "size": [120.0, 80.0, 8.0]
+    },
+    "dimension_count": 15,
+    "dimension_pass_count": 15,
+    "edge_count": 36,
+    "face_count": 14,
+    "solid_count": 1,
+    "valid_shape": true
+  },
+  "executed_at": "2026-07-12T01:00:42+09:00",
+  "purpose": "secondary CAD interoperability smoke; not engineering approval",
+  "rhino": {
+    "bounding_box_mm": {
+      "maximum": [60.0, 40.0, 8.0],
+      "minimum": [-60.0, -40.0, -2.220446049250313e-16],
+      "size": [120.0, 80.0, 8.0]
+    },
+    "object_count": 1,
+    "object_types": {"Brep": 1},
+    "output_3dm_bytes": 63911,
+    "unit_system": "Millimeters",
+    "version": "8.30"
+  },
+  "status": "passed"
+}

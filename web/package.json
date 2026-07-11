@@ -1,6 +1,6 @@
 {
   "name": "datumguard-web",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "demo:capture": "node scripts/capture-architecture-demo.mjs",
-    "demo:capture:piping": "node scripts/capture-piping-demo.mjs"
+    "demo:capture:piping": "node scripts/capture-piping-demo.mjs",
+    "demo:capture:solid": "node scripts/capture-solid-demo.mjs"
   },
   "dependencies": {
     "@fontsource/dm-mono": "^5.2.7",

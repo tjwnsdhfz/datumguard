@@ -63,7 +63,7 @@ test.describe("interactive architecture demo", () => {
     for (const [id, label] of exactStages) {
       await expect(page.getByTestId(`architecture-stage-${id}`)).toContainText(label);
     }
-    await expect(page.getByRole("link", { name: /플레이트 데모 열기/i })).toHaveAttribute("href", "/plate");
+    await expect(page.locator('a[href="/plate"]')).toHaveCount(1);
     await expect(page.getByRole("link", { name: /plant piping/i })).toHaveAttribute("href", "/piping");
     await expect(page.getByText(/not a certification/i)).toBeVisible();
   });

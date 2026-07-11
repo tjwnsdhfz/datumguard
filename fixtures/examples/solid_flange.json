@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "design_kind": "solid_part",
+  "units": "mm",
+  "geometry": {
+    "type": "flange",
+    "outer_diameter": 160.0,
+    "inner_diameter": 70.0,
+    "thickness": 18.0,
+    "bolt_circle_diameter": 120.0,
+    "bolt_hole_diameter": 14.0,
+    "bolt_hole_count": 8
+  },
+  "tolerance_mm": 0.001,
+  "metadata": {
+    "project_name": "Utility flange geometry study",
+    "revision": "A",
+    "notes": "Synthetic portfolio fixture; no pressure or code certification."
+  },
+  "contract_hash": null
+}

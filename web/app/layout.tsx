@@ -12,9 +12,9 @@ import "./globals.css";
 import "./architecture.css";
 
 export const metadata: Metadata = {
-  title: "DatumGuard | DXF 독립 검증 도구",
+  title: "DatumGuard | CAD Artifact Assurance",
   description:
-    "2D 플레이트를 폼으로 설계하고 생성된 DXF를 독립 재측정해 검증된 파일만 내려받는 공학 도면 도구",
+    "건축·플랜트·기계 설계와 DXF·STEP·IFC 산출물을 독립 재측정하는 공학 CAD 정확성 포트폴리오",
 };
 
 export const viewport: Viewport = {

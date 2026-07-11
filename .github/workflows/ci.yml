@@ -49,7 +49,7 @@ jobs:
       - name: Install Chromium
         working-directory: web
         run: npx playwright install --with-deps chromium
-      - name: Run architecture, piping, and plate E2E against API and web
+      - name: Run all five CAD workspaces against the real API
         working-directory: web
         env:
           PLAYWRIGHT_API_URL: http://127.0.0.1:8000
