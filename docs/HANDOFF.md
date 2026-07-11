@@ -4,6 +4,10 @@
 
 Architecture, Plant/Semiconductor Piping, Mechanical/Ship Plate MVP 구현과 로컬 검증은 완료되었다.
 
+- Public web: `https://datumguard-tjwnsdhfz.vercel.app`
+- Public API: `https://datumguard-api.onrender.com`
+- GitHub: `https://github.com/tjwnsdhfz/datumguard`
+
 - `/`: 12×8m architecture CAD workspace
 - `/piping`: semiconductor CDA utility piping CAD workspace
 - `/plate`: mechanical/ship plate workflow와 ship bracket·semiconductor panel preset
@@ -37,13 +41,16 @@ Piping의 route length, maximum support gap, minimum equipment clearance도 seri
 - Browser/visual QA: Architecture 1440×960 capture, 4-room PASS, 300mm open-loop export block, 820px numeric/verify flow, piping pass/fail, plate ship bracket pass
 - `npm run demo:capture`: pass; `docs/assets/demo/architecture-verified.png` is exactly 1440×960
 
-## 공개 배포에 남은 외부 단계
+## 공개 배포 상태
 
-공개 GitHub 저장소 `https://github.com/tjwnsdhfz/datumguard`와 `origin` remote가 생성되었고 `main`의 초기 CI는 backend, web, Playwright, backend/web Docker image build를 모두 통과했다.
+공개 GitHub 저장소, Render backend, Vercel frontend가 생성되었다. Render는 `plan: free`, health endpoint `/api/v1/health`, exact production CORS origin을 사용한다. Vercel Production에는 Render API와 GitHub CTA 환경변수를 적용한 재배포가 `Ready` 상태다.
 
-1. Backend는 README의 Render button 또는 루트 `render.yaml`로 배포하고 `DATUMGUARD_CORS_ORIGINS`를 web origin으로 설정한다.
-2. Frontend는 README의 Vercel button을 사용하거나 Root Directory를 `web/`으로 지정한다.
-3. `NEXT_PUBLIC_DATUMGUARD_API_URL`과 `NEXT_PUBLIC_GITHUB_URL`을 설정한 뒤 frontend를 rebuild한다.
-4. `docs/demo.md`와 `docs/piping-demo.md`의 hosted demo 항목을 실행한다.
+2026-07-11 remote smoke 결과:
 
-현재 환경에는 Vercel/Render 인증이 없어 원격 URL 생성은 완료하지 않았다. 로컬 Docker CLI는 없지만 GitHub Actions의 container job에서 두 Dockerfile의 실제 build가 통과했다.
+- API health/domains: `200`
+- Production CORS preflight: exact Vercel origin 허용
+- Architecture: `VERIFIED / PASS`, 96m², dimensions 4/4, room seeds 4, bundle 활성
+- Piping: `VERIFIED`, route 12.0m, max support gap 2,000mm, min clearance 1,975mm, bundle 활성
+- Plate: 모든 필수 치수 deviation 0.000000mm, bundle 활성
+
+현재 Vercel 배포 source는 로그인 세션의 Drop to Deploy로 업로드한 commit `415983d`의 `web/` tree다. GitHub App은 `tjwnsdhfz/datumguard` 단일 저장소 범위로 선택했지만 GitHub sudo-mode 이메일 확인이 남아 있어 자동 배포 연결은 아직 완료되지 않았다. 다음 세션에서는 GitHub 확인 후 Vercel Project Settings의 Git 연결을 완료하고 `main` push 자동 배포를 한 번 검증한다. Render는 이미 GitHub Blueprint와 CI-passed commit 자동 배포를 사용한다.

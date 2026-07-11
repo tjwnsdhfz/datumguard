@@ -1,6 +1,16 @@
 # DatumGuard Deployment Guide
 
-이 문서는 Vercel web과 Render backend를 연결하는 설정 계약이다. 저장소에는 배포 가능한 manifest만 포함하며, 실제 배포나 공개 URL 생성을 전제로 하지 않는다. 아래의 `$WEB_ORIGIN`과 `$API_ORIGIN`은 배포 후 운영자가 실제 HTTPS origin으로 치환한다.
+이 문서는 Vercel web과 Render backend를 연결하는 설정 계약이다. 기준 공개 배포의 `$WEB_ORIGIN`은 `https://datumguard-tjwnsdhfz.vercel.app`, `$API_ORIGIN`은 `https://datumguard-api.onrender.com`이다. 새 환경을 만들 때는 아래 변수를 새 HTTPS origin으로 치환한다.
+
+## 현재 공개 배포
+
+| 구성요소 | 공개 URL | 2026-07-11 상태 |
+|---|---|---|
+| Next.js web | `https://datumguard-tjwnsdhfz.vercel.app` | Vercel Production `Ready` |
+| FastAPI backend | `https://datumguard-api.onrender.com` | Render Free health `200 ok` |
+| OpenAPI | `https://datumguard-api.onrender.com/docs` | 공개 접근 가능 |
+
+Vercel에는 `NEXT_PUBLIC_DATUMGUARD_API_URL=https://datumguard-api.onrender.com`과 `NEXT_PUBLIC_GITHUB_URL=https://github.com/tjwnsdhfz/datumguard`를 Production/Preview에 설정했다. Render의 `DATUMGUARD_CORS_ORIGINS`는 `https://datumguard-tjwnsdhfz.vercel.app` exact origin을 허용하며 preflight 응답으로 확인했다.
 
 ## 1. 배포 토폴로지
 
@@ -26,10 +36,10 @@ Web과 API는 별도 origin이다. API는 stateless이며 계정, DB, 장기 art
 `DATUMGUARD_CORS_ORIGINS`는 쉼표로 구분한 exact origin 목록이다. scheme과 host, non-default port만 포함하고 path와 마지막 slash는 넣지 않는다.
 
 ```text
-https://example-web.invalid,https://example-preview.invalid
+https://datumguard-tjwnsdhfz.vercel.app,https://example-preview.invalid
 ```
 
-위 값은 형식 예시일 뿐 배포 URL이 아니다. API는 localhost 두 origin을 개발 기본값으로 추가하지만 hosted origin은 자동 추정하지 않는다. Vercel preview URL을 사용하려면 검증할 preview origin을 명시적으로 추가한다. wildcard credential CORS로 완화하지 않는다.
+첫 값은 현재 production origin이고 두 번째 값은 preview 형식 예시다. API는 localhost 두 origin을 개발 기본값으로 추가하지만 hosted origin은 자동 추정하지 않는다. Vercel preview URL을 사용하려면 검증할 preview origin을 명시적으로 추가한다. wildcard credential CORS로 완화하지 않는다.
 
 ### Cold start
 
@@ -78,6 +88,16 @@ curl --fail --silent "$API_ORIGIN/api/v1/domains"
 ```
 
 브라우저에서는 `/`, `/piping`, `/plate`가 각각 유지되는지, 실패 preset에서 ZIP이 비활성인지, `passed` 응답과 `bundle_base64`가 함께 있을 때만 ZIP이 활성인지 확인한다. CORS 오류가 나면 browser console의 요청 origin과 `DATUMGUARD_CORS_ORIGINS`를 exact string으로 비교한다.
+
+### 기준 배포 smoke 결과
+
+| Mode | Web 결과 | API evidence |
+|---|---|---|
+| Architecture | `VERIFIED / PASS`, bundle 활성 | 96m², dimensions 4/4, room seeds 4, violations 0 |
+| Piping | `VERIFIED`, bundle 활성 | route 12.0m, max support gap 2,000mm, min clearance 1,975mm |
+| Plate | 모든 필수 검사 통과, bundle 활성 | 전체 표기 치수 deviation 0.000000mm |
+
+추가로 `/api/v1/health`와 `/api/v1/domains`가 `200`, production origin의 CORS preflight가 `Access-Control-Allow-Origin: https://datumguard-tjwnsdhfz.vercel.app`을 반환하는지 확인했다.
 
 ## 6. CI가 보장하는 범위
 
