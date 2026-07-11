@@ -15,11 +15,11 @@ Web과 API는 별도 origin이다. API는 stateless이며 계정, DB, 장기 art
 ## 2. Render backend
 
 1. 저장소 루트의 `render.yaml`을 Blueprint로 사용한다.
-2. 서비스는 루트 `Dockerfile`을 build하고 `/api/v1/health`를 health check로 사용한다.
+2. 서비스는 `plan: free`로 생성하고 루트 `Dockerfile`을 build하며 `/api/v1/health`를 health check로 사용한다.
 3. Render가 제공하는 `PORT`를 애플리케이션이 읽으므로 고정 public port를 manifest에 넣지 않는다.
 4. `DATUMGUARD_CORS_ORIGINS`를 실제 web origin으로 설정한다.
 
-현재 Blueprint는 Docker 서비스에 `runtime: docker`, `dockerfilePath`, `dockerContext`, `healthCheckPath`, `autoDeployTrigger: checksPass`를 명시한다. 마지막 설정은 연결된 CI check가 통과한 commit만 자동 배포 대상으로 삼는다.
+현재 Blueprint는 Docker 서비스에 `runtime: docker`, `plan: free`, `dockerfilePath`, `dockerContext`, `healthCheckPath`, `autoDeployTrigger: checksPass`를 명시한다. 무료 instance는 유휴 상태에서 중지될 수 있으므로 공개 포트폴리오 시현용으로만 사용한다. 마지막 설정은 연결된 CI check가 통과한 commit만 자동 배포 대상으로 삼는다.
 
 ### CORS 값
 

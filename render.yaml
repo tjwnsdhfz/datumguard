@@ -2,6 +2,7 @@ services:
   - type: web
     name: datumguard-api
     runtime: docker
+    plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /api/v1/health
