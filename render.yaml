@@ -13,7 +13,7 @@ services:
       - key: DATUMGUARD_CORS_ORIGIN_REGEX
         value: '^https://datumguard-tjwnsdhfz-[a-z0-9-]+\.vercel\.app$'
       - key: DATUMGUARD_ENABLE_SOLID
-        value: 'true'
+        value: 'false'
       - key: DATUMGUARD_ENABLE_ARTIFACT_LAB
         value: 'true'
       - key: DATUMGUARD_RATE_LIMIT_ENABLED

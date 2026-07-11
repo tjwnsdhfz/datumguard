@@ -87,6 +87,29 @@ test.describe("real CAD artifact and solid workspaces", () => {
     await expect(page.getByTestId("solid-download-bundle")).toBeEnabled();
   });
 
+  test("fails fast when the deployed API disables the solid capability", async ({ page }) => {
+    let domainCalls = 0;
+    await page.route("**/api/v1/domains", async (route) => {
+      domainCalls += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          { id: "architecture" },
+          { id: "plant_piping" },
+          { id: "mechanical_ship_plate" },
+          { id: "artifact_lab" },
+        ]),
+      });
+    });
+
+    await page.goto("/solid");
+    const readiness = page.locator('[data-readiness-state="failed"]');
+    await expect(readiness).toContainText("비활성화", { timeout: 5_000 });
+    await expect(page.getByTestId("solid-run-button")).toBeDisabled();
+    expect(domainCalls).toBe(1);
+  });
+
   test("supports keyboard tabs and never automatically retries a heavy upload", async ({ page }) => {
     let requests = 0;
     await page.route("**/api/v1/artifacts/audit", async (route) => {

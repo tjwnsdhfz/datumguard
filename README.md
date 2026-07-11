@@ -112,7 +112,7 @@ docker compose up --build
 - Architecture: [web root](https://datumguard-tjwnsdhfz.vercel.app)
 - Plant / Semiconductor Piping: [/piping](https://datumguard-tjwnsdhfz.vercel.app/piping)
 - Mechanical / Ship Plate: [/plate](https://datumguard-tjwnsdhfz.vercel.app/plate)
-- 3D Solid STEP: [/solid](https://datumguard-tjwnsdhfz.vercel.app/solid)
+- 3D Solid STEP UI: [/solid](https://datumguard-tjwnsdhfz.vercel.app/solid) — local/CI 기능이며 현재 Render Free API에서는 메모리 안전을 위해 비활성
 - CAD Artifact Lab: [/intake](https://datumguard-tjwnsdhfz.vercel.app/intake)
 - API: [health](https://datumguard-api.onrender.com/api/v1/health) · [domains](https://datumguard-api.onrender.com/api/v1/domains) · [OpenAPI](https://datumguard-api.onrender.com/docs)
 
@@ -124,13 +124,15 @@ docker compose up --build
 - Frontend는 Vercel 프로젝트의 Root Directory를 `web/`으로 지정하고, build 전에 `NEXT_PUBLIC_DATUMGUARD_API_URL`을 backend URL로 설정합니다.
 - Backend의 `DATUMGUARD_CORS_ORIGINS`에는 frontend origin을 쉼표로 구분해 설정합니다.
 
-`render.yaml`은 GitHub CI check가 통과한 commit만 backend에 자동 배포하도록 구성되어 있습니다. Vercel for GitHub는 Root Directory `web/`에서 PR Preview와 `main` Production을 만들며, `deployment-smoke`가 다섯 workspace의 실제 DOM, API version/capability, architecture·solid canary와 CORS를 확인합니다. 정확한 연결 계약은 [GitHub Deployment Guide](docs/github-deployment.md), 환경변수·cold start 순서는 [Deployment Guide](docs/deployment.md)를 따릅니다.
+`render.yaml`은 GitHub CI check가 통과한 commit만 backend에 자동 배포하도록 구성되어 있습니다. Vercel for GitHub는 Root Directory `web/`에서 PR Preview와 `main` Production을 만들며, `deployment-smoke`가 다섯 workspace의 실제 DOM, API version/capability, architecture와 활성화된 optional canary, CORS를 확인합니다. 정확한 연결 계약은 [GitHub Deployment Guide](docs/github-deployment.md), 환경변수·cold start 순서는 [Deployment Guide](docs/deployment.md)를 따릅니다.
 
 배포가 끝나면 `$WEB_ORIGIN/`, `/piping`, `/plate`, `/solid`, `/intake`를 모두 확인합니다. Frontend를 build한 뒤 `NEXT_PUBLIC_DATUMGUARD_API_URL`을 바꾸었다면 반드시 rebuild해야 합니다.
 
 공개 데모는 stateless입니다. 계정·DB·서버 프로젝트 저장을 사용하지 않으며, 요청 파일과 자연어 원문을 영구 저장하지 않습니다. Hosted demo에는 Rhino 연결을 요구하지 않으며, Rhino evidence는 로컬 adapter가 있을 때만 secondary cross-check로 사용합니다.
 
 운영 경계도 코드로 고정했습니다. 실제 수신 byte 제한, 파일별·합계 upload 제한, optional API key, anonymous/authenticated quota, heavy CAD queue, parser subprocess, request ID·redacted JSON log, `/live`·`/ready`·bounded `/metrics`, Solid/Artifact Lab kill switch를 제공합니다. 브라우저 draft는 30일 TTL의 IndexedDB에만 저장되며 [/privacy](https://datumguard-tjwnsdhfz.vercel.app/privacy)에서 전체 삭제할 수 있습니다. 10k DAU는 현재 Free 배포의 용량 주장이 아니며, 출시 체크리스트·장애/rollback·SLO·비용 후보는 [Operations Guide](docs/operations/README.md)와 [Cost Guard](docs/operations/cost-guard.md)에 분리했습니다.
+
+OpenCascade Solid은 코드·Linux CI·Docker image에서 실제 STEP 생성과 재입력을 통과하지만, Render Free 512MB Production canary에서 HTTP 502가 발생해 `DATUMGUARD_ENABLE_SOLID=false`로 fail-closed했습니다. OOM 또는 worker restart는 의심되지만 직접 확인되지 않았습니다. 유료 변경 없이 기능을 과장하지 않기 위한 운영 결정이며, [Cost Guard](docs/operations/cost-guard.md)의 Render Standard 이상 staging에서 canary와 부하 검증을 통과한 뒤에만 다시 활성화합니다.
 
 ## API와 MCP
 
