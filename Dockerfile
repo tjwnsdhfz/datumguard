@@ -1,4 +1,10 @@
-FROM python:3.12.11-slim-bookworm AS builder
+FROM python:3.12.11-slim-bookworm AS base
+
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+
+FROM base AS builder
 
 ENV PIP_NO_CACHE_DIR=1 \
     UV_COMPILE_BYTECODE=1 \
@@ -13,7 +19,7 @@ COPY src ./src
 RUN uv sync --frozen --no-dev --no-editable
 
 
-FROM python:3.12.11-slim-bookworm AS runtime
+FROM base AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
