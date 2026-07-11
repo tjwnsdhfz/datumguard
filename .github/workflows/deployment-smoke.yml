@@ -82,23 +82,44 @@ jobs:
               print(tomllib.load(stream)["project"]["version"])
           PY
           )"
-          has_optional=false
-          if [[ -f web/app/solid/page.tsx && -f web/app/intake/page.tsx ]]; then
-            has_optional=true
-          fi
+          has_solid=false
+          has_artifact=false
+          [[ -f web/app/solid/page.tsx ]] && has_solid=true
+          [[ -f web/app/intake/page.tsx ]] && has_artifact=true
+          read -r manifest_solid manifest_artifact < <(python - <<'PY'
+          import re
+          from pathlib import Path
+
+          text = Path("render.yaml").read_text(encoding="utf-8")
+
+          def enabled(key: str) -> str:
+              match = re.search(
+                  rf"- key:\s*{re.escape(key)}\s*\n\s*value:\s*['\"]?([^'\"\s]+)",
+                  text,
+              )
+              if match is None:
+                  return "true"
+              return "true" if match.group(1).lower() in {"1", "true", "yes", "on"} else "false"
+
+          print(enabled("DATUMGUARD_ENABLE_SOLID"), enabled("DATUMGUARD_ENABLE_ARTIFACT_LAB"))
+          PY
+          )
 
           strict_version=false
-          require_optional=false
+          expected_solid=false
+          expected_artifact=false
           case "${CAPABILITY_MODE}" in
             base) ;;
             full)
               strict_version=true
-              require_optional=true
+              expected_solid=true
+              expected_artifact=true
               ;;
             auto)
               if [[ "${DEPLOYMENT_ENVIRONMENT}" == "Production" || "${ORIGIN}" == "https://datumguard-tjwnsdhfz.vercel.app" ]]; then
                 strict_version=true
-                require_optional="${has_optional}"
+                if [[ "${has_solid}" == "true" ]]; then expected_solid="${manifest_solid}"; fi
+                if [[ "${has_artifact}" == "true" ]]; then expected_artifact="${manifest_artifact}"; fi
               fi
               ;;
             *) echo "unsupported capability mode: ${CAPABILITY_MODE}" >&2; exit 1 ;;
@@ -106,9 +127,10 @@ jobs:
 
           echo "expected_version=${expected_version}" >> "${GITHUB_OUTPUT}"
           echo "strict_version=${strict_version}" >> "${GITHUB_OUTPUT}"
-          echo "require_optional=${require_optional}" >> "${GITHUB_OUTPUT}"
-          echo "Optional v0.2 capability required: ${require_optional}"
-          if [[ "${strict_version}" != "true" && "${has_optional}" == "true" ]]; then
+          echo "expected_solid=${expected_solid}" >> "${GITHUB_OUTPUT}"
+          echo "expected_artifact=${expected_artifact}" >> "${GITHUB_OUTPUT}"
+          echo "Expected optional capabilities: solid=${expected_solid}, artifact=${expected_artifact}"
+          if [[ "${strict_version}" != "true" && ( "${has_solid}" == "true" || "${has_artifact}" == "true" ) ]]; then
             echo "Preview compatibility mode: v0.2 web is checked against the currently deployed base API; optional canaries run only when advertised."
           fi
 
@@ -167,7 +189,8 @@ jobs:
         env:
           EXPECTED_VERSION: ${{ steps.contract.outputs.expected_version }}
           STRICT_VERSION: ${{ steps.contract.outputs.strict_version }}
-          REQUIRE_OPTIONAL: ${{ steps.contract.outputs.require_optional }}
+          EXPECTED_SOLID: ${{ steps.contract.outputs.expected_solid }}
+          EXPECTED_ARTIFACT: ${{ steps.contract.outputs.expected_artifact }}
         run: |
           set -euo pipefail
           health="${RUNNER_TEMP}/datumguard-health.json"
@@ -181,21 +204,30 @@ jobs:
                 "${API_URL}/api/v1/health" --output "${health}" && \
               curl --fail --silent --show-error --connect-timeout 10 --max-time 30 \
                 "${API_URL}/api/v1/domains" --output "${domains}" && \
-              python - "${health}" "${domains}" "${EXPECTED_VERSION}" "${STRICT_VERSION}" "${REQUIRE_OPTIONAL}" <<'PY'
+              python - "${health}" "${domains}" "${EXPECTED_VERSION}" "${STRICT_VERSION}" "${EXPECTED_SOLID}" "${EXPECTED_ARTIFACT}" <<'PY'
           import json
           import sys
 
           health = json.load(open(sys.argv[1], encoding="utf-8"))
           domains = json.load(open(sys.argv[2], encoding="utf-8"))
-          expected, strict, optional = sys.argv[3], sys.argv[4] == "true", sys.argv[5] == "true"
+          expected = sys.argv[3]
+          strict = sys.argv[4] == "true"
+          expected_solid = sys.argv[5] == "true"
+          expected_artifact = sys.argv[6] == "true"
           ids = {item.get("id") for item in domains if isinstance(item, dict)}
           base = {"architecture", "plant_piping", "mechanical_ship_plate"}
           if health.get("status") != "ok" or not base.issubset(ids):
               raise SystemExit(1)
           if strict and health.get("version") != expected:
               raise SystemExit(1)
-          if optional and not {"solid_part", "artifact_lab"}.issubset(ids):
-              raise SystemExit(1)
+          for capability, required in {
+              "solid_part": expected_solid,
+              "artifact_lab": expected_artifact,
+          }.items():
+              if required and capability not in ids:
+                  raise SystemExit(1)
+              if strict and not required and capability in ids:
+                  raise SystemExit(1)
           PY
             then
               ready=true
@@ -211,9 +243,11 @@ jobs:
 
           api_version="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "${health}")"
           solid_supported="$(python -c 'import json,sys; print(str(any(x.get("id") == "solid_part" for x in json.load(open(sys.argv[1])))).lower())' "${domains}")"
+          artifact_supported="$(python -c 'import json,sys; print(str(any(x.get("id") == "artifact_lab" for x in json.load(open(sys.argv[1])))).lower())' "${domains}")"
           echo "version=${api_version}" >> "${GITHUB_OUTPUT}"
           echo "solid_supported=${solid_supported}" >> "${GITHUB_OUTPUT}"
-          echo "API version ${api_version}; solid capability ${solid_supported}."
+          echo "artifact_supported=${artifact_supported}" >> "${GITHUB_OUTPUT}"
+          echo "API version ${api_version}; solid=${solid_supported}, artifact=${artifact_supported}."
 
       - name: Run small architecture canary
         shell: bash
@@ -262,9 +296,67 @@ jobs:
           assert len(payload.get("violations") or []) == 0, "unexpected violations"
           PY
 
-      - name: Explain deferred preview solid canary
+      - name: Verify disabled Solid endpoint fails closed
         if: steps.api.outputs.solid_supported != 'true'
-        run: echo "Solid canary deferred because the shared preview API advertises only the backward-compatible v0.1 capability set."
+        shell: bash
+        env:
+          STRICT_VERSION: ${{ steps.contract.outputs.strict_version }}
+        run: |
+          set -euo pipefail
+          response="${RUNNER_TEMP}/solid-disabled.json"
+          status="$(curl --silent --show-error --connect-timeout 10 --max-time 60 \
+            --header 'Content-Type: application/json' \
+            --data-binary @fixtures/examples/solid_mounting_plate.json \
+            --output "${response}" --write-out '%{http_code}' \
+            "${API_URL}/api/v1/solid/designs/run")"
+          if [[ "${STRICT_VERSION}" == "true" ]]; then
+            [[ "${status}" == "503" ]]
+            python - "${response}" <<'PY'
+          import json
+          import sys
+
+          payload = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert payload.get("error", {}).get("code") == "DG_CAPABILITY_DISABLED", payload
+          PY
+          elif [[ "${status}" != "404" && "${status}" != "503" ]]; then
+            echo "Disabled Solid route unexpectedly returned HTTP ${status}." >&2
+            exit 1
+          fi
+
+      - name: Run small Artifact Lab canary when the API advertises support
+        if: steps.api.outputs.artifact_supported == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture="${RUNNER_TEMP}/artifact-canary.dxf"
+          response="${RUNNER_TEMP}/artifact-canary.json"
+          python - "${fixture}" <<'PY'
+          import sys
+
+          rows = [
+              "0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1027",
+              "9", "$INSUNITS", "70", "4", "0", "ENDSEC", "0", "SECTION",
+              "2", "TABLES", "0", "ENDSEC", "0", "SECTION", "2", "BLOCKS",
+              "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES", "0", "LINE",
+              "5", "10", "100", "AcDbEntity", "8", "AUDIT", "100", "AcDbLine",
+              "10", "0", "20", "0", "30", "0", "11", "1200", "21", "0",
+              "31", "0", "0", "ENDSEC", "0", "EOF", "",
+          ]
+          open(sys.argv[1], "wb").write("\n".join(rows).encode("ascii"))
+          PY
+          curl --fail --silent --show-error --connect-timeout 10 --max-time 120 \
+            --form "file=@${fixture};type=image/vnd.dxf" \
+            "${API_URL}/api/v1/artifacts/audit" --output "${response}"
+          python - "${response}" <<'PY'
+          import json
+          import sys
+
+          payload = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert payload.get("status") == "audited", payload
+          assert payload.get("format") == "dxf", payload
+          assert str(payload.get("artifact_hash", "")).startswith("sha256:"), payload
+          assert payload.get("approval_eligible") is False, payload
+          PY
 
       - name: Verify deployment CORS access
         shell: bash

@@ -25,6 +25,8 @@
 
 공식 근거: [Vercel pricing](https://vercel.com/pricing), [Vercel Hobby](https://vercel.com/docs/plans/hobby), [Render pricing](https://render.com/pricing), [Render Free](https://render.com/docs/free), [Render workspace migration](https://render.com/docs/new-workspace-plans), [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions), [Sentry pricing](https://sentry.io/pricing/), [UptimeRobot Free](https://help.uptimerobot.com/en/articles/11604710-who-should-use-uptimerobot-s-free-plan).
 
+2026-07-12 Production canary에서 Render Free의 architecture는 통과했지만 OpenCascade Solid은 약 40초 뒤 HTTP 502를 반환했다. OOM 또는 worker restart는 의심되지만 직접 확인되지 않았다. 따라서 Free 배포는 Solid을 광고하지 않으며, Render Standard 이상 격리 staging에서 같은 canary와 RSS 측정을 통과하기 전 활성화하지 않는다.
+
 ## 승인 전 제안액
 
 | 단계 | 월 고정비(USD) | 한계 |

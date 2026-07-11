@@ -33,7 +33,7 @@ Web과 API는 별도 origin이다. API는 stateless이며 계정, DB, 장기 art
 
 현재 Blueprint는 Docker 서비스에 `runtime: docker`, `plan: free`, `dockerfilePath`, `dockerContext`, `healthCheckPath`, `autoDeployTrigger: checksPass`를 명시한다. 무료 instance는 유휴 상태에서 중지될 수 있으므로 공개 포트폴리오 시현용으로만 사용한다. 마지막 설정은 연결된 CI check가 통과한 commit만 자동 배포 대상으로 삼는다.
 
-Blueprint는 optional Solid/Artifact Lab 기능, 48MB request·20MB artifact·40MB compare 합계 제한과 anonymous quota를 명시한다. Free instance에서는 OOM 위험을 줄이기 위해 heavy concurrency를 `1`, bounded waiter를 `4`로 제한한다. API key가 필요하면 dashboard secret `DATUMGUARD_API_KEYS`를 추가하며 Git이나 `NEXT_PUBLIC_*`에 값을 기록하지 않는다.
+Blueprint는 48MB request·20MB artifact·40MB compare 합계 제한과 anonymous quota를 명시한다. Free instance에서는 OOM 위험을 줄이기 위해 heavy concurrency를 `1`, bounded waiter를 `4`로 제한한다. 실제 Production Solid canary가 HTTP 502를 반환했으므로 `DATUMGUARD_ENABLE_SOLID=false`, Artifact Lab은 `true`가 현재 계약이다. OOM 또는 worker restart는 직접 확인되지 않은 의심 원인이다. API key가 필요하면 dashboard secret `DATUMGUARD_API_KEYS`를 추가하며 Git이나 `NEXT_PUBLIC_*`에 값을 기록하지 않는다.
 
 ### CORS 값
 
@@ -84,7 +84,7 @@ Scale-to-zero 또는 유휴 sleep을 사용하는 Render plan에서는 첫 healt
 5. Vercel의 `NEXT_PUBLIC_DATUMGUARD_API_URL=$API_ORIGIN`을 설정하고 Git repository의 Root Directory를 `web`으로 연결한다.
 6. PR Preview 또는 Production `deployment_status` 이후 `deployment-smoke`로 실제 DOM sentinel, API version/capability, CORS와 synthetic canary를 검사한다.
 
-Production에서 Vercel과 Render는 독립적으로 완료될 수 있다. 새 web이 먼저 Ready가 되어도 smoke는 strict API version/capability가 수렴할 때까지 제한된 시간 동안 재시도한다. Backend 변경은 기존 web의 base architecture/piping/plate contract를 깨지 않는 backward-compatible release로 배포한다. Preview는 shared production API가 v0.1이면 base canary를 실행하고 solid canary를 명시적으로 보류하지만, 이 상태는 Production 승인으로 사용하지 않는다.
+Production에서 Vercel과 Render는 독립적으로 완료될 수 있다. 새 web이 먼저 Ready가 되어도 smoke는 strict API version/capability가 수렴할 때까지 제한된 시간 동안 재시도한다. Production의 optional capability 기대값은 같은 SHA의 `render.yaml` kill switch와 일치해야 하며, 비활성 기능이 domain registry에 남아 있어도 실패한다. Backend 변경은 기존 web의 base architecture/piping/plate contract를 깨지 않는 backward-compatible release로 배포한다. Preview는 shared production API가 이전 capability set이면 base canary만 실행할 수 있지만, 이 상태는 Production 승인으로 사용하지 않는다.
 
 | Mode | Web | Run endpoint |
 |---|---|---|

@@ -7,9 +7,9 @@
 | Safety correctness | independently reopened artifact가 모든 required check를 통과한 경우에만 `PASS`와 official bundle 발급 | wrong PASS `0` | 한 건 즉시 SEV1 |
 | Web availability | production alias가 `2xx`이고 route별 `data-testid` sentinel 존재 | 99.9% | 2개 location에서 2회 연속 실패 |
 | Base API availability | health `ok`, base 3 domain, architecture canary `passed` | 99.9% | 5분 창 성공률 <99% |
-| v0.2 capability | health version과 domain registry가 web release 계약과 일치, solid canary `passed` | 99.5% | Production 불일치 즉시 deploy 실패 |
+| v0.2 capability | health version과 domain registry가 같은 SHA의 kill-switch 계약과 일치, 활성화된 optional canary `passed` | 99.5% | Production 불일치 즉시 deploy 실패 |
 | Architecture latency | warmed canary end-to-end duration | p95 ≤3s, p99 ≤5s | 15분간 p95 >3s |
-| Solid latency | small mounting plate end-to-end duration | provisional p95 ≤30s | 15분간 p95 >30s 또는 timeout |
+| Solid latency | capability가 활성화된 환경의 small mounting plate end-to-end duration | provisional p95 ≤30s | 활성 환경에서 p95 >30s 또는 timeout; 비활성 환경은 domain 미광고·503 |
 | Overload behavior | 허용량 초과 시 bounded queue/429, 5xx·OOM 없음 | overload 5xx <1% | 5xx 또는 restart 발생 |
 
 ## 측정 규칙

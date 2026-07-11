@@ -11,12 +11,13 @@
 - [Privacy and data lifecycle](privacy-data-lifecycle.md): contract/CAD/draft/bundle의 저장 위치와 삭제 책임
 - [Cost guard](cost-guard.md): 10k DAU 가정, 플랫폼 한도, 예산 경보와 승인 경계
 - [Load testing](load-testing.md): local/staging 전용 probe와 악성·최대 크기 단발 검사
+- [Incidents](incidents/): 실제 배포 장애의 timeline, 영향, 완화와 재활성화 조건
 
 ## 출시 전 필수
 
 - [ ] feature PR에서 `backend`, `web`, `containers`와 security workflow 전체가 통과한다.
 - [x] Vercel automation bypass를 GitHub Actions secret으로 등록했다. 실제 protected Preview DOM sentinel은 PR 배포에서 최종 검증한다.
-- [ ] Production smoke가 web release와 API version/capability의 일치를 확인하고 architecture·solid canary를 통과한다.
+- [ ] Production smoke가 web release와 API version/capability의 일치를 확인하고 architecture 및 활성화된 optional canary를 통과한다.
 - [ ] Render Free가 아닌 용량 후보에서 1/2/5/10 동시성 probe와 STEP·20MB upload 단발 시험을 수행한다.
 - [x] optional API key, bounded per-IP/route rate limit, CAD worker concurrency/queue와 timeout/429 계약을 구현했다.
 - [x] payload를 제외한 request ID·route·status·duration·queue JSON 로그와 bounded in-process metrics를 구현했다.
