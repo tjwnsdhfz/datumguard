@@ -55,8 +55,12 @@ def apply_worker_limits() -> None:
         except (OSError, ValueError):
             return
 
+    # Native OpenCascade/VTK wheels map large shared-library address ranges on Linux.
+    # A 1 GiB RLIMIT_AS (and especially a low RLIMIT_NPROC on shared CI hosts) can abort a
+    # healthy parser before it reads input. The container/cgroup remains the primary RSS
+    # boundary; this higher address-space ceiling is a second, best-effort runaway guard.
     memory_bytes = (
-        _env_int("DATUMGUARD_WORKER_MEMORY_MB", 1024, minimum=128, maximum=16384) * 1024 * 1024
+        _env_int("DATUMGUARD_WORKER_MEMORY_MB", 4096, minimum=512, maximum=16384) * 1024 * 1024
     )
     file_bytes = _env_int("DATUMGUARD_WORKER_FILE_MB", 64, minimum=8, maximum=1024) * 1024 * 1024
     cpu_seconds = _env_int("DATUMGUARD_WORKER_CPU_SECONDS", 45, minimum=5, maximum=300)
@@ -64,8 +68,6 @@ def apply_worker_limits() -> None:
     lower_limit(resource.RLIMIT_FSIZE, file_bytes)
     lower_limit(resource.RLIMIT_CPU, cpu_seconds)
     lower_limit(resource.RLIMIT_NOFILE, 128)
-    if hasattr(resource, "RLIMIT_NPROC"):
-        lower_limit(resource.RLIMIT_NPROC, 32)
 
 
 def _worker_environment() -> dict[str, str]:

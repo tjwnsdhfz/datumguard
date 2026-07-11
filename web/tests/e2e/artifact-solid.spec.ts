@@ -37,7 +37,7 @@ test.describe("real CAD artifact and solid workspaces", () => {
     const results = page.getByTestId("artifact-audit-results");
     await expect(results).toBeVisible();
     await expect(results).toContainText("equipment-layout.dxf");
-    await expect(results).toContainText(/^sha256:|sha256:/i);
+    await expect(results).toContainText(/sha256:[0-9a-f]{64}/i);
     await expect(results).toContainText("ORIGINAL PRESERVED");
     await expect(results.getByRole("img")).toBeVisible();
   });

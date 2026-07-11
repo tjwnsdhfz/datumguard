@@ -122,7 +122,6 @@ jobs:
           if [[ -n "${VERCEL_BYPASS_SECRET}" ]]; then
             auth_headers+=(
               --header "x-vercel-protection-bypass: ${VERCEL_BYPASS_SECRET}"
-              --header "x-vercel-set-bypass-cookie: true"
             )
           fi
 
@@ -140,6 +139,7 @@ jobs:
           for index in "${!routes[@]}"; do
             body="$(mktemp)"
             status="$(curl --silent --show-error --output "${body}" --write-out '%{http_code}' \
+              --location --max-redirs 3 \
               --connect-timeout 10 --max-time 45 \
               --header 'Accept: text/html' "${auth_headers[@]}" \
               "${ORIGIN}${routes[$index]}")"
