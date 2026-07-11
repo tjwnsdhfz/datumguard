@@ -1,5 +1,9 @@
 # DatumGuard
 
+[![CI](https://github.com/tjwnsdhfz/datumguard/actions/workflows/ci.yml/badge.svg)](https://github.com/tjwnsdhfz/datumguard/actions/workflows/ci.yml)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Ftjwnsdhfz%2Fdatumguard)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftjwnsdhfz%2Fdatumguard&root-directory=web&env=NEXT_PUBLIC_DATUMGUARD_API_URL,NEXT_PUBLIC_GITHUB_URL)
+
 DatumGuard는 건축 평면, 플랜트·반도체 utility piping, 기계·조선 plate를 분야별 구조화 contract로 정의하고, 생성된 DXF를 다시 읽어 치수와 제약을 독립 검증한 뒤 통과한 파일만 내려받게 하는 오픈소스 Engineering Design Assurance 도구입니다.
 
 > **중요:** DatumGuard MVP는 구조·안전·법규·산업표준 적합성을 판정하지 않습니다. PDF 미리보기는 `DO NOT SCALE`이며, 검증된 bundle의 DXF가 제작 기준 파일입니다.
@@ -87,6 +91,8 @@ docker compose up --build
 - Health: `http://localhost:8000/api/v1/health`
 
 ## 공개 배포
+
+공개 저장소는 [tjwnsdhfz/datumguard](https://github.com/tjwnsdhfz/datumguard)입니다. 먼저 Render 버튼으로 backend를 만들고 발급된 API origin을 Vercel 배포 화면의 `NEXT_PUBLIC_DATUMGUARD_API_URL`에 입력합니다.
 
 - Backend는 루트 `Dockerfile`을 Render, Fly.io, Railway 같은 컨테이너 서비스에 배포합니다.
 - Frontend는 Vercel 프로젝트의 Root Directory를 `web/`으로 지정하고, build 전에 `NEXT_PUBLIC_DATUMGUARD_API_URL`을 backend URL로 설정합니다.
