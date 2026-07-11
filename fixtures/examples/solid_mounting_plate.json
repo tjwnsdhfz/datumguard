@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "design_kind": "solid_part",
+  "units": "mm",
+  "geometry": {
+    "type": "mounting_plate",
+    "width": 120.0,
+    "depth": 80.0,
+    "thickness": 8.0,
+    "corner_radius": 6.0,
+    "holes": [
+      {"id": "mount-a", "center": [-45.0, -25.0], "diameter": 10.0},
+      {"id": "mount-b", "center": [45.0, -25.0], "diameter": 10.0},
+      {"id": "mount-c", "center": [-45.0, 25.0], "diameter": 10.0},
+      {"id": "mount-d", "center": [45.0, 25.0], "diameter": 10.0}
+    ]
+  },
+  "tolerance_mm": 0.001,
+  "metadata": {
+    "project_name": "Semiconductor tool mounting plate",
+    "revision": "A",
+    "notes": "Synthetic portfolio fixture; geometry verification only."
+  },
+  "contract_hash": null
+}

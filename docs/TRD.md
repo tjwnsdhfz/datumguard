@@ -630,6 +630,11 @@ MCP 공개 도구 수와 이름은 유지하고 `design_kind`로 plate/architect
 | DG-FR-016 | rhino_adapter | absent/match/mismatch tests |
 | DG-FR-017 | compare/audit + domain summaries | revision diff/hash/area/route summary tests |
 | DG-FR-018 | evaluation | 100+50 benchmark run |
+| DG-FR-019 | artifact_service + Artifact Lab | real DXF/STEP/IFC immutable audit tests |
+| DG-FR-020 | artifact_service compare | DXF fingerprint, STEP metric, IFC GlobalId revision tests |
+| DG-FR-021 | solid_models + `/solid` | Pydantic schema, three family and exact input tests |
+| DG-FR-022 | solid_service + cad_worker | isolated OpenCascade STEP writer/re-import and pass-only bundle tests |
+| DG-FR-023 | RhinoCode local smoke | STEP→headless RhinoDoc→3DM unit/bbox evidence |
 | DG-NFR-001~010 | 전체 | CI, security, performance, compatibility suites |
 
 ## 22. 배포와 CI
@@ -651,3 +656,18 @@ MCP 공개 도구 수와 이름은 유지하고 `design_kind`로 plate/architect
 8. QA·benchmark·release
 
 각 단계는 [prompts/INDEX.md](../prompts/INDEX.md)의 단일 작업 프롬프트와 일대일 대응한다.
+
+## 24. DXF·STEP·IFC Artifact Assurance 확장
+
+- `artifact_models.py`는 `ArtifactAuditResponse`와 `ArtifactComparisonResponse`를 공개 schema로 제공한다.
+- upload 크기는 파일당 20MB, request body는 48MB로 제한한다. 서버는 request byte를 영구 저장하지 않는다.
+- DXF는 `ezdxf recover`/auditor, STEP은 별도 `cad_worker`의 OpenCascade, IFC는 IfcOpenShell로 읽는다.
+- STEP writer와 verifier는 JSON/stdin allowlist operation만 받는 별도 process다. shell, Python source,
+  Rhino command 또는 사용자 path 실행을 받지 않는다.
+- `SolidPartContract`는 `mounting_plate`, `angle_bracket`, `flange` discriminated union이다.
+- STEP은 writer timestamp를 canonicalize하여 동일 contract의 artifact와 bundle hash를 재현한다.
+- 웹 mesh는 재입력 STEP의 tessellation이며 공식 치수 판정 source가 아니다.
+- 기존 9개 MCP contract 도구는 변경하지 않고 `artifact_audit`, `artifact_compare`,
+  `solid_generate_verify`를 추가해 총 12개 tool을 제공한다.
+- Rhino 8 smoke는 hosted API 밖의 repository-owned driver만 RhinoCode로 실행한다. 결과는 secondary
+  interoperability evidence이며 OpenCascade 공식 verifier를 덮어쓰지 않는다.

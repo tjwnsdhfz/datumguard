@@ -9,6 +9,7 @@ build/
 *.egg-info/
 .datumguard/
 .runtime/
+cad_smoke_outputs/
 web/.next/
 web/node_modules/
 web/out/

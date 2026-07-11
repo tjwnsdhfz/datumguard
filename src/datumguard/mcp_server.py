@@ -16,6 +16,8 @@ from .architecture_service import (
     validate_architecture_contract,
     verify_architecture_only,
 )
+from .artifact_service import audit_artifact as audit_artifact_core
+from .artifact_service import compare_artifacts as compare_artifacts_core
 from .models import DesignContract, RepairProposal, Violation
 from .piping_models import PipingPlanContract
 from .piping_service import (
@@ -35,6 +37,8 @@ from .service import (
     validate_contract,
     verify_only,
 )
+from .solid_models import SolidPartContract
+from .solid_service import run_solid_design
 
 mcp = FastMCP(
     "DatumGuard",
@@ -115,6 +119,72 @@ def drawing_verify(contract: dict[str, Any], dxf_base64: str) -> dict[str, Any]:
     if isinstance(source, PipingPlanContract):
         return verify_piping_only(source, dxf_bytes).as_dict()
     return verify_only(source, dxf_bytes).as_dict()
+
+
+@mcp.tool(
+    description=(
+        "Audit an immutable DXF, STEP, or IFC artifact. This is informational and never "
+        "grants fabrication approval without an explicit contract."
+    )
+)
+def artifact_audit(filename: str, content_base64: str) -> dict[str, Any]:
+    try:
+        content = base64.b64decode(content_base64, validate=True)
+    except ValueError as exc:
+        return {
+            **_base_envelope("sha256:not-applicable", status="failed_verification"),
+            "error": {
+                "code": "DG_INPUT_INVALID",
+                "message": "content_base64 is invalid.",
+                "details": {},
+                "correlation_id": type(exc).__name__,
+            },
+        }
+    return audit_artifact_core(filename, content).model_dump(mode="json")
+
+
+@mcp.tool(
+    description=(
+        "Compare two immutable CAD artifact revisions by DXF geometry fingerprints, STEP "
+        "kernel measurements, or IFC GlobalIds."
+    )
+)
+def artifact_compare(
+    baseline_filename: str,
+    baseline_base64: str,
+    candidate_filename: str,
+    candidate_base64: str,
+) -> dict[str, Any]:
+    try:
+        baseline = base64.b64decode(baseline_base64, validate=True)
+        candidate = base64.b64decode(candidate_base64, validate=True)
+    except ValueError as exc:
+        return {
+            **_base_envelope("sha256:not-applicable", status="failed_verification"),
+            "error": {
+                "code": "DG_INPUT_INVALID",
+                "message": "One or more artifact payloads are not valid base64.",
+                "details": {},
+                "correlation_id": type(exc).__name__,
+            },
+        }
+    return compare_artifacts_core(
+        baseline_filename,
+        baseline,
+        candidate_filename,
+        candidate,
+    ).model_dump(mode="json")
+
+
+@mcp.tool(
+    description=(
+        "Generate a constrained mounting plate, angle bracket, or flange STEP file, reopen "
+        "the serialized STEP with OpenCascade, and return an approved bundle only on pass."
+    )
+)
+def solid_generate_verify(contract: dict[str, Any]) -> dict[str, Any]:
+    parsed = SolidPartContract.model_validate(contract)
+    return run_solid_design(parsed).model_dump(mode="json")
 
 
 @mcp.tool(description="Propose bounded changes to declared free parameters only.")

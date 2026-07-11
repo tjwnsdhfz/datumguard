@@ -4,7 +4,11 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
+import BackendReadinessNotice from "@/app/components/backend-readiness";
+import LocalDraftNotice from "@/app/components/local-draft-notice";
+import { apiErrorMessage, apiPostJson } from "@/lib/api-client";
 import { loadDraft, saveDraft } from "@/lib/draft-db";
+import { useBackendReadiness } from "@/lib/use-backend-readiness";
 
 type Point = [number, number];
 type PresetId = "semiconductor-cda-utility" | "clearance-collision";
@@ -149,10 +153,6 @@ type DragState = {
   viewBox: ViewBox;
 };
 
-const API_URL = (process.env.NEXT_PUBLIC_DATUMGUARD_API_URL || "http://localhost:8000").replace(
-  /\/$/,
-  "",
-);
 const DRAFT_KEY = "piping-contract-draft-v1";
 const PLAN_HEIGHT = 8000;
 const FIT_VIEW: ViewBox = { x: -700, y: -500, width: 13700, height: 9300 };
@@ -362,6 +362,8 @@ export default function PipingWorkspace() {
   const [verification, setVerification] = useState<VerificationState>("idle");
   const [result, setResult] = useState<PipingResult | null>(null);
   const [message, setMessage] = useState("Ready to lock the piping contract and remeasure its serialized DXF.");
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const readiness = useBackendReadiness("plant_piping");
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -369,13 +371,17 @@ export default function PipingWorkspace() {
       .then((saved) => {
         if (saved && Array.isArray(saved.segments) && Array.isArray(saved.nodes)) setDraft(saved);
       })
-      .catch(() => undefined)
+      .catch((error) => setStorageError(error instanceof Error ? error.message : "로컬 draft를 읽지 못했습니다."))
       .finally(() => setHydrated(true));
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    const timer = window.setTimeout(() => saveDraft(draft, DRAFT_KEY).catch(() => undefined), 300);
+    const timer = window.setTimeout(() => {
+      saveDraft(draft, DRAFT_KEY)
+        .then(() => setStorageError(null))
+        .catch((error) => setStorageError(error instanceof Error ? error.message : "로컬 draft를 저장하지 못했습니다."));
+    }, 300);
     return () => window.clearTimeout(timer);
   }, [draft, hydrated]);
 
@@ -517,17 +523,20 @@ export default function PipingWorkspace() {
   const contract = useMemo(() => buildContract(draft), [draft]);
 
   const runVerification = async () => {
+    if (readiness.state !== "ready") {
+      setMessage("Backend readiness를 먼저 확인합니다. 준비 완료 후 수동으로 다시 실행해 주세요.");
+      readiness.retry();
+      return;
+    }
     setVerification("running");
     setResult(null);
     setMessage("Contract locked. The DXF writer and independent reader are running.");
     try {
-      const response = await fetch(`${API_URL}/api/v1/piping/designs/run`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(contract),
-      });
-      const payload = (await response.json()) as PipingResult;
-      if (!response.ok && !payload.error) throw new Error(`API ${response.status}`);
+      const payload = await apiPostJson<PipingResult>(
+        "/api/v1/piping/designs/run",
+        contract,
+        { timeoutMs: 60_000 },
+      );
       setResult(payload);
       if (payload.status === "passed") {
         setVerification("passed");
@@ -538,7 +547,7 @@ export default function PipingWorkspace() {
       }
     } catch (error) {
       setVerification("failed");
-      setMessage(`${error instanceof Error ? error.message : "API connection failed"} — verify ${API_URL}.`);
+      setMessage(apiErrorMessage(error, "Piping verification request failed."));
     }
   };
 
@@ -661,6 +670,8 @@ export default function PipingWorkspace() {
         <nav aria-label="Engineering workspaces">
           <Link href="/">Architecture</Link>
           <Link href="/plate">Mechanical / Ship Plate</Link>
+          <Link href="/solid">3D Solid</Link>
+          <Link href="/intake">Artifact Lab</Link>
           <a href="#piping-verification">Evidence</a>
         </nav>
       </header>
@@ -680,6 +691,8 @@ export default function PipingWorkspace() {
         </div>
         <div className="piping-snap-setting"><b>SNAP</b><span>{draft.snap} mm</span><small>Shift = 10 mm</small></div>
       </section>
+
+      <LocalDraftNotice error={storageError} onDismiss={() => setStorageError(null)} />
 
       <section className="piping-workspace">
         <aside className="piping-left-panel" aria-label="Piping model browser">
@@ -881,6 +894,8 @@ export default function PipingWorkspace() {
             {!selectedNode && !selectedSegment && !selectedComponent && !selectedSupport && !selectedZone && <p className="piping-property-help">Select a node, segment, valve, support, or zone to inspect exact contract values.</p>}
           </div>
 
+          <BackendReadinessNotice readiness={readiness} />
+
           <div className="piping-flow" aria-label="Assurance pipeline">
             <div><span>01</span><div><strong>Contract</strong><small>Datum + explicit mm values</small></div></div>
             <div><span>02</span><div><strong>DXF Writer</strong><small>R2013 entities + trace IDs</small></div></div>
@@ -888,8 +903,8 @@ export default function PipingWorkspace() {
             <div><span>04</span><div><strong>Approval Gate</strong><small>No pass, no official bundle</small></div></div>
           </div>
 
-          <button data-testid="piping-run-verification" className="piping-run" type="button" disabled={verification === "running"} onClick={runVerification}>
-            {verification === "running" ? <><span className="piping-spinner" aria-hidden="true" />Reading DXF…</> : <><Icon name="run" />Generate + verify DXF</>}
+          <button data-testid="piping-run-verification" className="piping-run" type="button" disabled={verification === "running" || readiness.state !== "ready"} onClick={runVerification}>
+            {verification === "running" ? <><span className="piping-spinner" aria-hidden="true" />Reading DXF…</> : readiness.state !== "ready" ? <><span className="piping-spinner" aria-hidden="true" />Backend readiness</> : verification === "failed" ? <><Icon name="run" />Retry manually</> : <><Icon name="run" />Generate + verify DXF</>}
           </button>
           <p className="piping-boundary"><b>NOT A CERTIFICATION.</b> Geometry evidence only; no pressure, stress, code, or safety determination.</p>
         </aside>

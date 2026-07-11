@@ -473,3 +473,56 @@ footer {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Shared operational feedback for every engineering workspace. */
+.backend-readiness {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 15px;
+  padding: 10px 12px;
+  border: 1px solid #bdbdc4;
+  background: #f6f6f8;
+  color: #4f5057;
+}
+.backend-readiness > span { width: 8px; height: 8px; border: 1px solid currentColor; border-radius: 50%; }
+.backend-readiness > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.backend-readiness strong { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.backend-readiness small { color: inherit; font-size: 9px; line-height: 1.5; }
+.backend-readiness button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid currentColor;
+  border-radius: 32px;
+  background: transparent;
+  color: inherit;
+  font: 700 10px "Noto Sans KR", sans-serif;
+  cursor: pointer;
+}
+.backend-readiness.ready { border-color: #91c7b2; background: #e4f3ed; color: #086145; }
+.backend-readiness.ready > span { background: #087a55; }
+.backend-readiness.waiting { border-color: #d8bd82; background: #fff3dc; color: #76500e; }
+.backend-readiness.failed { border-color: #dfa7a1; background: #fbe9e7; color: #8d2a22; }
+
+.local-draft-notice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px clamp(14px, 4vw, 56px);
+  border-bottom: 1px solid #d5a49e;
+  background: #fff0ee;
+  color: #76241d;
+  font-size: 11px;
+}
+.local-draft-notice a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.local-draft-notice button { min-height: 44px; padding: 0 12px; border: 1px solid currentColor; border-radius: 32px; background: transparent; color: inherit; cursor: pointer; }
+.result-banner.failed > .secondary-button { align-self: center; justify-self: end; }
+
+@media (max-width: 680px) {
+  .backend-readiness { grid-template-columns: 10px minmax(0, 1fr); }
+  .backend-readiness button { grid-column: 1 / -1; width: 100%; }
+  .local-draft-notice { grid-template-columns: 1fr; }
+  .local-draft-notice :where(a,button) { width: fit-content; }
+}

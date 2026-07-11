@@ -1,56 +1,75 @@
-# DatumGuard Multi-domain Engineering MVP Handoff
+# DatumGuard v0.2 CAD Artifact Assurance Handoff
 
-## 현재 상태
+## 현재 작업 상태
 
-Architecture, Plant/Semiconductor Piping, Mechanical/Ship Plate MVP 구현과 로컬 검증은 완료되었다.
+- Repository: `https://github.com/tjwnsdhfz/datumguard`
+- Branch: `agent/cad-artifact-assurance`
+- Base: `main` at `2d1f08e`
+- Production web: `https://datumguard-tjwnsdhfz.vercel.app`
+- Production API: `https://datumguard-api.onrender.com`
 
-- Public web: `https://datumguard-tjwnsdhfz.vercel.app`
-- Public API: `https://datumguard-api.onrender.com`
-- GitHub: `https://github.com/tjwnsdhfz/datumguard`
+이 문서의 v0.2 기능은 feature branch에 구현·검증되었으며 아직 production merge 전이다.
 
-- `/`: 12×8m architecture CAD workspace
-- `/piping`: semiconductor CDA utility piping CAD workspace
-- `/plate`: mechanical/ship plate workflow와 ship bracket·semiconductor panel preset
-- Architecture API: validate, schema, generate→independent DXF verify→approval bundle
-- Piping API: validate, schema, route generate→independent DXF verify→approval bundle
-- MCP: 기존 9개 도구가 plate, `architectural_plan`, `piping_plan`을 분기 처리
-- Demo image: `docs/assets/demo/architecture-verified.png`
-- Piping image: `docs/assets/demo/piping-verified.png`
-- Architecture fixtures: `architecture_four_room.json`, `architecture_open_300mm.json`; legacy studio/open-loop fixtures remain for compatibility
-- Piping fixtures: `piping_utility.json`, `piping_clearance_failure.json`
+## 공개 workspace
 
-Architecture의 `gross_area_m2`와 room area는 normalized contract geometry가 아니라 serialized DXF를 독립 재읽기해 복원한 wall centerline에서 산출한다. 성공 응답의 `summary_source`는 `independent_serialized_dxf_remeasurement`다.
+| Route | 분야 | 공식 artifact/evidence |
+|---|---|---|
+| `/` | Architecture | serialized R2013 DXF 재측정, 4-room/96m² demo |
+| `/piping` | Plant·semiconductor utility | route/support/clearance DXF 재측정 |
+| `/plate` | Mechanical·ship plate | hole/slot/cutout와 공차 DXF 재측정 |
+| `/solid` | 3D solid part | OpenCascade STEP 생성, 별도 process 재입력, mesh·dimension evidence |
+| `/intake` | Existing CAD artifact | 외부 DXF·STEP·IFC immutable audit와 revision compare |
 
-Architecture DXF는 `A-GRID`, `A-WALL`, `A-WALL-CENTER`, `A-DOOR`, `A-WIND`, `A-COLS`, `A-ROOM`, `A-DIMS`, `A-ANNO`, `DG-META` 10개 고정 layer와 `contract_hash/entity_id/entity_type/revision` XDATA를 사용한다. `repair_propose`/`repair_apply`와 run의 `auto_repair`는 선언된 column center·opening offset만 CP-SAT으로 최대 3회 수정하며 locked 값과 wall topology는 변경하지 않는다.
+`/solid`은 mounting plate, angle bracket, flange를 지원한다. `/intake`는 contract 없는 파일을
+검사하므로 `approval_eligible=false`가 고정이며 제작 승인을 만들지 않는다.
 
-Piping의 route length, maximum support gap, minimum equipment clearance도 serialized DXF의 pipe/support/equipment entity에서 재측정한다. Valid CDA fixture는 12.0m route, 2,000mm maximum support gap, 1,975mm minimum clearance를 보고하며 clearance failure fixture는 `DG_PIPE_CLEARANCE_VIOLATION`으로 export를 차단한다.
+## Backend·API·MCP
+
+- Python 3.12, Pydantic, ezdxf, Shapely, OR-Tools, CadQuery/OpenCascade, IfcOpenShell
+- CadQuery writer/auditor는 고정 JSON operation만 받는 `cad_worker` subprocess로 격리
+- `POST /api/v1/solid/designs/run`
+- `POST /api/v1/artifacts/audit`
+- `POST /api/v1/artifacts/compare`
+- `GET /api/v1/schema/solid-part-contract`
+- `/api/v1/domains`는 5개 workspace를 반환
+- 기존 MCP 9개 도구 하위 호환 + `artifact_audit`, `artifact_compare`, `solid_generate_verify` = 12개
+- 파일당 20MB, request body 48MB, stateless·no persistence
+
+## 실제 CAD 상호운용 증거
+
+2026-07-12 Rhino 8.30에서 검증 mounting plate STEP을 실제 import했다.
+
+- OpenCascade official evidence: valid solid 1, bbox `120×80×8mm`, dimensions 15/15 pass
+- Rhino secondary evidence: `Brep` 1, `Millimeters`, bbox `120×80×8mm`
+- Rhino output: 63,911-byte `.3dm`
+- 고정 evidence: `docs/evidence/rhino-step-smoke.json`
+- 재현: Rhino에서 `StartScriptServer` 실행 후
+  `python tools/rhino_step_smoke.py --connect-existing`
+
+Rhino evidence는 STEP 공식 verifier를 대체하지 않으며 hosted API는 arbitrary Rhino/script command를
+노출하지 않는다.
 
 ## 검증 결과
 
-2026-07-11 실행 결과:
+2026-07-12 실행:
 
-- `ruff format --check src tests`: pass
-- `ruff check src tests`: pass
-- `mypy src/datumguard`: pass, 19 source files
-- `pytest -q`: pass, 232 tests; Starlette `httpx` deprecation warning 1건만 존재
+- `ruff format --check src tests tools`: pass
+- `ruff check src tests tools`: pass
+- `mypy src/datumguard`: pass, 25 source files
+- `pytest`: pass, 245 tests; 기존 Starlette/httpx deprecation warning 1건
 - `npm run typecheck`: pass
 - `npm run lint`: pass
-- `npm run build`: pass; static routes `/`, `/piping`, `/plate`
-- `npm audit --omit=dev`: 0 vulnerabilities
-- `npm run test:e2e -- --project=chromium`: pass, 12 Chromium tests
-- Browser/visual QA: Architecture 1440×960 capture, 4-room PASS, 300mm open-loop export block, 820px numeric/verify flow, piping pass/fail, plate ship bracket pass
-- `npm run demo:capture`: pass; `docs/assets/demo/architecture-verified.png` is exactly 1440×960
+- `npm run build`: pass, static routes `/`, `/piping`, `/plate`, `/solid`, `/intake`
+- Playwright real API E2E: pass, Chromium 15 tests
+- Solid demo capture: `docs/assets/demo/solid-step-verified.png`, 1440×960
+- `git diff --check`: pass
+- Local Docker build: Docker CLI가 설치되지 않아 미실행; GitHub `containers` job이 두 image를 build한다.
 
-## 공개 배포 상태
+## 배포·다음 행동
 
-공개 GitHub 저장소, Render backend, Vercel frontend가 생성되었다. Render는 `plan: free`, health endpoint `/api/v1/health`, exact production CORS와 DatumGuard 전용 Vercel Preview regex를 사용한다. Vercel project는 `tjwnsdhfz/datumguard`, production branch `main`, Root Directory `web`, Node.js `22.x`로 연결되었고 Render API와 GitHub CTA 환경변수를 Production/Preview에 적용한다.
-
-2026-07-11 remote smoke 결과:
-
-- API health/domains: `200`
-- Production CORS preflight: exact Vercel origin 허용
-- Architecture: `VERIFIED / PASS`, 96m², dimensions 4/4, room seeds 4, bundle 활성
-- Piping: `VERIFIED`, route 12.0m, max support gap 2,000mm, min clearance 1,975mm, bundle 활성
-- Plate: 모든 필수 치수 deviation 0.000000mm, bundle 활성
-
-초기 Vercel Production은 Drop to Deploy로 생성했지만 현재는 Vercel CLI `git connect`로 GitHub 저장소에 연결했다. `web/.vercel`과 `.env.local`은 ignore하고 공개 client 값만 `.env.example`로 제공한다. `.github/workflows/deployment-smoke.yml`은 성공한 Vercel `deployment_status` 또는 수동 실행에서 Architecture, Piping, Plate route, Render health/domains와 CORS를 검사한다. Render는 GitHub Blueprint와 CI-passed commit 자동 배포를 사용한다.
+1. 모든 변경을 commit하고 feature branch를 push한다.
+2. Draft PR을 열어 GitHub CI의 backend/web/container job을 확인한다.
+3. CI가 통과하면 PR을 ready로 전환하고 merge한다.
+4. Render가 v0.2 dependency image를 배포한 뒤 Vercel production이 새 API를 바라보는지 확인한다.
+5. `deployment-smoke`로 5개 route, solid schema, health/domains와 CORS를 검증한다.
+6. Production에서 `/solid` STEP pass와 `/intake` DXF upload를 최종 smoke한다.

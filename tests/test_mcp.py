@@ -44,6 +44,9 @@ def test_mcp_exposes_exact_public_tool_set() -> None:
         "drawing_compare",
         "export_bundle",
         "rhino_preview",
+        "artifact_audit",
+        "artifact_compare",
+        "solid_generate_verify",
     }
 
 

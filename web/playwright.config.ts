@@ -3,6 +3,9 @@ import { defineConfig, devices } from "@playwright/test";
 const port = Number(process.env.PLAYWRIGHT_PORT ?? "3000");
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${port}`;
 const apiURL = process.env.PLAYWRIGHT_API_URL ?? "http://127.0.0.1:8000";
+const parsedApiURL = new URL(apiURL);
+const apiHost = parsedApiURL.hostname;
+const apiPort = Number(parsedApiURL.port || (parsedApiURL.protocol === "https:" ? "443" : "80"));
 const isCI = Boolean(process.env.CI);
 const apiPython =
   process.env.DATUMGUARD_PYTHON ??
@@ -10,10 +13,12 @@ const apiPython =
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  fullyParallel: true,
+  // These are functional CAD tests, not a load test. Native parser jobs run sequentially so
+  // the production-style bounded queue is not consumed by unrelated test cases.
+  fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  workers: isCI ? 1 : undefined,
+  workers: 1,
   timeout: 30_000,
   expect: {
     timeout: 5_000,
@@ -46,11 +51,15 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `"${apiPython}" -m uvicorn datumguard.api:app --host 127.0.0.1 --port 8000`,
+      command: `"${apiPython}" -m uvicorn datumguard.api:app --host ${apiHost} --port ${apiPort}`,
       cwd: "..",
       url: `${apiURL}/api/v1/health`,
       reuseExistingServer: !isCI,
       timeout: 120_000,
+      env: {
+        DATUMGUARD_CORS_ORIGINS:
+          process.env.DATUMGUARD_CORS_ORIGINS ?? baseURL,
+      },
     },
     {
       command: isCI
