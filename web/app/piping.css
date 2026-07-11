@@ -1354,3 +1354,63 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Mission Control visual layer */
+.piping-app {
+  --pipe-ink:#111116;--pipe-deep:#000;--pipe-green:#087a55;
+  --pipe-green-strong:#087a55;--pipe-mint:#e2f3ec;--pipe-cyan:#34343b;
+  --pipe-blue:#303038;--pipe-paper:#f3f3f5;--pipe-panel:#fff;
+  --pipe-line:#d7d7dc;--pipe-line-soft:#e0e0e8;--pipe-muted:#69696f;
+  --pipe-shadow:none;background:var(--pipe-paper);color:var(--pipe-ink)
+}
+.piping-topbar{border-color:#3a3a3f;background:#000}
+.piping-brand>span{border:1px solid #fff;border-radius:50%;background:transparent;color:#fff;letter-spacing:.08em}
+.piping-brand strong,.piping-title b,.piping-panel-title strong,.piping-result-head h1{font-weight:800;letter-spacing:.015em}
+.piping-brand small,.piping-title small{color:#a7a7af;letter-spacing:.04em}
+.piping-live-dot{background:#fff;box-shadow:none}
+.piping-topbar nav{gap:4px}
+.piping-topbar nav a{padding:0 12px;border:1px solid transparent;border-radius:32px;color:#b8b8c0;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.piping-topbar nav a:hover{border-color:#3a3a3f;background:#0a0a0a;color:#fff}
+.piping-topbar :where(a,button):focus-visible{outline-color:#fff}
+.piping-commandbar{border-color:#d7d7dc;background:#f8f8f9;box-shadow:none}
+.piping-tools,.piping-history{gap:6px}
+.piping-tools button,.piping-history button{border-color:#d0d0d6;border-radius:32px;background:transparent;color:#323238;letter-spacing:.04em;text-transform:uppercase}
+.piping-tools button:hover,.piping-history button:hover:not(:disabled){border-color:#000;background:#fff;color:#000}
+.piping-tools button.active{border-color:#000;background:#000;color:#fff}
+.piping-tool-divider{background:#d7d7dc}
+.piping-snap-setting{letter-spacing:.08em;text-transform:uppercase}
+.piping-snap-setting b{color:#111116}
+.piping-snap-setting span{border-color:#bdbdc4;border-radius:32px;background:#fff}
+.piping-left-panel,.piping-right-panel{background:#fff}
+.piping-left-panel,.piping-right-panel,.piping-workspace{border-color:#d7d7dc}
+.piping-panel-title{border-color:#e0e0e8;background:#fafafa}
+.piping-panel-title span,.piping-result-head>div:first-child>span,.piping-timeline>span,.piping-summary>span,.piping-hashes>span{color:#69696f;letter-spacing:.16em;text-transform:uppercase}
+.piping-presets{border-color:#e0e0e8}
+.piping-presets button{border-color:#d7d7dc;background:#fff;color:#323238}
+.piping-presets button:hover{border-color:#3a3a3f;background:#f5f5f6;color:#111116}
+.piping-presets button.active{border-color:#111116;background:#111116;color:#fff}
+.piping-presets button.active small{color:#c8c8d0}
+.piping-presets button.invalid{border-color:#d8a29b;color:#9b3025}
+.piping-presets button.invalid.active{border-color:#b33a2d;background:#b33a2d;color:#fff;box-shadow:none}
+.piping-tree section button:hover,.piping-tree section button.active{background:#efeff1;color:#111116}
+.piping-tree section button.active{box-shadow:inset 3px 0 #111116}
+.piping-canvas-shell{background:#ededf0}
+.piping-canvas{background:#fff}
+.piping-canvas-status{border:1px solid #d7d7dc;background:#fff;color:#5f5f66;box-shadow:none;letter-spacing:.04em;text-transform:uppercase}
+.piping-canvas-status b{color:#111116}
+.piping-segment .pipe-outline{stroke:#111116}.piping-segment .pipe-center{stroke:#707078}
+.piping-node>circle,.piping-node>rect{stroke:#111116}
+.piping-datum{stroke:#303038}.piping-datum text{fill:#303038}
+.piping-scale{border:1px solid #d7d7dc;background:#fff;box-shadow:none}
+.piping-readonly,.piping-summary>div,.piping-hashes code{background:#f1f1f3}
+.piping-flow,.piping-evidence-grid{border-color:#d7d7dc}
+.piping-flow>div>span{border:1px solid #c7c7cd;background:#fff;color:#111116}
+.piping-run,.piping-download{border:1px solid #000;border-radius:32px;background:#000;color:#fff;letter-spacing:.06em;text-transform:uppercase}
+.piping-run:hover:not(:disabled),.piping-download:hover:not(:disabled){background:#fff;color:#000}
+.piping-verification{background:#fff}
+.piping-verified{border-radius:32px;background:#f1f1f3}
+.piping-verified.passed{border-color:#93c7b4;background:#e2f3ec;color:#075f44}
+.piping-verified.failed{border-color:#d8a29b;background:#fae8e5;color:#9b3025}
+.piping-evidence-grid>div{border-color:#e0e0e8}
+.piping-app :where(button,a,input,[tabindex]):focus-visible{outline:2px solid #000;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.piping-live-dot,.piping-spinner{animation:none!important}}
