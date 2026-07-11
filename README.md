@@ -1,6 +1,8 @@
 # DatumGuard
 
 [![CI](https://github.com/tjwnsdhfz/datumguard/actions/workflows/ci.yml/badge.svg)](https://github.com/tjwnsdhfz/datumguard/actions/workflows/ci.yml)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel-000000?logo=vercel)](https://datumguard-tjwnsdhfz.vercel.app)
+[![API Health](https://img.shields.io/badge/API_Health-Render-46e3b7?logo=render&logoColor=000000)](https://datumguard-api.onrender.com/api/v1/health)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Ftjwnsdhfz%2Fdatumguard)
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftjwnsdhfz%2Fdatumguard&root-directory=web&env=NEXT_PUBLIC_DATUMGUARD_API_URL,NEXT_PUBLIC_GITHUB_URL)
 
@@ -8,9 +10,9 @@ DatumGuard는 건축 평면, 플랜트·반도체 utility piping, 기계·조선
 
 > **중요:** DatumGuard MVP는 구조·안전·법규·산업표준 적합성을 판정하지 않습니다. PDF 미리보기는 `DO NOT SCALE`이며, 검증된 bundle의 DXF가 제작 기준 파일입니다.
 
-[![DatumGuard의 architecture contract, CAD canvas, 독립 DXF verifier와 approval gate](docs/assets/demo/architecture-verified.png)](docs/demo.md)
+[![DatumGuard의 architecture contract, CAD canvas, 독립 DXF verifier와 approval gate](docs/assets/demo/architecture-verified.png)](https://datumguard-tjwnsdhfz.vercel.app)
 
-[Architecture 데모 실행·재현 가이드 보기 →](docs/demo.md)
+[공개 Architecture 데모 열기 →](https://datumguard-tjwnsdhfz.vercel.app) · [실행·재현 가이드 보기 →](docs/demo.md)
 
 이미지의 재현 절차와 화면 계약은 [Architecture Demo Guide](docs/demo.md)에 고정되어 있습니다. `/`는 Architecture, `/piping`은 Plant/Semiconductor Piping, `/plate`는 Mechanical/Ship Plate workbench다. 세 모드 모두 실제 serialized DXF evidence가 통과해야만 bundle을 활성화합니다.
 
@@ -92,7 +94,17 @@ docker compose up --build
 
 ## 공개 배포
 
-공개 저장소는 [tjwnsdhfz/datumguard](https://github.com/tjwnsdhfz/datumguard)입니다. 먼저 Render 버튼으로 backend를 만들고 발급된 API origin을 Vercel 배포 화면의 `NEXT_PUBLIC_DATUMGUARD_API_URL`에 입력합니다.
+현재 공개 배포는 아래 주소에서 바로 사용할 수 있습니다.
+
+- Web: [datumguard-tjwnsdhfz.vercel.app](https://datumguard-tjwnsdhfz.vercel.app)
+- Architecture: [web root](https://datumguard-tjwnsdhfz.vercel.app)
+- Plant / Semiconductor Piping: [/piping](https://datumguard-tjwnsdhfz.vercel.app/piping)
+- Mechanical / Ship Plate: [/plate](https://datumguard-tjwnsdhfz.vercel.app/plate)
+- API: [health](https://datumguard-api.onrender.com/api/v1/health) · [domains](https://datumguard-api.onrender.com/api/v1/domains) · [OpenAPI](https://datumguard-api.onrender.com/docs)
+
+2026-07-11 실환경 smoke test에서 세 mode의 생성→serialized DXF 재측정→approval bundle이 모두 통과했습니다. Architecture는 96m²와 4개 room seed, Piping은 12.0m route와 1,975mm minimum clearance, Plate는 전체 치수 편차 0.000000mm를 보고했습니다.
+
+직접 복제해 배포하려면 공개 저장소 [tjwnsdhfz/datumguard](https://github.com/tjwnsdhfz/datumguard)를 사용합니다. 먼저 Render 버튼으로 backend를 만들고 발급된 API origin을 Vercel 배포 화면의 `NEXT_PUBLIC_DATUMGUARD_API_URL`에 입력합니다.
 
 - Backend는 루트 `Dockerfile`을 Render, Fly.io, Railway 같은 컨테이너 서비스에 배포합니다.
 - Frontend는 Vercel 프로젝트의 Root Directory를 `web/`으로 지정하고, build 전에 `NEXT_PUBLIC_DATUMGUARD_API_URL`을 backend URL로 설정합니다.
