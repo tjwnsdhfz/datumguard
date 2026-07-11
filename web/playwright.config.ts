@@ -13,10 +13,12 @@ const apiPython =
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  fullyParallel: true,
+  // These are functional CAD tests, not a load test. Native parser jobs run sequentially so
+  // the production-style bounded queue is not consumed by unrelated test cases.
+  fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  workers: isCI ? 1 : undefined,
+  workers: 1,
   timeout: 30_000,
   expect: {
     timeout: 5_000,

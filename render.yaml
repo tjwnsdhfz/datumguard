@@ -5,10 +5,32 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
+    healthCheckPath: /api/v1/ready
     autoDeployTrigger: checksPass
     envVars:
       - key: DATUMGUARD_CORS_ORIGINS
         sync: false
       - key: DATUMGUARD_CORS_ORIGIN_REGEX
         value: '^https://datumguard-tjwnsdhfz-[a-z0-9-]+\.vercel\.app$'
+      - key: DATUMGUARD_ENABLE_SOLID
+        value: 'true'
+      - key: DATUMGUARD_ENABLE_ARTIFACT_LAB
+        value: 'true'
+      - key: DATUMGUARD_RATE_LIMIT_ENABLED
+        value: 'true'
+      - key: DATUMGUARD_ANON_RATE_LIMIT_PER_MINUTE
+        value: '30'
+      - key: DATUMGUARD_ANON_HEAVY_RATE_LIMIT_PER_MINUTE
+        value: '6'
+      - key: DATUMGUARD_HEAVY_CONCURRENCY
+        value: '1'
+      - key: DATUMGUARD_HEAVY_MAX_WAITERS
+        value: '4'
+      - key: DATUMGUARD_MAX_BODY_BYTES
+        value: '50331648'
+      - key: DATUMGUARD_MAX_ARTIFACT_BYTES
+        value: '20971520'
+      - key: DATUMGUARD_MAX_UPLOAD_TOTAL_BYTES
+        value: '41943040'
+      - key: DATUMGUARD_TRUST_CF_CONNECTING_IP
+        value: 'true'

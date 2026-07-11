@@ -1,6 +1,9 @@
-node_modules
-.next
-out
+.next/
+node_modules/
+playwright-report/
+test-results/
+tests/
+scripts/
 *.tsbuildinfo
-npm-debug.log*
 .env*
+Dockerfile

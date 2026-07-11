@@ -4,7 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import BackendReadinessNotice from "@/app/components/backend-readiness";
+import LocalDraftNotice from "@/app/components/local-draft-notice";
+import { apiErrorMessage, apiPostJson } from "@/lib/api-client";
 import { loadDraft, saveDraft } from "@/lib/draft-db";
+import { useBackendReadiness } from "@/lib/use-backend-readiness";
 import ArchitectureWorkspace from "./architecture-workspace";
 
 type Units = "mm" | "inch";
@@ -141,10 +145,6 @@ const SEMICON_PANEL_DRAFT: Draft = {
   ],
 };
 
-const API_URL = (process.env.NEXT_PUBLIC_DATUMGUARD_API_URL || "http://localhost:8000").replace(
-  /\/$/,
-  "",
-);
 const GITHUB_URL = process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com";
 
 function numberValue(value: string, fallback = 0): number {
@@ -408,20 +408,25 @@ function PlateWorkspace() {
   const [result, setResult] = useState<ApiResult | null>(null);
   const [intentResult, setIntentResult] = useState<ApiResult | null>(null);
   const [networkError, setNetworkError] = useState<string | null>(null);
+  const [lastAction, setLastAction] = useState<"intent" | "verify" | null>(null);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const readiness = useBackendReadiness("mechanical_ship_plate");
 
   useEffect(() => {
     loadDraft<Draft>()
       .then((saved) => {
         if (saved) setDraft(saved);
       })
-      .catch(() => undefined)
+      .catch((error) => setStorageError(error instanceof Error ? error.message : "로컬 draft를 읽지 못했습니다."))
       .finally(() => setHydrated(true));
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
     const timer = window.setTimeout(() => {
-      saveDraft(draft).catch(() => undefined);
+      saveDraft(draft)
+        .then(() => setStorageError(null))
+        .catch((error) => setStorageError(error instanceof Error ? error.message : "로컬 draft를 저장하지 못했습니다."));
     }, 350);
     return () => window.clearTimeout(timer);
   }, [draft, hydrated]);
@@ -458,43 +463,42 @@ function PlateWorkspace() {
     window.setTimeout(() => document.getElementById(`feature-${index}`)?.scrollIntoView(), 0);
   }
 
-  async function request(path: string, body: unknown): Promise<ApiResult> {
-    const response = await fetch(`${API_URL}${path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(body),
-    });
-    const payload = (await response.json()) as ApiResult;
-    if (!response.ok && !payload.error) {
-      throw new Error(`API ${response.status}`);
-    }
-    return payload;
+  async function request(path: string, body: unknown, timeoutMs = 60_000): Promise<ApiResult> {
+    return apiPostJson<ApiResult>(path, body, { timeoutMs });
   }
 
   async function checkIntent() {
+    if (readiness.state !== "ready") {
+      setNetworkError("Backend readiness를 먼저 확인합니다. 준비 완료 후 수동으로 다시 시도하세요.");
+      readiness.retry();
+      return;
+    }
+    setLastAction("intent");
     setLoading(true);
     setNetworkError(null);
     try {
-      setIntentResult(await request("/api/v1/contracts/draft", { contract, intent_text: draft.intentText }));
+      setIntentResult(await request("/api/v1/contracts/draft", { contract, intent_text: draft.intentText }, 30_000));
     } catch (error) {
-      setNetworkError(error instanceof Error ? error.message : "API에 연결하지 못했습니다.");
+      setNetworkError(apiErrorMessage(error, "조건 모호성 확인 요청에 실패했습니다."));
     } finally {
       setLoading(false);
     }
   }
 
   async function runVerification() {
+    if (readiness.state !== "ready") {
+      setNetworkError("Backend readiness를 먼저 확인합니다. 준비 완료 후 수동으로 다시 시도하세요.");
+      readiness.retry();
+      return;
+    }
+    setLastAction("verify");
     setLoading(true);
     setNetworkError(null);
     setResult(null);
     try {
       setResult(await request("/api/v1/designs/run?auto_repair=true", contract));
     } catch (error) {
-      setNetworkError(
-        error instanceof Error
-          ? `${error.message} — API 주소 ${API_URL}을 확인하세요.`
-          : "API에 연결하지 못했습니다.",
-      );
+      setNetworkError(apiErrorMessage(error, "Plate 검증 요청에 실패했습니다."));
     } finally {
       setLoading(false);
     }
@@ -527,6 +531,8 @@ function PlateWorkspace() {
           <a href={GITHUB_URL} target="_blank" rel="noreferrer">GitHub</a>
         </nav>
       </header>
+
+      <LocalDraftNotice error={storageError} onDismiss={() => setStorageError(null)} />
 
       <section className="hero" id="top">
         <div className="eyebrow">MECHANICAL / SHIP PLATE · CONTRACT → DXF → REMEASURE → APPROVE</div>
@@ -659,7 +665,7 @@ function PlateWorkspace() {
             </label>
             <div className="intent-footer">
               <p>AI가 원문에 없는 숫자·단위·좌표를 추정하지 않습니다.</p>
-              <button type="button" className="secondary-button" disabled={loading || !draft.intentText.trim()} onClick={checkIntent}>조건 모호성 확인</button>
+              <button type="button" className="secondary-button" disabled={loading || readiness.state !== "ready" || !draft.intentText.trim()} onClick={checkIntent}>조건 모호성 확인</button>
             </div>
             {intentResult && (
               <div className={`inline-status ${intentResult.status === "ready" ? "pass" : "warn"}`}>
@@ -677,8 +683,9 @@ function PlateWorkspace() {
             <div className="preview-meta">
               <span>Origin <b>0, 0</b></span><span>Features <b>{draft.features.length}</b></span><span>Units <b>{draft.units}</b></span>
             </div>
-            <button className="primary-button" type="button" disabled={loading || !draft.features.length} onClick={runVerification}>
-              {loading ? <><span className="spinner" /> 생성·재측정 중</> : <>DXF 생성 및 독립 검증 <span>→</span></>}
+            <BackendReadinessNotice readiness={readiness} />
+            <button className="primary-button" type="button" disabled={loading || readiness.state !== "ready" || !draft.features.length} onClick={runVerification}>
+              {loading ? <><span className="spinner" /> 생성·재측정 중</> : readiness.state !== "ready" ? <>Backend readiness</> : networkError && lastAction === "verify" ? <>수동 검증 재시도 <span>→</span></> : <>DXF 생성 및 독립 검증 <span>→</span></>}
             </button>
             <p className="approval-note"><span aria-hidden="true">⌁</span> 검증 통과 전에는 공식 ZIP을 만들지 않습니다.</p>
           </div>
@@ -688,7 +695,7 @@ function PlateWorkspace() {
       <section className="results" id="verification">
         <div className="section-heading results-heading"><div><span className="step">04</span><h2>검증 결과</h2></div></div>
         {!result && !networkError && <div className="empty-result"><span>⌖</span><p>도면을 생성하면 DXF에서 다시 읽은 측정값이 여기에 표시됩니다.</p></div>}
-        {networkError && <div className="result-banner failed"><strong>연결 실패</strong><p>{networkError}</p></div>}
+        {networkError && <div className="result-banner failed"><strong>연결 실패</strong><p>{networkError}</p><button type="button" className="secondary-button" onClick={lastAction === "intent" ? checkIntent : runVerification}>수동 재시도</button></div>}
         {result && (
           <div className="result-shell">
             <div className={`result-banner ${result.status === "passed" ? "passed" : "failed"}`}>
@@ -706,7 +713,7 @@ function PlateWorkspace() {
       </section>
 
       <section className="boundary"><div><span>NOT A CERTIFICATION</span><h2>정확한 파일과 안전한 설계는 같은 말이 아닙니다.</h2></div><p>DatumGuard MVP는 파일의 치수·공차·간섭을 검사합니다. 구조 안전, 법규, 재료 성능, 공정 적합성은 자격 있는 엔지니어와 제작자가 별도로 검토해야 합니다. PDF는 <b>DO NOT SCALE</b>이며 검증 ZIP의 DXF만 제작 기준입니다.</p></section>
-      <footer><span>DatumGuard / Open engineering accuracy harness</span><span>Stateless · No account · No server project storage</span></footer>
+      <footer><span>DatumGuard / Open engineering accuracy harness</span><span>Stateless · No account · No server project storage · <Link href="/privacy">Privacy & local data</Link></span></footer>
     </main>
   );
 }

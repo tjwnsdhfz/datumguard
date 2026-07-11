@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { type KeyboardEvent, useRef, useState } from "react";
 
+import { apiErrorMessage, apiPostForm } from "@/lib/api-client";
+import { useBackendReadiness } from "@/lib/use-backend-readiness";
+import BackendReadinessNotice from "./components/backend-readiness";
 import MeshPreview from "./components/mesh-preview";
 
 type Metric = {
@@ -54,11 +57,6 @@ type ComparisonResult = {
   candidate: AuditResult;
   error?: { code: string; message: string } | null;
 };
-
-const API_URL = (process.env.NEXT_PUBLIC_DATUMGUARD_API_URL || "http://localhost:8000").replace(
-  /\/$/,
-  "",
-);
 
 function bytes(value: number): string {
   if (value < 1024) return `${value} B`;
@@ -115,9 +113,12 @@ function FilePicker({
 }
 
 function DxfPreview({ svg, filename }: { svg: string; filename: string }) {
+  const source = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   return (
     <figure className="lab-dxf-figure">
-      <div dangerouslySetInnerHTML={{ __html: svg }} />
+      {/* An image document cannot execute embedded SVG script in the application origin. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={source} alt={`${filename} DXF modelspace preview`} />
       <figcaption><span>ezdxf rendered modelspace</span><code>{filename}</code></figcaption>
     </figure>
   );
@@ -250,32 +251,88 @@ export default function ArtifactLab() {
   const [comparison, setComparison] = useState<ComparisonResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastAction, setLastAction] = useState<"audit" | "compare">("audit");
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const readiness = useBackendReadiness("artifact_lab");
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  function selectMode(nextMode: "audit" | "compare", focusIndex?: number) {
+    setMode(nextMode);
+    setError(null);
+    if (focusIndex != null) window.requestAnimationFrame(() => tabRefs.current[focusIndex]?.focus());
+  }
+
+  function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? 1
+        : (index + (event.key === "ArrowRight" ? 1 : -1) + 2) % 2;
+    selectMode(nextIndex === 0 ? "audit" : "compare", nextIndex);
+  }
+
+  function selectFile(nextFile: File | null, setter: (value: File | null) => void) {
+    if (nextFile && nextFile.size > 20 * 1024 * 1024) {
+      setter(null);
+      setError("CAD 파일은 20MB 이하여야 합니다. 파일은 전송되지 않았습니다.");
+      return;
+    }
+    setError(null);
+    setter(nextFile);
+  }
 
   async function runAudit() {
     if (!file) return;
+    if (!privacyAccepted) {
+      setError("비기밀 CAD 업로드 고지를 확인해야 합니다.");
+      return;
+    }
+    if (readiness.state !== "ready") {
+      setError("Backend readiness를 먼저 확인합니다. 준비 완료 후 수동으로 다시 시도하세요.");
+      readiness.retry();
+      return;
+    }
+    setLastAction("audit");
     setLoading(true); setError(null); setAuditResult(null);
     const body = new FormData(); body.append("file", file);
     try {
-      const response = await fetch(`${API_URL}/api/v1/artifacts/audit`, { method: "POST", body });
-      const payload = await response.json() as AuditResult;
-      if (!response.ok) throw new Error(payload.error?.message || "Artifact audit failed");
+      const payload = await apiPostForm<AuditResult>(
+        "/api/v1/artifacts/audit",
+        body,
+        { timeoutMs: 210_000 },
+      );
       setAuditResult(payload);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Artifact audit failed");
+      setError(apiErrorMessage(reason, "Artifact audit failed"));
     } finally { setLoading(false); }
   }
 
   async function runCompare() {
     if (!baseline || !candidate) return;
+    if (!privacyAccepted) {
+      setError("비기밀 CAD 업로드 고지를 확인해야 합니다.");
+      return;
+    }
+    if (readiness.state !== "ready") {
+      setError("Backend readiness를 먼저 확인합니다. 준비 완료 후 수동으로 다시 시도하세요.");
+      readiness.retry();
+      return;
+    }
+    setLastAction("compare");
     setLoading(true); setError(null); setComparison(null);
     const body = new FormData(); body.append("baseline", baseline); body.append("candidate", candidate);
     try {
-      const response = await fetch(`${API_URL}/api/v1/artifacts/compare`, { method: "POST", body });
-      const payload = await response.json() as ComparisonResult;
-      if (!response.ok) throw new Error(payload.error?.message || "Revision comparison failed");
+      const payload = await apiPostForm<ComparisonResult>(
+        "/api/v1/artifacts/compare",
+        body,
+        { timeoutMs: 210_000 },
+      );
       setComparison(payload);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Revision comparison failed");
+      setError(apiErrorMessage(reason, "Revision comparison failed"));
     } finally { setLoading(false); }
   }
 
@@ -292,31 +349,37 @@ export default function ArtifactLab() {
       </section>
 
       <section className="lab-workbench" aria-label="Artifact audit workbench">
+        <BackendReadinessNotice readiness={readiness} />
         <div className="lab-mode-tabs" role="tablist" aria-label="Audit mode">
-          <button type="button" role="tab" aria-selected={mode === "audit"} onClick={() => { setMode("audit"); setError(null); }}>01 · SINGLE FILE AUDIT<span>구조·단위·형상·속성</span></button>
-          <button type="button" role="tab" aria-selected={mode === "compare"} onClick={() => { setMode("compare"); setError(null); }}>02 · REVISION COMPARE<span>Geometry · metrics · GlobalId</span></button>
+          <button ref={(node) => { tabRefs.current[0] = node; }} id="artifact-tab-audit" type="button" role="tab" aria-selected={mode === "audit"} aria-controls="artifact-panel-audit" tabIndex={mode === "audit" ? 0 : -1} onKeyDown={(event) => handleTabKeyDown(event, 0)} onClick={() => selectMode("audit")}>01 · SINGLE FILE AUDIT<span>구조·단위·형상·속성</span></button>
+          <button ref={(node) => { tabRefs.current[1] = node; }} id="artifact-tab-compare" type="button" role="tab" aria-selected={mode === "compare"} aria-controls="artifact-panel-compare" tabIndex={mode === "compare" ? 0 : -1} onKeyDown={(event) => handleTabKeyDown(event, 1)} onClick={() => selectMode("compare")}>02 · REVISION COMPARE<span>Geometry · metrics · GlobalId</span></button>
         </div>
 
+        <label className="lab-upload-consent">
+          <input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} />
+          <span><strong>비기밀 CAD만 업로드합니다.</strong> 파일은 Oregon의 API에서 일시 처리되고 서버에 장기 보관되지 않습니다. 브라우저 draft 정책은 <Link href="/privacy">Privacy & local data</Link>에서 확인하세요.</span>
+        </label>
+
         {mode === "audit" ? (
-          <div className="lab-input-panel" role="tabpanel">
+          <div id="artifact-panel-audit" className="lab-input-panel" role="tabpanel" aria-labelledby="artifact-tab-audit" tabIndex={0}>
             <div className="lab-panel-copy"><span>INPUT / 01</span><h2>CAD 파일 하나를 감사합니다</h2><p>복구 가능한 DXF 오류는 원본을 바꾸지 않고 evidence로만 기록합니다. STEP은 격리 OpenCascade worker에서 재수입합니다.</p></div>
-            <FilePicker id="artifact-file" label="검사할 CAD 파일" file={file} onChange={setFile} />
-            <button data-testid="artifact-audit-button" type="button" className="lab-primary" disabled={!file || loading} onClick={runAudit}>{loading ? <><span className="lab-spinner" />AUDITING SERIALIZED ARTIFACT</> : "LOCK HASH + RUN INDEPENDENT AUDIT"}</button>
+            <FilePicker id="artifact-file" label="검사할 CAD 파일" file={file} onChange={(value) => selectFile(value, setFile)} />
+            <button data-testid="artifact-audit-button" type="button" className="lab-primary" disabled={!file || !privacyAccepted || loading || readiness.state !== "ready"} onClick={runAudit}>{loading ? <><span className="lab-spinner" />AUDITING SERIALIZED ARTIFACT</> : error && lastAction === "audit" ? "RETRY AUDIT MANUALLY" : "LOCK HASH + RUN INDEPENDENT AUDIT"}</button>
           </div>
         ) : (
-          <div className="lab-input-panel" role="tabpanel">
+          <div id="artifact-panel-compare" className="lab-input-panel" role="tabpanel" aria-labelledby="artifact-tab-compare" tabIndex={0}>
             <div className="lab-panel-copy"><span>INPUT / 02</span><h2>두 revision을 비교합니다</h2><p>DXF는 geometry fingerprint, STEP은 kernel metrics, IFC는 GlobalId와 핵심 속성 변경을 비교합니다.</p></div>
-            <div className="lab-file-pair"><FilePicker id="baseline-file" label="Baseline CAD 파일" file={baseline} onChange={setBaseline} /><FilePicker id="candidate-file" label="Candidate CAD 파일" file={candidate} onChange={setCandidate} /></div>
-            <button data-testid="artifact-compare-button" type="button" className="lab-primary" disabled={!baseline || !candidate || loading} onClick={runCompare}>{loading ? <><span className="lab-spinner" />COMPARING REVISIONS</> : "LOCK BOTH HASHES + COMPARE"}</button>
+            <div className="lab-file-pair"><FilePicker id="baseline-file" label="Baseline CAD 파일" file={baseline} onChange={(value) => selectFile(value, setBaseline)} /><FilePicker id="candidate-file" label="Candidate CAD 파일" file={candidate} onChange={(value) => selectFile(value, setCandidate)} /></div>
+            <button data-testid="artifact-compare-button" type="button" className="lab-primary" disabled={!baseline || !candidate || !privacyAccepted || loading || readiness.state !== "ready"} onClick={runCompare}>{loading ? <><span className="lab-spinner" />COMPARING REVISIONS</> : error && lastAction === "compare" ? "RETRY COMPARE MANUALLY" : "LOCK BOTH HASHES + COMPARE"}</button>
           </div>
         )}
-        {error && <div className="lab-error" role="alert"><strong>REQUEST FAILED</strong><span>{error}</span><button type="button" onClick={() => setError(null)}>Dismiss</button></div>}
+        {error && <div className="lab-error" role="alert"><strong>REQUEST FAILED</strong><span>{error}</span><button type="button" onClick={lastAction === "audit" ? runAudit : runCompare}>수동 재시도</button><button type="button" onClick={() => setError(null)}>Dismiss</button></div>}
       </section>
 
       {auditResult && <><div className="lab-export-row"><button type="button" onClick={() => downloadJson(`${auditResult.filename}-audit.json`, auditResult)}>DOWNLOAD AUDIT JSON</button></div><AuditEvidence result={auditResult} /></>}
       {comparison && <><div className="lab-export-row"><button type="button" onClick={() => downloadJson("datumguard-revision-comparison.json", comparison)}>DOWNLOAD COMPARISON JSON</button></div><ComparisonEvidence result={comparison} /></>}
 
-      <section className="lab-boundary"><span>ASSURANCE BOUNDARY</span><h2>감사 완료는 설계 승인과 다릅니다.</h2><p>Artifact Lab은 파일 구조와 기하학 evidence를 제공합니다. 구조안전, 압력, 재료, 법규, 공정 적합성은 자격 있는 엔지니어와 제작자가 검토해야 합니다.</p></section>
+      <section className="lab-boundary"><span>ASSURANCE BOUNDARY</span><h2>감사 완료는 설계 승인과 다릅니다.</h2><p>Artifact Lab은 파일 구조와 기하학 evidence를 제공합니다. 구조안전, 압력, 재료, 법규, 공정 적합성은 자격 있는 엔지니어와 제작자가 검토해야 합니다. <Link href="/privacy">Privacy & local data</Link></p></section>
     </main>
   );
 }

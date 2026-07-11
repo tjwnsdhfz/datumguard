@@ -1,8 +1,23 @@
-FROM python:3.12-slim AS runtime
+FROM python:3.12.11-slim-bookworm AS builder
+
+ENV PIP_NO_CACHE_DIR=1 \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
+
+WORKDIR /app
+
+RUN python -m pip install --no-cache-dir uv==0.8.22
+
+COPY pyproject.toml uv.lock README.md ./
+COPY src ./src
+RUN uv sync --frozen --no-dev --no-editable
+
+
+FROM python:3.12.11-slim-bookworm AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
+    PATH=/app/.venv/bin:$PATH \
     PORT=8000
 
 WORKDIR /app
@@ -17,14 +32,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsm6 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml README.md ./
-COPY src ./src
-RUN python -m pip install --upgrade pip && python -m pip install .
+COPY --from=builder --chown=datumguard:datumguard /app/.venv /app/.venv
 
 USER datumguard
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)"
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/ready', timeout=3)"
 
 CMD ["datumguard-api"]

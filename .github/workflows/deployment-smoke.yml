@@ -8,6 +8,12 @@ on:
         description: Vercel deployment origin to verify
         required: true
         default: https://datumguard-tjwnsdhfz.vercel.app
+      capability_mode:
+        description: auto is strict for production and backward-compatible for preview
+        required: true
+        type: choice
+        default: auto
+        options: [auto, base, full]
 
 permissions:
   contents: read
@@ -23,63 +29,256 @@ jobs:
       (github.event.deployment_status.state == 'success' &&
       endsWith(github.event.deployment_status.environment_url, '.vercel.app'))
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 15
     env:
       DEPLOYMENT_URL: ${{ inputs.deployment_url || github.event.deployment_status.environment_url }}
       API_URL: https://datumguard-api.onrender.com
+      CAPABILITY_MODE: ${{ inputs.capability_mode || 'auto' }}
+      DEPLOYMENT_ENVIRONMENT: ${{ github.event.deployment.environment || 'workflow_dispatch' }}
+      VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
     steps:
+      - name: Check out the deployed revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ github.event.deployment.sha || github.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+
       - name: Validate Vercel deployment target
+        id: target
         shell: bash
         run: |
           set -euo pipefail
-          case "${DEPLOYMENT_URL}" in
-            https://*.vercel.app|https://datumguard-tjwnsdhfz.vercel.app) ;;
-            *) echo "Unsupported deployment URL: ${DEPLOYMENT_URL}" >&2; exit 1 ;;
+          origin="$(python - "${DEPLOYMENT_URL}" <<'PY'
+          import re
+          import sys
+          from urllib.parse import urlsplit
+
+          value = sys.argv[1].rstrip("/")
+          parsed = urlsplit(value)
+          host = parsed.hostname or ""
+          allowed = re.fullmatch(r"datumguard-tjwnsdhfz(?:-[a-z0-9-]+)?\.vercel\.app", host)
+          if parsed.scheme != "https" or parsed.username or parsed.password or parsed.port or parsed.path or not allowed:
+              raise SystemExit(f"unsupported deployment origin: {value}")
+          print(value)
+          PY
+          )"
+          echo "origin=${origin}" >> "${GITHUB_OUTPUT}"
+
+      - name: Determine release compatibility contract
+        id: contract
+        shell: bash
+        env:
+          ORIGIN: ${{ steps.target.outputs.origin }}
+        run: |
+          set -euo pipefail
+          expected_version="$(python - <<'PY'
+          import tomllib
+
+          with open("pyproject.toml", "rb") as stream:
+              print(tomllib.load(stream)["project"]["version"])
+          PY
+          )"
+          has_optional=false
+          if [[ -f web/app/solid/page.tsx && -f web/app/intake/page.tsx ]]; then
+            has_optional=true
+          fi
+
+          strict_version=false
+          require_optional=false
+          case "${CAPABILITY_MODE}" in
+            base) ;;
+            full)
+              strict_version=true
+              require_optional=true
+              ;;
+            auto)
+              if [[ "${DEPLOYMENT_ENVIRONMENT}" == "Production" || "${ORIGIN}" == "https://datumguard-tjwnsdhfz.vercel.app" ]]; then
+                strict_version=true
+                require_optional="${has_optional}"
+              fi
+              ;;
+            *) echo "unsupported capability mode: ${CAPABILITY_MODE}" >&2; exit 1 ;;
           esac
 
-      - name: Wake API and verify public registry
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error \
-            --retry 12 --retry-all-errors --retry-delay 5 \
-            --connect-timeout 10 --max-time 60 \
-            "${API_URL}/api/v1/health" >/dev/null
-          curl --fail --silent --show-error \
-            --retry 3 --retry-all-errors --retry-delay 2 \
-            --connect-timeout 10 --max-time 30 \
-            "${API_URL}/api/v1/domains" >/dev/null
-          curl --fail --silent --show-error \
-            --retry 3 --retry-all-errors --retry-delay 2 \
-            --connect-timeout 10 --max-time 30 \
-            "${API_URL}/api/v1/schema/solid-part-contract" >/dev/null
+          echo "expected_version=${expected_version}" >> "${GITHUB_OUTPUT}"
+          echo "strict_version=${strict_version}" >> "${GITHUB_OUTPUT}"
+          echo "require_optional=${require_optional}" >> "${GITHUB_OUTPUT}"
+          echo "Optional v0.2 capability required: ${require_optional}"
+          if [[ "${strict_version}" != "true" && "${has_optional}" == "true" ]]; then
+            echo "Preview compatibility mode: v0.2 web is checked against the currently deployed base API; optional canaries run only when advertised."
+          fi
 
-      - name: Verify all five engineering workspace routes
+      - name: Verify DatumGuard page sentinels
+        shell: bash
+        env:
+          ORIGIN: ${{ steps.target.outputs.origin }}
+        run: |
+          set -euo pipefail
+          auth_headers=()
+          if [[ -n "${VERCEL_BYPASS_SECRET}" ]]; then
+            auth_headers+=(
+              --header "x-vercel-protection-bypass: ${VERCEL_BYPASS_SECRET}"
+              --header "x-vercel-set-bypass-cookie: true"
+            )
+          fi
+
+          routes=(/ /piping /plate)
+          sentinels=('data-testid="architecture-demo"' 'data-testid="piping-demo"' 'data-testid="plate-designer"')
+          if [[ -f web/app/solid/page.tsx ]]; then
+            routes+=(/solid)
+            sentinels+=('data-testid="solid-workspace"')
+          fi
+          if [[ -f web/app/intake/page.tsx ]]; then
+            routes+=(/intake)
+            sentinels+=('data-testid="artifact-lab"')
+          fi
+
+          for index in "${!routes[@]}"; do
+            body="$(mktemp)"
+            status="$(curl --silent --show-error --output "${body}" --write-out '%{http_code}' \
+              --connect-timeout 10 --max-time 45 \
+              --header 'Accept: text/html' "${auth_headers[@]}" \
+              "${ORIGIN}${routes[$index]}")"
+            if [[ "${status}" != "200" ]]; then
+              echo "Route ${routes[$index]} returned HTTP ${status}." >&2
+              rm -f "${body}"
+              exit 1
+            fi
+            if grep --ignore-case --quiet --extended-regexp '<title>Login . Vercel</title>|Vercel Authentication' "${body}"; then
+              echo "Route ${routes[$index]} returned a Vercel login page. Configure VERCEL_AUTOMATION_BYPASS_SECRET." >&2
+              rm -f "${body}"
+              exit 1
+            fi
+            grep --fixed-strings --quiet "${sentinels[$index]}" "${body}" || {
+              echo "Route ${routes[$index]} is missing sentinel ${sentinels[$index]}." >&2
+              rm -f "${body}"
+              exit 1
+            }
+            rm -f "${body}"
+          done
+
+      - name: Wake API and verify version and capabilities
+        id: api
+        shell: bash
+        env:
+          EXPECTED_VERSION: ${{ steps.contract.outputs.expected_version }}
+          STRICT_VERSION: ${{ steps.contract.outputs.strict_version }}
+          REQUIRE_OPTIONAL: ${{ steps.contract.outputs.require_optional }}
+        run: |
+          set -euo pipefail
+          health="${RUNNER_TEMP}/datumguard-health.json"
+          domains="${RUNNER_TEMP}/datumguard-domains.json"
+          attempts=12
+          if [[ "${STRICT_VERSION}" == "true" ]]; then attempts=60; fi
+
+          ready=false
+          for ((attempt=1; attempt<=attempts; attempt++)); do
+            if curl --fail --silent --show-error --connect-timeout 10 --max-time 60 \
+                "${API_URL}/api/v1/health" --output "${health}" && \
+              curl --fail --silent --show-error --connect-timeout 10 --max-time 30 \
+                "${API_URL}/api/v1/domains" --output "${domains}" && \
+              python - "${health}" "${domains}" "${EXPECTED_VERSION}" "${STRICT_VERSION}" "${REQUIRE_OPTIONAL}" <<'PY'
+          import json
+          import sys
+
+          health = json.load(open(sys.argv[1], encoding="utf-8"))
+          domains = json.load(open(sys.argv[2], encoding="utf-8"))
+          expected, strict, optional = sys.argv[3], sys.argv[4] == "true", sys.argv[5] == "true"
+          ids = {item.get("id") for item in domains if isinstance(item, dict)}
+          base = {"architecture", "plant_piping", "mechanical_ship_plate"}
+          if health.get("status") != "ok" or not base.issubset(ids):
+              raise SystemExit(1)
+          if strict and health.get("version") != expected:
+              raise SystemExit(1)
+          if optional and not {"solid_part", "artifact_lab"}.issubset(ids):
+              raise SystemExit(1)
+          PY
+            then
+              ready=true
+              break
+            fi
+            echo "API release contract not ready (attempt ${attempt}/${attempts}); waiting for Render/Vercel ordering to converge."
+            sleep 10
+          done
+          if [[ "${ready}" != "true" ]]; then
+            echo "API version/capability contract did not converge." >&2
+            exit 1
+          fi
+
+          api_version="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "${health}")"
+          solid_supported="$(python -c 'import json,sys; print(str(any(x.get("id") == "solid_part" for x in json.load(open(sys.argv[1])))).lower())' "${domains}")"
+          echo "version=${api_version}" >> "${GITHUB_OUTPUT}"
+          echo "solid_supported=${solid_supported}" >> "${GITHUB_OUTPUT}"
+          echo "API version ${api_version}; solid capability ${solid_supported}."
+
+      - name: Run small architecture canary
         shell: bash
         run: |
           set -euo pipefail
-          origin="${DEPLOYMENT_URL%/}"
-          for path in / /piping /plate /solid /intake; do
-            curl --fail --silent --show-error \
-              --retry 6 --retry-all-errors --retry-delay 3 \
-              --connect-timeout 10 --max-time 45 \
-              "${origin}${path}" >/dev/null
-          done
+          response="${RUNNER_TEMP}/architecture-canary.json"
+          curl --fail --silent --show-error --connect-timeout 10 --max-time 120 \
+            --header 'Content-Type: application/json' \
+            --data-binary @fixtures/examples/architecture_four_room.json \
+            "${API_URL}/api/v1/architecture/designs/run" --output "${response}"
+          python - "${response}" <<'PY'
+          import json
+          import sys
+
+          payload = json.load(open(sys.argv[1], encoding="utf-8"))
+          summary = payload.get("summary") or {}
+          assert payload.get("status") == "passed", payload.get("status")
+          assert payload.get("bundle_base64"), "approval bundle missing"
+          assert str(payload.get("contract_hash", "")).startswith("sha256:"), "contract hash missing"
+          assert str(payload.get("artifact_hash", "")).startswith("sha256:"), "artifact hash missing"
+          assert summary.get("gross_area_m2") == 96.0, summary
+          assert len(payload.get("violations") or []) == 0, "unexpected violations"
+          PY
+
+      - name: Run small solid canary when the API advertises support
+        if: steps.api.outputs.solid_supported == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="${RUNNER_TEMP}/solid-canary.json"
+          curl --fail --silent --show-error --connect-timeout 10 --max-time 240 \
+            --header 'Content-Type: application/json' \
+            --data-binary @fixtures/examples/solid_mounting_plate.json \
+            "${API_URL}/api/v1/solid/designs/run" --output "${response}"
+          python - "${response}" <<'PY'
+          import json
+          import sys
+
+          payload = json.load(open(sys.argv[1], encoding="utf-8"))
+          summary = payload.get("summary") or {}
+          assert payload.get("status") == "passed", payload.get("status")
+          assert payload.get("step_base64"), "STEP payload missing"
+          assert payload.get("bundle_base64"), "verified solid bundle missing"
+          assert summary.get("valid_shape") is True, summary
+          assert int(summary.get("solid_count", 0)) >= 1, summary
+          assert len(payload.get("violations") or []) == 0, "unexpected violations"
+          PY
+
+      - name: Explain deferred preview solid canary
+        if: steps.api.outputs.solid_supported != 'true'
+        run: echo "Solid canary deferred because the shared preview API advertises only the backward-compatible v0.1 capability set."
 
       - name: Verify deployment CORS access
         shell: bash
+        env:
+          ORIGIN: ${{ steps.target.outputs.origin }}
         run: |
           set -euo pipefail
-          origin="${DEPLOYMENT_URL%/}"
-          headers="$({
-            curl --fail --silent --show-error --dump-header - --output /dev/null \
-              --request OPTIONS \
-              --header "Origin: ${origin}" \
-              --header "Access-Control-Request-Method: POST" \
-              --header "Access-Control-Request-Headers: content-type" \
-              --retry 3 --retry-all-errors --retry-delay 2 \
-              --connect-timeout 10 --max-time 30 \
-              "${API_URL}/api/v1/architecture/designs/run"
-          } | tr -d '\r')"
+          headers="$(curl --fail --silent --show-error --dump-header - --output /dev/null \
+            --request OPTIONS \
+            --header "Origin: ${ORIGIN}" \
+            --header 'Access-Control-Request-Method: POST' \
+            --header 'Access-Control-Request-Headers: content-type' \
+            --retry 30 --retry-all-errors --retry-delay 10 --retry-max-time 600 \
+            --connect-timeout 10 --max-time 30 \
+            "${API_URL}/api/v1/architecture/designs/run" | tr -d '\r')"
           grep --fixed-strings --ignore-case \
-            "access-control-allow-origin: ${origin}" <<<"${headers}"
+            "access-control-allow-origin: ${ORIGIN}" <<<"${headers}"

@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import BackendReadinessNotice from "./components/backend-readiness";
+import LocalDraftNotice from "./components/local-draft-notice";
 import MeshPreview from "./components/mesh-preview";
+import { apiErrorMessage, apiPostJson } from "@/lib/api-client";
+import { loadDraft, saveDraft } from "@/lib/draft-db";
+import { useBackendReadiness } from "@/lib/use-backend-readiness";
 
 type Family = "mounting_plate" | "angle_bracket" | "flange";
 
@@ -60,10 +65,7 @@ type SolidResult = {
   error?: { code: string; message: string } | null;
 };
 
-const API_URL = (process.env.NEXT_PUBLIC_DATUMGUARD_API_URL || "http://localhost:8000").replace(
-  /\/$/,
-  "",
-);
+const DRAFT_KEY = "solid-contract-draft-v1";
 
 const PLATE: Draft = {
   family: "mounting_plate", projectName: "Semiconductor tool mounting plate", revision: "A",
@@ -143,20 +145,47 @@ export default function SolidWorkspace() {
   const [result, setResult] = useState<SolidResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const readiness = useBackendReadiness("solid_part");
   const contract = useMemo(() => buildContract(draft), [draft]);
   const setNumber = (key: keyof Draft, value: number) => setDraft((current) => ({ ...current, [key]: value }));
 
+  useEffect(() => {
+    loadDraft<Draft>(DRAFT_KEY)
+      .then((saved) => {
+        if (saved && saved.family in PRESETS) setDraft(saved);
+      })
+      .catch((reason) => setStorageError(reason instanceof Error ? reason.message : "로컬 draft를 읽지 못했습니다."))
+      .finally(() => setHydrated(true));
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const timer = window.setTimeout(() => {
+      saveDraft(draft, DRAFT_KEY)
+        .then(() => setStorageError(null))
+        .catch((reason) => setStorageError(reason instanceof Error ? reason.message : "로컬 draft를 저장하지 못했습니다."));
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [draft, hydrated]);
+
   async function run() {
+    if (readiness.state !== "ready") {
+      setError("Backend readiness를 먼저 확인합니다. 준비 완료 후 수동으로 다시 시도하세요.");
+      readiness.retry();
+      return;
+    }
     setLoading(true); setError(null); setResult(null);
     try {
-      const response = await fetch(`${API_URL}/api/v1/solid/designs/run`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(contract),
-      });
-      const payload = await response.json() as SolidResult;
-      if (!response.ok) throw new Error(payload.error?.message || "STEP generation failed");
+      const payload = await apiPostJson<SolidResult>(
+        "/api/v1/solid/designs/run",
+        contract,
+        { timeoutMs: 210_000 },
+      );
       setResult(payload);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "STEP generation failed");
+      setError(apiErrorMessage(reason, "STEP generation failed"));
     } finally { setLoading(false); }
   }
 
@@ -168,6 +197,8 @@ export default function SolidWorkspace() {
         <Link href="/" className="lab-brand"><span>DG</span><div><strong>DatumGuard</strong><small>OpenCascade solid assurance</small></div></Link>
         <nav aria-label="Engineering workspaces"><Link href="/">Architecture</Link><Link href="/piping">Piping</Link><Link href="/plate">Plate</Link><Link href="/solid" aria-current="page">3D Solid</Link><Link href="/intake">Artifact Lab</Link></nav>
       </header>
+
+      <LocalDraftNotice error={storageError} onDismiss={() => setStorageError(null)} />
 
       <section className="solid-header">
         <div><span>3D SOLID CONTRACT · STEP AUTHORITY</span><h1>정확한 3D 형상을 만들고<br /><em>다시 열어 측정합니다.</em></h1></div>
@@ -192,8 +223,9 @@ export default function SolidWorkspace() {
             <Field label="Verification tolerance" value={draft.tolerance} unit="mm" step={0.001} min={0.001} onChange={(value) => setNumber("tolerance", value)} />
           </div>
           <details className="solid-contract-json"><summary>Structured contract preview</summary><pre>{JSON.stringify(contract, null, 2)}</pre></details>
-          <button data-testid="solid-run-button" type="button" className="lab-primary" disabled={loading} onClick={run}>{loading ? <><span className="lab-spinner" />OPEN CASCADE WORKERS RUNNING</> : "GENERATE STEP + INDEPENDENTLY VERIFY"}</button>
-          {error && <div className="lab-error" role="alert"><strong>CONTRACT / KERNEL ERROR</strong><span>{error}</span></div>}
+          <BackendReadinessNotice readiness={readiness} />
+          <button data-testid="solid-run-button" type="button" className="lab-primary" disabled={loading || readiness.state !== "ready"} onClick={run}>{loading ? <><span className="lab-spinner" />OPEN CASCADE WORKERS RUNNING</> : readiness.state !== "ready" ? "BACKEND READINESS" : error ? "RETRY MANUALLY" : "GENERATE STEP + INDEPENDENTLY VERIFY"}</button>
+          {error && <div className="lab-error" role="alert"><strong>CONTRACT / KERNEL ERROR</strong><span>{error}</span><button type="button" onClick={run}>수동 재시도</button></div>}
         </section>
 
         <section className="solid-preview-panel">
@@ -212,7 +244,7 @@ export default function SolidWorkspace() {
         {result.violations.length > 0 && <div className="lab-issues">{result.violations.map((violation) => <article className="error" key={`${violation.code}-${violation.entity_ids.join("-")}`}><span>blocked</span><code>{violation.code}</code><div><strong>{violation.message}</strong><small>{violation.entity_ids.join(", ")}</small></div></article>)}</div>}
       </section>}
 
-      <section className="lab-boundary"><span>ENGINEERING BOUNDARY</span><h2>정확한 STEP은 안전 인증이 아닙니다.</h2><p>형상, 치수, topology evidence만 검증합니다. 구조강도, 용접, 압력, 재료와 산업규격은 자격 있는 엔지니어가 별도로 승인해야 합니다.</p></section>
+      <section className="lab-boundary"><span>ENGINEERING BOUNDARY</span><h2>정확한 STEP은 안전 인증이 아닙니다.</h2><p>형상, 치수, topology evidence만 검증합니다. 구조강도, 용접, 압력, 재료와 산업규격은 자격 있는 엔지니어가 별도로 승인해야 합니다. <Link href="/privacy">Privacy & local data</Link></p></section>
     </main>
   );
 }

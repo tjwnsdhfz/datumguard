@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import io
 import json
+import subprocess
 import zipfile
 from pathlib import Path
 
@@ -11,8 +12,9 @@ import ifcopenshell
 import ifcopenshell.api
 import pytest
 
-from datumguard import solid_service
+from datumguard import artifact_service, cad_subprocess, solid_service
 from datumguard.artifact_service import audit_artifact, compare_artifacts
+from datumguard.cad_subprocess import CadWorkerFailure, run_parser_worker
 from datumguard.mcp_server import artifact_audit as mcp_artifact_audit
 from datumguard.mcp_server import solid_generate_verify
 from datumguard.models import DesignContract
@@ -208,3 +210,46 @@ def test_new_mcp_tools_return_structured_artifact_evidence() -> None:
     assert audited["format"] == "dxf"
     assert solid["status"] == "passed"
     assert solid["summary"]["part_family"] == "flange"
+
+
+def test_dxf_parser_worker_failure_is_contained_and_scrubbed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    document = ezdxf.new("R2013")
+    document.modelspace().add_line((0, 0), (10, 0))
+
+    def failed_worker(_payload: dict[str, object]) -> dict[str, object]:
+        raise CadWorkerFailure(
+            "worker crashed",
+            {"return_code": 137, "stderr": "C:/private/parser/path", "failure": "worker_exit"},
+        )
+
+    monkeypatch.setattr(artifact_service, "run_parser_worker", failed_worker)
+    result = audit_artifact("isolated-failure.dxf", _dxf_bytes(document))
+
+    assert result.status == "failed_verification"
+    assert result.error is not None
+    assert result.error.code == "DG_ARTIFACT_DXF_READ_FAILED"
+    serialized = result.model_dump_json()
+    assert "stderr" not in serialized
+    assert "private/parser" not in serialized
+    assert result.error.details == {"isolated_worker": True, "failure": "worker_exit"}
+
+
+def test_subprocess_failure_does_not_expose_stderr_or_paths(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def failed_run(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        return subprocess.CompletedProcess(
+            args=["python"],
+            returncode=137,
+            stdout=b"",
+            stderr=b"C:/private/native/path and secret details",
+        )
+
+    monkeypatch.setattr(cad_subprocess.subprocess, "run", failed_run)
+    with pytest.raises(CadWorkerFailure) as captured:
+        run_parser_worker({"operation": "test"})
+
+    assert captured.value.details == {"return_code": 137, "failure": "worker_exit"}
+    assert "private/native" not in str(captured.value.details)

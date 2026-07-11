@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import base64
 import os
-import uuid
 from typing import Annotated, Any
 
 import uvicorn
@@ -18,6 +17,13 @@ from .architecture_models import ArchitecturalPlanContract
 from .architecture_service import run_architecture_design, validate_architecture_contract
 from .artifact_service import MAX_ARTIFACT_BYTES, audit_artifact, compare_artifacts
 from .models import DesignContract, RepairProposal, StrictModel, Violation
+from .operations import (
+    DEFAULT_MAX_BODY_BYTES,
+    OPERATIONS,
+    OperationalMiddleware,
+    current_request_id,
+    make_error_content,
+)
 from .piping_models import PipingPlanContract
 from .piping_service import run_piping_design, validate_piping_contract
 from .repair import RepairRejected
@@ -35,7 +41,7 @@ from .service import (
 from .solid_models import SolidPartContract
 from .solid_service import run_solid_design
 
-MAX_BODY_BYTES = 48 * 1024 * 1024
+MAX_BODY_BYTES = DEFAULT_MAX_BODY_BYTES
 
 
 class DraftRequest(StrictModel):
@@ -89,48 +95,48 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+app.add_middleware(OperationalMiddleware, controls=OPERATIONS)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins(),
     allow_origin_regex=_origin_regex(),
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Accept"],
+    allow_headers=["Content-Type", "Accept", "Authorization", "X-API-Key", "X-Request-ID"],
+    expose_headers=["Retry-After", "X-Request-ID"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=1200)
 
 
-@app.middleware("http")
-async def reject_large_body(request: Request, call_next: Any) -> Any:
-    content_length = request.headers.get("content-length")
-    try:
-        body_too_large = bool(content_length) and int(content_length or 0) > MAX_BODY_BYTES
-    except ValueError:
-        body_too_large = True
-    if body_too_large:
-        return JSONResponse(
-            status_code=413,
-            content={
-                "status": "failed_verification",
-                "contract_hash": "sha256:unavailable",
-                "artifact_hash": None,
-                "measurements": [],
-                "violations": [],
-                "evidence": [],
-                "error": {
-                    "code": "DG_INPUT_INVALID",
-                    "message": "요청 본문이 48MB 제한을 초과했습니다.",
-                    "details": {"max_bytes": MAX_BODY_BYTES},
-                    "correlation_id": str(uuid.uuid4()),
-                },
-            },
-        )
-    return await call_next(request)
+def _request_id(request: Request) -> str:
+    return str(getattr(request.state, "request_id", "") or current_request_id())
+
+
+def _error_response(
+    request: Request,
+    *,
+    status_code: int,
+    code: str,
+    message: str,
+    details: dict[str, Any] | None = None,
+    retry_after: int | None = None,
+) -> JSONResponse:
+    headers = {"Retry-After": str(retry_after)} if retry_after is not None else None
+    return JSONResponse(
+        status_code=status_code,
+        content=make_error_content(
+            _request_id(request),
+            code=code,
+            message=message,
+            details=details,
+        ),
+        headers=headers,
+    )
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(
-    _request: Request,
+    request: Request,
     exc: RequestValidationError,
 ) -> JSONResponse:
     errors = [
@@ -141,43 +147,33 @@ async def validation_exception_handler(
         }
         for error in exc.errors()
     ]
-    return JSONResponse(
+    return _error_response(
+        request,
         status_code=422,
-        content={
-            "status": "failed_verification",
-            "contract_hash": "sha256:unavailable",
-            "artifact_hash": None,
-            "measurements": [],
-            "violations": [],
-            "evidence": [],
-            "error": {
-                "code": "DG_INPUT_INVALID",
-                "message": "요청이 DesignContract 스키마를 통과하지 못했습니다.",
-                "details": {"errors": errors},
-                "correlation_id": str(uuid.uuid4()),
-            },
-        },
+        code="DG_INPUT_INVALID",
+        message="요청이 DesignContract 스키마를 통과하지 못했습니다.",
+        details={"errors": errors},
     )
 
 
 @app.exception_handler(ServiceFailure)
-async def service_exception_handler(_request: Request, exc: ServiceFailure) -> JSONResponse:
-    return JSONResponse(
+async def service_exception_handler(request: Request, exc: ServiceFailure) -> JSONResponse:
+    return _error_response(
+        request,
         status_code=422,
-        content={
-            "status": "failed_verification",
-            "contract_hash": "sha256:unavailable",
-            "artifact_hash": None,
-            "measurements": [],
-            "violations": [],
-            "evidence": [],
-            "error": {
-                "code": exc.code,
-                "message": exc.message,
-                "details": exc.details,
-                "correlation_id": str(uuid.uuid4()),
-            },
-        },
+        code=exc.code,
+        message=exc.message,
+        details=exc.details,
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, _exc: Exception) -> JSONResponse:
+    return _error_response(
+        request,
+        status_code=500,
+        code="DG_INTERNAL_ERROR",
+        message="요청을 안전하게 완료하지 못했습니다.",
     )
 
 
@@ -192,13 +188,45 @@ def root() -> dict[str, str]:
 
 
 @app.get("/api/v1/health")
-def health() -> dict[str, str]:
+async def health() -> dict[str, str]:
     return {"status": "ok", "service": "datumguard", "version": "0.2.0"}
+
+
+@app.get("/api/v1/live")
+async def liveness() -> dict[str, str]:
+    return {"status": "ok", "service": "datumguard", "check": "liveness"}
+
+
+@app.get("/api/v1/ready")
+async def readiness() -> JSONResponse:
+    gate = OPERATIONS.gate.snapshot()
+    ready = gate.ready
+    return JSONResponse(
+        status_code=200 if ready else 503,
+        content={
+            "status": "ready" if ready else "not_ready",
+            "service": "datumguard",
+            "version": "0.2.0",
+            "queue": {
+                "limit": gate.limit,
+                "active": gate.active,
+                "waiting": gate.waiting,
+                "max_waiters": gate.max_waiters,
+                "wait_timeout_seconds": gate.wait_timeout_seconds,
+            },
+        },
+        headers={} if ready else {"Retry-After": "2"},
+    )
+
+
+@app.get("/api/v1/metrics")
+async def metrics() -> dict[str, Any]:
+    return OPERATIONS.metrics_snapshot()
 
 
 @app.get("/api/v1/domains")
 def engineering_domains() -> list[dict[str, str]]:
-    return [
+    domains = [
         {
             "id": "architecture",
             "design_kind": "architectural_plan",
@@ -230,6 +258,11 @@ def engineering_domains() -> list[dict[str, str]]:
             "run_endpoint": "/api/v1/artifacts/audit",
         },
     ]
+    if not OPERATIONS.solid_enabled:
+        domains = [item for item in domains if item["id"] != "solid_part"]
+    if not OPERATIONS.artifact_lab_enabled:
+        domains = [item for item in domains if item["id"] != "artifact_lab"]
+    return domains
 
 
 @app.get("/api/v1/schema/design-contract")
@@ -361,25 +394,95 @@ def piping_design_run(contract: PipingPlanContract) -> dict[str, Any]:
     return run_piping_design(contract).model_dump(mode="json")
 
 
-@app.post("/api/v1/solid/designs/run")
-def solid_design_run(contract: SolidPartContract) -> dict[str, Any]:
+@app.post("/api/v1/solid/designs/run", response_model=None)
+def solid_design_run(
+    request: Request,
+    contract: SolidPartContract,
+) -> dict[str, Any] | JSONResponse:
+    if not OPERATIONS.solid_enabled:
+        return _error_response(
+            request,
+            status_code=503,
+            code="DG_CAPABILITY_DISABLED",
+            message="요청한 CAD 기능이 이 배포에서 비활성화되어 있습니다.",
+            details={"capability": "solid"},
+            retry_after=60,
+        )
     return run_solid_design(contract).model_dump(mode="json")
 
 
-@app.post("/api/v1/artifacts/audit")
-async def artifact_audit(file: Annotated[UploadFile, File()]) -> dict[str, Any]:
-    data = await file.read(MAX_ARTIFACT_BYTES + 1)
+async def _read_upload_limited(file: UploadFile, *, max_bytes: int) -> bytes:
+    data = bytearray()
+    while len(data) <= max_bytes:
+        remaining = max_bytes + 1 - len(data)
+        chunk = await file.read(min(64 * 1024, remaining))
+        if not chunk:
+            break
+        data.extend(chunk)
+    return bytes(data)
+
+
+@app.post("/api/v1/artifacts/audit", response_model=None)
+async def artifact_audit(
+    request: Request,
+    file: Annotated[UploadFile, File()],
+) -> dict[str, Any] | JSONResponse:
+    if not OPERATIONS.artifact_lab_enabled:
+        return _error_response(
+            request,
+            status_code=503,
+            code="DG_CAPABILITY_DISABLED",
+            message="요청한 CAD 기능이 이 배포에서 비활성화되어 있습니다.",
+            details={"capability": "artifact_lab"},
+            retry_after=60,
+        )
+    data = await _read_upload_limited(file, max_bytes=MAX_ARTIFACT_BYTES)
+    if len(data) > MAX_ARTIFACT_BYTES:
+        return _error_response(
+            request,
+            status_code=413,
+            code="DG_ARTIFACT_TOO_LARGE",
+            message="CAD 파일 크기가 서버 제한을 초과했습니다.",
+            details={"max_bytes": MAX_ARTIFACT_BYTES},
+        )
     result = await run_in_threadpool(audit_artifact, file.filename or "artifact", data)
     return result.model_dump(mode="json")
 
 
-@app.post("/api/v1/artifacts/compare")
+@app.post("/api/v1/artifacts/compare", response_model=None)
 async def artifact_compare(
+    request: Request,
     baseline: Annotated[UploadFile, File()],
     candidate: Annotated[UploadFile, File()],
-) -> dict[str, Any]:
-    baseline_data = await baseline.read(MAX_ARTIFACT_BYTES + 1)
-    candidate_data = await candidate.read(MAX_ARTIFACT_BYTES + 1)
+) -> dict[str, Any] | JSONResponse:
+    if not OPERATIONS.artifact_lab_enabled:
+        return _error_response(
+            request,
+            status_code=503,
+            code="DG_CAPABILITY_DISABLED",
+            message="요청한 CAD 기능이 이 배포에서 비활성화되어 있습니다.",
+            details={"capability": "artifact_lab"},
+            retry_after=60,
+        )
+    baseline_data = await _read_upload_limited(baseline, max_bytes=MAX_ARTIFACT_BYTES)
+    candidate_data = await _read_upload_limited(candidate, max_bytes=MAX_ARTIFACT_BYTES)
+    if len(baseline_data) > MAX_ARTIFACT_BYTES or len(candidate_data) > MAX_ARTIFACT_BYTES:
+        return _error_response(
+            request,
+            status_code=413,
+            code="DG_ARTIFACT_TOO_LARGE",
+            message="비교할 CAD 파일 중 서버 제한을 초과한 파일이 있습니다.",
+            details={"max_bytes_per_file": MAX_ARTIFACT_BYTES},
+        )
+    total_bytes = len(baseline_data) + len(candidate_data)
+    if total_bytes > OPERATIONS.max_upload_total_bytes:
+        return _error_response(
+            request,
+            status_code=413,
+            code="DG_ARTIFACT_TOO_LARGE",
+            message="비교할 CAD 파일의 합계 크기가 서버 제한을 초과했습니다.",
+            details={"max_total_bytes": OPERATIONS.max_upload_total_bytes},
+        )
     result = await run_in_threadpool(
         compare_artifacts,
         baseline.filename or "baseline",
@@ -400,7 +503,7 @@ def export_bundle(
 
 
 @app.post("/api/v1/rhino/preview")
-def rhino_preview() -> JSONResponse:
+def rhino_preview(request: Request) -> JSONResponse:
     return JSONResponse(
         status_code=501,
         content={
@@ -422,7 +525,7 @@ def rhino_preview() -> JSONResponse:
                     "공개 서버에서는 Rhino adapter를 실행하지 않습니다. 로컬 MCP를 사용하세요."
                 ),
                 "details": {"official_verifier_affected": False},
-                "correlation_id": str(uuid.uuid4()),
+                "correlation_id": _request_id(request),
             },
         },
     )

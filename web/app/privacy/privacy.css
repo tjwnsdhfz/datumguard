@@ -1,0 +1,23 @@
+.privacy-shell { min-height: 100dvh; background: #f4f5f6; color: #111116; font-family: "Noto Sans KR", sans-serif; }
+.privacy-shell * { box-sizing: border-box; }
+.privacy-shell header { display: flex; min-height: 68px; align-items: center; justify-content: space-between; gap: 20px; padding: 0 clamp(18px, 5vw, 72px); border-bottom: 1px solid #3a3a3f; background: #0a0a0a; color: #fff; }
+.privacy-shell header a { display: inline-flex; min-height: 44px; align-items: center; color: inherit; font-size: 12px; text-decoration: none; }
+.privacy-brand { font-weight: 800; letter-spacing: .12em; }
+.privacy-hero { padding: clamp(56px, 9vw, 124px) clamp(20px, 8vw, 120px); border-bottom: 1px solid #3a3a3f; background: #fff; }
+.privacy-hero > span,
+.privacy-grid article > span { font: 600 10px "DM Mono", monospace; letter-spacing: .14em; }
+.privacy-hero h1 { max-width: 900px; margin: 20px 0; font-size: clamp(44px, 7vw, 92px); line-height: 1; text-transform: uppercase; }
+.privacy-hero p { max-width: 760px; margin: 0; color: #505057; font-size: 16px; line-height: 1.75; }
+.privacy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 1440px; margin: 0 auto; border-right: 1px solid #3a3a3f; border-left: 1px solid #3a3a3f; }
+.privacy-grid article { min-width: 0; padding: clamp(28px, 5vw, 64px); border-right: 1px solid #3a3a3f; border-bottom: 1px solid #3a3a3f; background: #fafbfc; }
+.privacy-grid article:nth-child(2n) { border-right: 0; }
+.privacy-grid h2 { margin: 12px 0 18px; font-size: clamp(24px, 3vw, 38px); text-transform: uppercase; }
+.privacy-grid p { color: #55565c; line-height: 1.75; }
+.privacy-local-controls { display: grid; gap: 10px; margin-top: 24px; }
+.privacy-local-controls button { min-height: 48px; width: fit-content; padding: 0 20px; border: 1px solid #0a0a0a; border-radius: 32px; background: transparent; color: #0a0a0a; font-weight: 700; cursor: pointer; }
+.privacy-local-controls button:hover { background: #0a0a0a; color: #fff; }
+.privacy-local-controls button.armed { border-color: #a92f25; color: #8f261f; }
+.privacy-local-controls p { margin: 0; color: #8f261f; }
+.privacy-shell :where(a,button):focus-visible { outline: 3px solid #255fd1; outline-offset: 3px; }
+@media (max-width: 760px) { .privacy-grid { grid-template-columns: 1fr; border-right: 0; border-left: 0; } .privacy-grid article { border-right: 0; } }
+@media (prefers-reduced-motion: reduce) { .privacy-shell * { scroll-behavior: auto !important; transition: none !important; } }

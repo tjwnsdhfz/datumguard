@@ -102,6 +102,7 @@ docker compose up --build
 - Web: `http://localhost:3000`
 - API: `http://localhost:8000`
 - Health: `http://localhost:8000/api/v1/health`
+- Readiness: `http://localhost:8000/api/v1/ready`
 
 ## 공개 배포
 
@@ -123,11 +124,13 @@ docker compose up --build
 - Frontend는 Vercel 프로젝트의 Root Directory를 `web/`으로 지정하고, build 전에 `NEXT_PUBLIC_DATUMGUARD_API_URL`을 backend URL로 설정합니다.
 - Backend의 `DATUMGUARD_CORS_ORIGINS`에는 frontend origin을 쉼표로 구분해 설정합니다.
 
-`render.yaml`은 GitHub CI check가 통과한 commit만 backend에 자동 배포하도록 구성되어 있습니다. Vercel for GitHub는 Root Directory `web/`에서 PR Preview와 `main` Production을 만들며, `deployment-smoke`가 세 route와 API CORS를 확인합니다. 정확한 연결 계약은 [GitHub Deployment Guide](docs/github-deployment.md), 환경변수·cold start 순서는 [Deployment Guide](docs/deployment.md)를 따릅니다.
+`render.yaml`은 GitHub CI check가 통과한 commit만 backend에 자동 배포하도록 구성되어 있습니다. Vercel for GitHub는 Root Directory `web/`에서 PR Preview와 `main` Production을 만들며, `deployment-smoke`가 다섯 workspace의 실제 DOM, API version/capability, architecture·solid canary와 CORS를 확인합니다. 정확한 연결 계약은 [GitHub Deployment Guide](docs/github-deployment.md), 환경변수·cold start 순서는 [Deployment Guide](docs/deployment.md)를 따릅니다.
 
 배포가 끝나면 `$WEB_ORIGIN/`, `/piping`, `/plate`, `/solid`, `/intake`를 모두 확인합니다. Frontend를 build한 뒤 `NEXT_PUBLIC_DATUMGUARD_API_URL`을 바꾸었다면 반드시 rebuild해야 합니다.
 
 공개 데모는 stateless입니다. 계정·DB·서버 프로젝트 저장을 사용하지 않으며, 요청 파일과 자연어 원문을 영구 저장하지 않습니다. Hosted demo에는 Rhino 연결을 요구하지 않으며, Rhino evidence는 로컬 adapter가 있을 때만 secondary cross-check로 사용합니다.
+
+운영 경계도 코드로 고정했습니다. 실제 수신 byte 제한, 파일별·합계 upload 제한, optional API key, anonymous/authenticated quota, heavy CAD queue, parser subprocess, request ID·redacted JSON log, `/live`·`/ready`·bounded `/metrics`, Solid/Artifact Lab kill switch를 제공합니다. 브라우저 draft는 30일 TTL의 IndexedDB에만 저장되며 [/privacy](https://datumguard-tjwnsdhfz.vercel.app/privacy)에서 전체 삭제할 수 있습니다. 10k DAU는 현재 Free 배포의 용량 주장이 아니며, 출시 체크리스트·장애/rollback·SLO·비용 후보는 [Operations Guide](docs/operations/README.md)와 [Cost Guard](docs/operations/cost-guard.md)에 분리했습니다.
 
 ## API와 MCP
 
@@ -140,6 +143,7 @@ docker compose up --build
 - 3D solid 생성·STEP 독립 검증: `POST /api/v1/solid/designs/run`
 - CAD 파일 감사: `POST /api/v1/artifacts/audit`
 - CAD revision 비교: `POST /api/v1/artifacts/compare`
+- Liveness/readiness/metrics: `GET /api/v1/live`, `GET /api/v1/ready`, `GET /api/v1/metrics`
 - 단계별 endpoint는 [TRD](docs/TRD.md)에 정리되어 있습니다.
 - 로컬 MCP: `datumguard-mcp`
 
@@ -158,17 +162,22 @@ MCP contract 분기는 입력의 `design_kind`로 결정합니다.
 
 ## 검증
 
-```bash
-ruff check .
-mypy src/datumguard
-pytest
-cd web && npm run typecheck && npm run lint && npm run build
+```powershell
+$env:UV_LINK_MODE = "copy" # Windows OneDrive only
+uv sync --frozen --extra dev
+uv run --frozen ruff check src tests tools
+uv run --frozen mypy src/datumguard
+uv run --frozen pytest
+Set-Location web
+npm run typecheck
+npm run lint
+npm run build
 ```
 
 Architecture, Piping, Plate, Solid, Artifact Lab route의 브라우저 계약은 실제 FastAPI를 함께 시작하는 Playwright E2E로 검사합니다.
 
-```bash
-cd web
+```powershell
+Set-Location web
 npm run test:e2e
 ```
 

@@ -36,11 +36,22 @@ async function dragBy(
 
 async function waitForArchitectureReady(page: Page) {
   const demo = page.getByTestId("architecture-demo");
-  await expect(demo).toHaveAttribute("data-health-status", "ready", { timeout: 45_000 });
+  await expect(demo).toHaveAttribute("data-health-status", "ready", { timeout: 75_000 });
   await expect(page.getByTestId("architecture-run-verification")).toBeEnabled();
 }
 
 test.describe("interactive architecture demo", () => {
+  test("serves the frontend security policy headers", async ({ page }) => {
+    const response = await page.goto("/");
+    expect(response).not.toBeNull();
+    const headers = response?.headers() || {};
+    expect(headers["content-security-policy"]).toContain("object-src 'none'");
+    expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["x-frame-options"]).toBe("DENY");
+    expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  });
+
   test("is the default four-room route with the exact five-stage assurance flow", async ({ page }) => {
     await page.goto("/");
     const demo = page.getByTestId("architecture-demo");
@@ -121,15 +132,21 @@ test.describe("interactive architecture demo", () => {
   });
 
   test("polls through a cold start and recovers without reloading", async ({ page }) => {
-    let healthCalls = 0;
-    await page.route("**/api/v1/health", async (route) => {
-      healthCalls += 1;
-      await route.fulfill({ status: healthCalls < 3 ? 503 : 200, contentType: "application/json", body: healthCalls < 3 ? '{"status":"starting"}' : '{"status":"ok"}' });
+    let readinessCalls = 0;
+    await page.route("**/api/v1/ready", async (route) => {
+      readinessCalls += 1;
+      await route.fulfill({
+        status: readinessCalls < 3 ? 503 : 200,
+        contentType: "application/json",
+        body: readinessCalls < 3
+          ? '{"status":"not_ready","version":"0.2.0"}'
+          : '{"status":"ready","version":"0.2.0"}',
+      });
     });
     await page.goto("/");
     await expect(page.getByTestId("architecture-health")).toContainText("검증 엔진 준비 중");
     await waitForArchitectureReady(page);
-    expect(healthCalls).toBeGreaterThanOrEqual(3);
+    expect(readinessCalls).toBeGreaterThanOrEqual(3);
     await expect(page.getByTestId("architecture-health")).toContainText("검증 엔진 준비 완료");
   });
 
@@ -138,6 +155,22 @@ test.describe("interactive architecture demo", () => {
     await page.getByTestId("architecture-preset-studio").click();
     await page.getByTestId("architecture-inspector-center-x").fill("4321");
     await page.waitForTimeout(450);
+    const metadata = await page.evaluate(async () => {
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open("datumguard", 2);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const value = await new Promise<Record<string, unknown>>((resolve, reject) => {
+        const request = database.transaction("drafts", "readonly").objectStore("drafts").get("architecture-contract-draft-v1");
+        request.onsuccess = () => resolve(request.result as Record<string, unknown>);
+        request.onerror = () => reject(request.error);
+      });
+      database.close();
+      return { schemaVersion: value.schemaVersion, updatedAt: value.updatedAt, expiresAt: value.expiresAt };
+    });
+    expect(metadata.schemaVersion).toBe(2);
+    expect(Number(metadata.expiresAt)).toBeGreaterThan(Number(metadata.updatedAt));
     await page.reload();
     await expect(page.getByTestId("architecture-inspector-center-x")).toHaveValue("4321");
   });

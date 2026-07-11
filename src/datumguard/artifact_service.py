@@ -6,12 +6,14 @@ import importlib
 import io
 import json
 import math
+import os
 import re
+import sys
 import tempfile
 import uuid
 from collections import Counter
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import ezdxf
 from ezdxf import bbox, recover
@@ -30,10 +32,21 @@ from .artifact_models import (
     AuditIssue,
     PreviewMesh,
 )
-from .cad_subprocess import CadWorkerFailure, run_cad_worker
+from .cad_subprocess import CadWorkerFailure, run_cad_worker, run_parser_worker
 from .models import ErrorInfo, Evidence, Violation
+from .operations import ARTIFACT_SINGLE_FLIGHT
 
-MAX_ARTIFACT_BYTES = 20 * 1024 * 1024
+
+def _configured_artifact_limit() -> int:
+    raw = os.getenv("DATUMGUARD_MAX_ARTIFACT_BYTES", "").strip()
+    try:
+        configured = int(raw) if raw else 20 * 1024 * 1024
+    except ValueError:
+        configured = 20 * 1024 * 1024
+    return min(max(configured, 1024), 64 * 1024 * 1024)
+
+
+MAX_ARTIFACT_BYTES = _configured_artifact_limit()
 MAX_PREVIEW_TRIANGLES = 3500
 MAX_ISSUES = 100
 
@@ -423,7 +436,12 @@ def _audit_step(filename: str, data: bytes, artifact_hash: str) -> ArtifactAudit
             message="OpenCascade가 STEP geometry를 읽지 못했습니다.",
             details={
                 "exception": type(exc).__name__,
-                "worker": exc.details if isinstance(exc, CadWorkerFailure) else {},
+                "isolated_worker": True,
+                "failure": (
+                    str(exc.details.get("failure", "worker_failure"))
+                    if isinstance(exc, CadWorkerFailure)
+                    else "invalid_result"
+                ),
             },
             artifact_format="step",
         )
@@ -691,7 +709,41 @@ def _audit_ifc(filename: str, data: bytes, artifact_hash: str) -> ArtifactAuditR
     )
 
 
-def audit_artifact(filename: str, data: bytes) -> ArtifactAuditResponse:
+def _audit_in_parser_worker(
+    filename: str,
+    data: bytes,
+    artifact_hash: str,
+    artifact_format: ArtifactFormat,
+) -> ArtifactAuditResponse:
+    try:
+        result = run_parser_worker(
+            {
+                "operation": f"audit_{artifact_format}",
+                "filename": filename,
+                "content_base64": base64.b64encode(data).decode("ascii"),
+                "artifact_hash": artifact_hash,
+            }
+        )
+        return ArtifactAuditResponse.model_validate(result)
+    except (CadWorkerFailure, ValueError, TypeError, KeyError) as exc:
+        return _failed_audit(
+            filename,
+            data,
+            code=f"DG_ARTIFACT_{artifact_format.upper()}_READ_FAILED",
+            message="격리된 CAD parser가 파일을 안전하게 처리하지 못했습니다.",
+            details={
+                "isolated_worker": True,
+                "failure": (
+                    str(exc.details.get("failure", "worker_failure"))
+                    if isinstance(exc, CadWorkerFailure)
+                    else "invalid_result"
+                ),
+            },
+            artifact_format=artifact_format,
+        )
+
+
+def _audit_artifact_uncached(filename: str, data: bytes) -> ArtifactAuditResponse:
     safe_name = _safe_filename(filename)
     if not data:
         return _failed_audit(
@@ -718,10 +770,22 @@ def audit_artifact(filename: str, data: bytes) -> ArtifactAuditResponse:
         )
     artifact_hash = _sha256(data)
     if artifact_format == "dxf":
-        return _audit_dxf(safe_name, data, artifact_hash)
+        return _audit_in_parser_worker(safe_name, data, artifact_hash, artifact_format)
     if artifact_format == "step":
         return _audit_step(safe_name, data, artifact_hash)
-    return _audit_ifc(safe_name, data, artifact_hash)
+    return _audit_in_parser_worker(safe_name, data, artifact_hash, artifact_format)
+
+
+def audit_artifact(filename: str, data: bytes) -> ArtifactAuditResponse:
+    suffix = Path(filename).suffix.lower()[0:16]
+    flight_key = f"audit:{suffix}:{_sha256(data)}"
+    return cast(
+        ArtifactAuditResponse,
+        ARTIFACT_SINGLE_FLIGHT.run(
+            flight_key,
+            lambda: _audit_artifact_uncached(filename, data),
+        ),
+    )
 
 
 def _metric_deltas(
@@ -748,7 +812,31 @@ def _metric_deltas(
     return deltas
 
 
-def compare_artifacts(
+def _isolated_dxf_fingerprints(data: bytes) -> tuple[Counter[str], dict[str, str]]:
+    result = run_parser_worker(
+        {
+            "operation": "dxf_fingerprints",
+            "content_base64": base64.b64encode(data).decode("ascii"),
+        }
+    )
+    fingerprints = Counter(
+        {str(key): int(value) for key, value in dict(result["fingerprints"]).items()}
+    )
+    handles = {str(key): str(value) for key, value in dict(result["handles"]).items()}
+    return fingerprints, handles
+
+
+def _isolated_ifc_index(data: bytes) -> dict[str, str]:
+    result = run_parser_worker(
+        {
+            "operation": "ifc_index",
+            "content_base64": base64.b64encode(data).decode("ascii"),
+        }
+    )
+    return {str(key): str(value) for key, value in dict(result["index"]).items()}
+
+
+def _compare_artifacts_uncached(
     baseline_filename: str,
     baseline_data: bytes,
     candidate_filename: str,
@@ -773,8 +861,8 @@ def compare_artifacts(
         )
     elif baseline.format == "dxf":
         try:
-            baseline_fingerprints, baseline_handles = _dxf_fingerprints(baseline_data)
-            candidate_fingerprints, candidate_handles = _dxf_fingerprints(candidate_data)
+            baseline_fingerprints, baseline_handles = _isolated_dxf_fingerprints(baseline_data)
+            candidate_fingerprints, candidate_handles = _isolated_dxf_fingerprints(candidate_data)
             added = candidate_fingerprints - baseline_fingerprints
             removed = baseline_fingerprints - candidate_fingerprints
             common_handles = set(baseline_handles) & set(candidate_handles)
@@ -790,7 +878,16 @@ def compare_artifacts(
                 "changed_handles": changed_handles[:50],
                 "same_geometry_multiset": not added and not removed,
             }
-        except (OSError, UnicodeError, DXFError, ValueError, TypeError, AttributeError) as exc:
+        except (
+            CadWorkerFailure,
+            OSError,
+            UnicodeError,
+            DXFError,
+            ValueError,
+            TypeError,
+            AttributeError,
+            KeyError,
+        ) as exc:
             issues.append(
                 AuditIssue(
                     code="DG_ARTIFACT_COMPARE_FAILED",
@@ -801,8 +898,8 @@ def compare_artifacts(
             )
     elif baseline.format == "ifc":
         try:
-            _baseline_model, baseline_index = _ifc_index(baseline_data)
-            _candidate_model, candidate_index = _ifc_index(candidate_data)
+            baseline_index = _isolated_ifc_index(baseline_data)
+            candidate_index = _isolated_ifc_index(candidate_data)
             baseline_ids = set(baseline_index)
             candidate_ids = set(candidate_index)
             common_ids = baseline_ids & candidate_ids
@@ -813,7 +910,15 @@ def compare_artifacts(
                     guid for guid in common_ids if baseline_index[guid] != candidate_index[guid]
                 )[:100],
             }
-        except (ImportError, UnicodeError, RuntimeError, ValueError, TypeError) as exc:
+        except (
+            CadWorkerFailure,
+            ImportError,
+            UnicodeError,
+            RuntimeError,
+            ValueError,
+            TypeError,
+            KeyError,
+        ) as exc:
             issues.append(
                 AuditIssue(
                     code="DG_ARTIFACT_COMPARE_FAILED",
@@ -867,3 +972,68 @@ def compare_artifacts(
             else None
         ),
     )
+
+
+def compare_artifacts(
+    baseline_filename: str,
+    baseline_data: bytes,
+    candidate_filename: str,
+    candidate_data: bytes,
+) -> ArtifactComparisonResponse:
+    baseline_hash = _sha256(baseline_data)
+    candidate_hash = _sha256(candidate_data)
+    format_key = (
+        f"{Path(baseline_filename).suffix.lower()}:{Path(candidate_filename).suffix.lower()}"
+    )
+    flight_key = f"compare:{format_key[0:32]}:{baseline_hash}:{candidate_hash}"
+    return cast(
+        ArtifactComparisonResponse,
+        ARTIFACT_SINGLE_FLIGHT.run(
+            flight_key,
+            lambda: _compare_artifacts_uncached(
+                baseline_filename,
+                baseline_data,
+                candidate_filename,
+                candidate_data,
+            ),
+        ),
+    )
+
+
+def parser_worker_main() -> None:
+    payload = json.loads(sys.stdin.buffer.read().decode("utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("parser worker payload must be an object")
+    operation = str(payload.get("operation", ""))
+    content = base64.b64decode(str(payload.get("content_base64", "")), validate=True)
+    if len(content) > MAX_ARTIFACT_BYTES:
+        raise ValueError("parser worker content exceeds the artifact limit")
+    if operation == "audit_dxf":
+        filename = _safe_filename(str(payload.get("filename", "artifact.dxf")))
+        artifact_hash = str(payload.get("artifact_hash") or _sha256(content))
+        result: dict[str, Any] = _audit_dxf(
+            filename,
+            content,
+            artifact_hash,
+        ).model_dump(mode="json")
+    elif operation == "audit_ifc":
+        filename = _safe_filename(str(payload.get("filename", "artifact.ifc")))
+        artifact_hash = str(payload.get("artifact_hash") or _sha256(content))
+        result = _audit_ifc(filename, content, artifact_hash).model_dump(mode="json")
+    elif operation == "dxf_fingerprints":
+        fingerprints, handles = _dxf_fingerprints(content)
+        result = {"fingerprints": dict(fingerprints), "handles": handles}
+    elif operation == "ifc_index":
+        _model, index = _ifc_index(content)
+        result = {"index": index}
+    else:
+        raise ValueError("unsupported parser worker operation")
+    sys.stdout.write(json.dumps(result, ensure_ascii=True, separators=(",", ":")))
+
+
+__all__ = [
+    "MAX_ARTIFACT_BYTES",
+    "audit_artifact",
+    "compare_artifacts",
+    "parser_worker_main",
+]

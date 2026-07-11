@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import LocalDraftNotice from "@/app/components/local-draft-notice";
+import { apiErrorMessage, apiPostJson } from "@/lib/api-client";
 import { loadDraft, saveDraft } from "@/lib/draft-db";
+import { useBackendReadiness } from "@/lib/use-backend-readiness";
 
 type Point = [number, number];
 type Tool = "select" | "pan" | "wall" | "column" | "door" | "window";
 type VerificationState = "idle" | "running" | "passed" | "failed";
-type HealthState = "checking" | "waiting" | "ready" | "failed";
 
 type GridLine = {
   id: string;
@@ -111,15 +113,9 @@ type DragState = {
 
 type ViewBox = { x: number; y: number; width: number; height: number };
 
-const API_URL = (process.env.NEXT_PUBLIC_DATUMGUARD_API_URL || "http://localhost:8000").replace(
-  /\/$/,
-  "",
-);
 const PLAN_HEIGHT = 8000;
 const FIT_VIEW: ViewBox = { x: -1100, y: -1100, width: 14200, height: 10200 };
 const DRAFT_KEY = "architecture-contract-draft-v1";
-const HEALTH_TIMEOUT_MS = 45_000;
-const HEALTH_RETRY_DELAY_MS = 900;
 
 function cloneDraft<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -352,10 +348,11 @@ export default function ArchitectureWorkspace() {
   const [result, setResult] = useState<ArchitectureResult | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
-  const [health, setHealth] = useState<HealthState>("checking");
-  const [healthAttempts, setHealthAttempts] = useState(0);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const readiness = useBackendReadiness("architecture");
+  const health = readiness.state;
+  const healthAttempts = readiness.attempts;
   const svgRef = useRef<SVGSVGElement>(null);
-  const healthPollToken = useRef(0);
 
   useEffect(() => {
     loadDraft<ArchitectureDraft>(DRAFT_KEY)
@@ -368,61 +365,19 @@ export default function ArchitectureWorkspace() {
           setDraft(saved);
         }
       })
-      .catch(() => undefined)
+      .catch((error) => setStorageError(error instanceof Error ? error.message : "로컬 draft를 읽지 못했습니다."))
       .finally(() => setHydrated(true));
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    const timer = window.setTimeout(() => saveDraft(draft, DRAFT_KEY).catch(() => undefined), 300);
+    const timer = window.setTimeout(() => {
+      saveDraft(draft, DRAFT_KEY)
+        .then(() => setStorageError(null))
+        .catch((error) => setStorageError(error instanceof Error ? error.message : "로컬 draft를 저장하지 못했습니다."));
+    }, 300);
     return () => window.clearTimeout(timer);
   }, [draft, hydrated]);
-
-  const pollHealth = useCallback(async () => {
-    const token = ++healthPollToken.current;
-    const deadline = Date.now() + HEALTH_TIMEOUT_MS;
-    let attempts = 0;
-    setHealth("checking");
-    setHealthAttempts(0);
-
-    while (Date.now() < deadline && token === healthPollToken.current) {
-      attempts += 1;
-      setHealthAttempts(attempts);
-      const controller = new AbortController();
-      const requestTimeout = window.setTimeout(() => controller.abort(), 2_500);
-      try {
-        const response = await fetch(`${API_URL}/api/v1/health`, {
-          cache: "no-store",
-          headers: { Accept: "application/json" },
-          signal: controller.signal,
-        });
-        if (response.ok && token === healthPollToken.current) {
-          setHealth("ready");
-          return;
-        }
-      } catch {
-        // Cold starts and brief network failures are retried within the fixed window.
-      } finally {
-        window.clearTimeout(requestTimeout);
-      }
-
-      if (token !== healthPollToken.current) return;
-      setHealth("waiting");
-      const remaining = deadline - Date.now();
-      if (remaining <= 0) break;
-      await new Promise((resolve) => window.setTimeout(resolve, Math.min(HEALTH_RETRY_DELAY_MS, remaining)));
-    }
-
-    if (token === healthPollToken.current) setHealth("failed");
-  }, []);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => void pollHealth(), 0);
-    return () => {
-      window.clearTimeout(timer);
-      healthPollToken.current += 1;
-    };
-  }, [pollHealth]);
 
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
@@ -588,28 +543,24 @@ export default function ArchitectureWorkspace() {
   const runVerification = async () => {
     if (health !== "ready") {
       setMessage("검증 엔진 준비 중입니다. 연결이 완료되면 다시 실행해 주세요.");
-      void pollHealth();
+      readiness.retry();
       return;
     }
     setVerification("running");
     setMessage("건축 검증 엔진이 contract를 잠그고 있습니다.");
     setResult(null);
     try {
-      const response = await fetch(`${API_URL}/api/v1/architecture/designs/run`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(architectureContract(draft)),
-      });
-      const payload = (await response.json()) as ArchitectureResult;
-      if (!response.ok && !payload.error) throw new Error(`API ${response.status}`);
-      setHealth("ready");
+      const payload = await apiPostJson<ArchitectureResult>(
+        "/api/v1/architecture/designs/run",
+        architectureContract(draft),
+        { timeoutMs: 60_000 },
+      );
       setResult(payload);
       setVerification(payload.status === "passed" ? "passed" : "failed");
       setMessage(payload.status === "passed" ? "독립 재측정과 approval gate를 통과했습니다." : payload.error?.message || "검증에 실패했습니다.");
     } catch (error) {
-      setHealth("failed");
       setVerification("failed");
-      setMessage(`${error instanceof Error ? error.message : "API 연결 실패"} — ${API_URL}`);
+      setMessage(apiErrorMessage(error, "건축 검증 요청에 실패했습니다."));
     }
   };
 
@@ -746,6 +697,8 @@ export default function ArchitectureWorkspace() {
         <label className="arch-snap">Snap <select value={draft.snap} onChange={(event) => commit({ ...draft, snap: Number(event.target.value) })}><option value={100}>100 mm</option><option value={50}>50 mm</option><option value={10}>10 mm</option></select><small>Shift = 10mm</small></label>
       </section>
 
+      <LocalDraftNotice error={storageError} onDismiss={() => setStorageError(null)} />
+
       <section className="arch-workspace">
         <aside className="arch-left-panel">
           <div className="arch-panel-title"><span>MODEL</span><strong>Level 01</strong></div>
@@ -781,8 +734,8 @@ export default function ArchitectureWorkspace() {
 
           <div data-testid="architecture-health" className={`arch-health ${health}`} role="status" aria-live="polite">
             <ArchitectureIcon name="health" />
-            <div><strong>{healthText}</strong><small>{health === "ready" ? "Independent DXF service online" : health === "failed" ? "45초 동안 연결하지 못했습니다" : `Cold-start check · attempt ${healthAttempts}`}</small></div>
-            {health === "failed" && <button data-testid="architecture-health-retry" type="button" onClick={() => void pollHealth()}>다시 시도</button>}
+            <div><strong>{healthText}</strong><small>{health === "ready" ? readiness.message : health === "failed" ? readiness.message : `Cold-start check · attempt ${healthAttempts}`}</small></div>
+            {health === "failed" && <button data-testid="architecture-health-retry" type="button" onClick={readiness.retry}>수동 재시도</button>}
           </div>
 
           <div className="arch-contract-card" data-testid="architecture-flow">
@@ -793,7 +746,7 @@ export default function ArchitectureWorkspace() {
             <div data-testid="architecture-stage-gate"><span>05</span><div><strong>Approved</strong><small>No pass, no official bundle</small></div></div>
           </div>
 
-          <button data-testid="architecture-run-verification" className="arch-run" type="button" disabled={verification === "running" || health !== "ready"} onClick={runVerification}>{verification === "running" ? <><span className="spinner" /> READING DXF…</> : health === "failed" ? <><ArchitectureIcon name="alert" /> 재연결 필요</> : health !== "ready" ? <><span className="spinner" /> 검증 엔진 준비 중</> : <><ArchitectureIcon name="run" /> GENERATE + VERIFY DXF</>}</button>
+          <button data-testid="architecture-run-verification" className="arch-run" type="button" disabled={verification === "running" || health !== "ready"} onClick={runVerification}>{verification === "running" ? <><span className="spinner" /> READING DXF…</> : health === "failed" ? <><ArchitectureIcon name="alert" /> 재연결 필요</> : health !== "ready" ? <><span className="spinner" /> 검증 엔진 준비 중</> : verification === "failed" ? <><ArchitectureIcon name="run" /> RETRY MANUALLY</> : <><ArchitectureIcon name="run" /> GENERATE + VERIFY DXF</>}</button>
           <p className="arch-boundary">NOT A CERTIFICATION · 구조·안전·법규 판정이 아닙니다.</p>
         </aside>
       </section>
