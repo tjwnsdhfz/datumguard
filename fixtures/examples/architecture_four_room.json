@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0.0",
+  "design_kind": "architectural_plan",
+  "units": "mm",
+  "datum": {
+    "id": "datum-main",
+    "origin": [0, 0],
+    "x_axis": [1, 0],
+    "y_axis": [0, 1],
+    "plane": "XY",
+    "locked": true
+  },
+  "grids": [
+    {"id": "grid-x-0", "label": "A", "start": [0, -500], "end": [0, 8500], "axis": "x", "offset": 0, "locked": true},
+    {"id": "grid-x-6", "label": "B", "start": [6000, -500], "end": [6000, 8500], "axis": "x", "offset": 6000, "locked": true},
+    {"id": "grid-x-12", "label": "C", "start": [12000, -500], "end": [12000, 8500], "axis": "x", "offset": 12000, "locked": true},
+    {"id": "grid-y-0", "label": "1", "start": [-500, 0], "end": [12500, 0], "axis": "y", "offset": 0, "locked": true},
+    {"id": "grid-y-4", "label": "2", "start": [-500, 4000], "end": [12500, 4000], "axis": "y", "offset": 4000, "locked": true},
+    {"id": "grid-y-8", "label": "3", "start": [-500, 8000], "end": [12500, 8000], "axis": "y", "offset": 8000, "locked": true}
+  ],
+  "walls": [
+    {"id": "wall-south", "start": [0, 0], "end": [12000, 0], "thickness": 200, "wall_type": "exterior", "locked": true},
+    {"id": "wall-east", "start": [12000, 0], "end": [12000, 8000], "thickness": 200, "wall_type": "exterior", "locked": true},
+    {"id": "wall-north", "start": [12000, 8000], "end": [0, 8000], "thickness": 200, "wall_type": "exterior", "locked": true},
+    {"id": "wall-west", "start": [0, 8000], "end": [0, 0], "thickness": 200, "wall_type": "exterior", "locked": true},
+    {"id": "wall-mid-v", "start": [6000, 0], "end": [6000, 8000], "thickness": 100, "wall_type": "interior", "locked": true},
+    {"id": "wall-mid-h", "start": [0, 4000], "end": [12000, 4000], "thickness": 100, "wall_type": "interior", "locked": true}
+  ],
+  "openings": [
+    {"id": "door-entry", "type": "door", "wall_id": "wall-south", "offset": 1000, "width": 1000, "height": 2100, "swing": "right"},
+    {"id": "door-lower", "type": "door", "wall_id": "wall-mid-v", "offset": 1500, "width": 900, "height": 2100, "swing": "left"},
+    {"id": "door-upper", "type": "door", "wall_id": "wall-mid-v", "offset": 5500, "width": 900, "height": 2100, "swing": "right"},
+    {"id": "door-west", "type": "door", "wall_id": "wall-mid-h", "offset": 2500, "width": 900, "height": 2100, "swing": "left"},
+    {"id": "door-east", "type": "door", "wall_id": "wall-mid-h", "offset": 8500, "width": 900, "height": 2100, "swing": "right"},
+    {"id": "window-north", "type": "window", "wall_id": "wall-north", "offset": 2000, "width": 1800, "height": 1500, "sill_height": 900, "swing": "none"},
+    {"id": "window-east", "type": "window", "wall_id": "wall-east", "offset": 5000, "width": 1800, "height": 1500, "sill_height": 900, "swing": "none"}
+  ],
+  "columns": [
+    {"id": "column-center", "type": "rectangular_column", "center": [6000, 4000], "width": 400, "depth": 400, "rotation_deg": 0}
+  ],
+  "room_seeds": [
+    {"id": "room-sw", "name": "Room SW", "point": [3000, 2000], "expected_area": 24000000},
+    {"id": "room-se", "name": "Room SE", "point": [9000, 2000], "expected_area": 24000000},
+    {"id": "room-nw", "name": "Room NW", "point": [3000, 6000], "expected_area": 24000000},
+    {"id": "room-ne", "name": "Room NE", "point": [9000, 6000], "expected_area": 24000000}
+  ],
+  "dimensions": [
+    {"id": "dim-width", "path": "walls.wall-south.length", "target": 12000, "tolerance_lower": -0.001, "tolerance_upper": 0.001, "locked": true},
+    {"id": "dim-height", "path": "walls.wall-west.length", "target": 8000, "tolerance_lower": -0.001, "tolerance_upper": 0.001, "locked": true},
+    {"id": "dim-entry", "path": "openings.door-entry.width", "target": 1000, "tolerance_lower": -0.001, "tolerance_upper": 0.001, "locked": true}
+  ],
+  "constraints": [
+    {"id": "constraint-exterior", "type": "exterior_closed_loop", "entity_ids": ["wall-south", "wall-east", "wall-north", "wall-west"], "parameters": {"tolerance": 1}, "required": true},
+    {"id": "constraint-connected", "type": "walls_connected", "entity_ids": [], "parameters": {"tolerance": 1}, "required": true},
+    {"id": "constraint-openings", "type": "openings_inside_walls", "entity_ids": [], "parameters": {}, "required": true},
+    {"id": "constraint-rooms", "type": "room_resolved", "entity_ids": [], "parameters": {}, "required": true},
+    {"id": "constraint-column-grid", "type": "column_grid_alignment", "entity_ids": ["column-center"], "parameters": {"tolerance": 1}, "required": true},
+    {"id": "constraint-duplicates", "type": "duplicate_geometry", "entity_ids": [], "parameters": {}, "required": true}
+  ],
+  "free_parameters": [],
+  "drawing_profile": {
+    "id": "architecture-profile-default",
+    "sheet_size": "A3",
+    "scale_denominator": 100,
+    "include_dimensions": true,
+    "include_room_labels": true,
+    "title_block": true
+  },
+  "metadata": {"project_name": "DatumGuard Four Room Architecture", "revision": "A", "notes": "12m x 8m synthetic golden fixture"}
+}

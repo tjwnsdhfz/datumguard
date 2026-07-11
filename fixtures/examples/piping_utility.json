@@ -1,0 +1,180 @@
+{
+  "schema_version": "1.0.0",
+  "design_kind": "piping_plan",
+  "units": "mm",
+  "datum": {
+    "id": "datum-main",
+    "origin": [0, 0],
+    "x_axis": [1, 0],
+    "y_axis": [0, 1],
+    "plane": "XY",
+    "locked": true
+  },
+  "nodes": [
+    {"id": "n1", "point": [0, 0], "node_type": "endpoint", "locked": true},
+    {"id": "n2", "point": [4000, 0], "node_type": "junction", "locked": true},
+    {"id": "n3", "point": [4000, 3000], "node_type": "junction", "locked": true},
+    {"id": "n4", "point": [9000, 3000], "node_type": "endpoint", "locked": true}
+  ],
+  "segments": [
+    {
+      "id": "seg-1",
+      "start_node_id": "n1",
+      "end_node_id": "n2",
+      "nominal_diameter": 50,
+      "service_code": "CDA"
+    },
+    {
+      "id": "seg-2",
+      "start_node_id": "n2",
+      "end_node_id": "n3",
+      "nominal_diameter": 50,
+      "service_code": "CDA"
+    },
+    {
+      "id": "seg-3",
+      "start_node_id": "n3",
+      "end_node_id": "n4",
+      "nominal_diameter": 40,
+      "service_code": "CDA"
+    }
+  ],
+  "components": [
+    {
+      "id": "valve-1",
+      "type": "valve",
+      "segment_id": "seg-1",
+      "offset": 2000,
+      "tag": "CDA-V-101",
+      "valve_type": "isolation"
+    },
+    {
+      "id": "instrument-1",
+      "type": "instrument",
+      "segment_id": "seg-2",
+      "offset": 1500,
+      "tag": "CDA-PI-101",
+      "instrument_type": "pressure_indicator"
+    },
+    {
+      "id": "reducer-1",
+      "type": "reducer",
+      "segment_id": "seg-3",
+      "offset": 1000,
+      "tag": "CDA-R-101",
+      "inlet_diameter": 50,
+      "outlet_diameter": 40
+    }
+  ],
+  "supports": [
+    {"id": "support-1", "type": "shoe", "segment_id": "seg-1", "offset": 1000},
+    {"id": "support-2", "type": "guide", "segment_id": "seg-1", "offset": 3000},
+    {"id": "support-3", "type": "shoe", "segment_id": "seg-2", "offset": 1000},
+    {"id": "support-4", "type": "guide", "segment_id": "seg-2", "offset": 2000},
+    {"id": "support-5", "type": "shoe", "segment_id": "seg-3", "offset": 1000},
+    {"id": "support-6", "type": "guide", "segment_id": "seg-3", "offset": 3000},
+    {"id": "support-7", "type": "shoe", "segment_id": "seg-3", "offset": 4500}
+  ],
+  "equipment_zones": [
+    {
+      "id": "eq-dryer",
+      "type": "rectangle",
+      "zone_kind": "equipment",
+      "origin": [6000, 5000],
+      "width": 2000,
+      "height": 1500,
+      "minimum_clearance": 300
+    },
+    {
+      "id": "ko-cabinet",
+      "type": "circle",
+      "zone_kind": "keepout",
+      "center": [1500, 2500],
+      "diameter": 1000,
+      "minimum_clearance": 300
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "dim-seg-1-length",
+      "path": "segments.seg-1.length",
+      "target": 4000,
+      "tolerance_lower": -0.1,
+      "tolerance_upper": 0.1,
+      "locked": true
+    },
+    {
+      "id": "dim-valve-offset",
+      "path": "components.valve-1.offset",
+      "target": 2000,
+      "tolerance_lower": -0.1,
+      "tolerance_upper": 0.1,
+      "locked": true
+    }
+  ],
+  "constraints": [
+    {
+      "id": "constraint-route-connected",
+      "type": "route_connected",
+      "entity_ids": [],
+      "parameters": {},
+      "required": true
+    },
+    {
+      "id": "constraint-orthogonal",
+      "type": "orthogonal",
+      "entity_ids": [],
+      "parameters": {"tolerance": 0.1},
+      "required": true
+    },
+    {
+      "id": "constraint-endpoints",
+      "type": "endpoint_alignment",
+      "entity_ids": [],
+      "parameters": {"tolerance": 0.1},
+      "required": true
+    },
+    {
+      "id": "constraint-components",
+      "type": "inline_component_position",
+      "entity_ids": [],
+      "parameters": {"tolerance": 0.1},
+      "required": true
+    },
+    {
+      "id": "constraint-support-spacing",
+      "type": "maximum_support_spacing",
+      "entity_ids": [],
+      "parameters": {"maximum_spacing": 2000},
+      "required": true
+    },
+    {
+      "id": "constraint-clearance",
+      "type": "minimum_obstacle_clearance",
+      "entity_ids": [],
+      "parameters": {"minimum_clearance": 300},
+      "required": true
+    },
+    {
+      "id": "constraint-duplicates",
+      "type": "duplicate_geometry",
+      "entity_ids": [],
+      "parameters": {},
+      "required": true
+    }
+  ],
+  "free_parameters": [],
+  "drawing_profile": {
+    "id": "piping-profile-default",
+    "sheet_size": "A3",
+    "scale_denominator": 50,
+    "include_dimensions": true,
+    "include_node_labels": true,
+    "title_block": true
+  },
+  "metadata": {
+    "project_name": "Semiconductor CDA Utility Route",
+    "revision": "A",
+    "notes": ""
+  }
+}

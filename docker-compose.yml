@@ -1,0 +1,22 @@
+services:
+  api:
+    build:
+      context: .
+    environment:
+      PORT: "8000"
+      DATUMGUARD_CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_DATUMGUARD_API_URL: http://localhost:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    restart: unless-stopped

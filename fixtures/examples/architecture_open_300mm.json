@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "design_kind": "architectural_plan",
+  "units": "mm",
+  "datum": {"id": "datum-main", "origin": [0, 0], "x_axis": [1, 0], "y_axis": [0, 1], "plane": "XY", "locked": true},
+  "grids": [
+    {"id": "grid-x-0", "label": "A", "start": [0, -500], "end": [0, 8500], "axis": "x", "offset": 0, "locked": true},
+    {"id": "grid-x-12", "label": "B", "start": [12000, -500], "end": [12000, 8500], "axis": "x", "offset": 12000, "locked": true}
+  ],
+  "walls": [
+    {"id": "wall-south", "start": [0, 0], "end": [12000, 0], "thickness": 200, "wall_type": "exterior", "locked": true},
+    {"id": "wall-east", "start": [12000, 0], "end": [12000, 8000], "thickness": 200, "wall_type": "exterior", "locked": true},
+    {"id": "wall-north", "start": [12000, 8000], "end": [300, 8000], "thickness": 200, "wall_type": "exterior", "locked": true},
+    {"id": "wall-west", "start": [0, 8000], "end": [0, 0], "thickness": 200, "wall_type": "exterior", "locked": true}
+  ],
+  "openings": [],
+  "columns": [],
+  "room_seeds": [
+    {"id": "room-open", "name": "Open Room", "point": [6000, 4000], "expected_area": 96000000}
+  ],
+  "dimensions": [],
+  "constraints": [
+    {"id": "constraint-exterior", "type": "exterior_closed_loop", "entity_ids": ["wall-south", "wall-east", "wall-north", "wall-west"], "parameters": {"tolerance": 1}, "required": true},
+    {"id": "constraint-connected", "type": "walls_connected", "entity_ids": [], "parameters": {"tolerance": 1}, "required": true},
+    {"id": "constraint-room", "type": "room_resolved", "entity_ids": ["room-open"], "parameters": {}, "required": true}
+  ],
+  "free_parameters": [],
+  "drawing_profile": {"id": "architecture-profile-default", "sheet_size": "A3", "scale_denominator": 100, "include_dimensions": true, "include_room_labels": true, "title_block": true},
+  "metadata": {"project_name": "DatumGuard 300mm Open Exterior", "revision": "A", "notes": "Intentional 300mm exterior gap"}
+}

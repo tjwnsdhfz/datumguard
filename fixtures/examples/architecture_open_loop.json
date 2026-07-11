@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "design_kind": "architectural_plan",
+  "units": "mm",
+  "datum": {
+    "id": "datum-main",
+    "origin": [0, 0],
+    "x_axis": [1, 0],
+    "y_axis": [0, 1],
+    "plane": "XY",
+    "locked": true
+  },
+  "grids": [],
+  "walls": [
+    {"id": "wall-south", "start": [0, 0], "end": [12000, 0], "thickness": 200, "wall_type": "exterior"},
+    {"id": "wall-east", "start": [12000, 0], "end": [12000, 8000], "thickness": 200, "wall_type": "exterior"},
+    {"id": "wall-north", "start": [12000, 8000], "end": [300, 8000], "thickness": 200, "wall_type": "exterior"},
+    {"id": "wall-west", "start": [0, 8000], "end": [0, 0], "thickness": 200, "wall_type": "exterior"}
+  ],
+  "openings": [],
+  "columns": [],
+  "room_seeds": [
+    {"id": "room-unresolved", "name": "Unresolved room", "point": [6000, 4000]}
+  ],
+  "dimensions": [],
+  "constraints": [
+    {"id": "constraint-exterior", "type": "exterior_closed_loop", "entity_ids": ["wall-south", "wall-east", "wall-north", "wall-west"], "parameters": {"tolerance": 1}, "required": true},
+    {"id": "constraint-room", "type": "room_resolved", "entity_ids": ["room-unresolved"], "parameters": {}, "required": true}
+  ],
+  "free_parameters": [],
+  "drawing_profile": {
+    "id": "architecture-profile-default",
+    "sheet_size": "A3",
+    "scale_denominator": 100,
+    "include_dimensions": true,
+    "include_room_labels": true,
+    "title_block": true
+  },
+  "metadata": {
+    "project_name": "Open exterior loop failure",
+    "revision": "A",
+    "notes": "Expected to fail independent DXF verification"
+  },
+  "contract_hash": null,
+  "intent_text": null
+}

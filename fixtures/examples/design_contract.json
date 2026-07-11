@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.0.0",
+  "units": "mm",
+  "datum": {
+    "id": "datum-main",
+    "origin": [0.0, 0.0],
+    "x_axis": [1.0, 0.0],
+    "y_axis": [0.0, 1.0],
+    "plane": "XY",
+    "locked": true
+  },
+  "outline": {
+    "id": "outline-plate",
+    "type": "rectangle",
+    "origin": [0.0, 0.0],
+    "width": 120.0,
+    "height": 80.0
+  },
+  "features": [
+    {
+      "id": "hole-1",
+      "type": "circular_hole",
+      "center": [10.0, 10.0],
+      "diameter": 6.0
+    },
+    {
+      "id": "slot-1",
+      "type": "slot",
+      "center": [60.0, 40.0],
+      "length": 24.0,
+      "width": 8.0,
+      "angle_deg": 0.0
+    },
+    {
+      "id": "cutout-1",
+      "type": "rectangular_cutout",
+      "origin": [90.0, 30.0],
+      "width": 15.0,
+      "height": 20.0,
+      "corner_radius": 0.0
+    },
+    {
+      "id": "pattern-1",
+      "type": "linear_pattern",
+      "source_feature_id": "hole-1",
+      "count": 4,
+      "direction": [1.0, 0.0],
+      "spacing": 30.0
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "dim-width",
+      "path": "outline.width",
+      "target": 120.0,
+      "tolerance_lower": -0.1,
+      "tolerance_upper": 0.1,
+      "locked": true,
+      "source": {"kind": "form", "ref": "plate-width"}
+    },
+    {
+      "id": "dim-slot-x",
+      "path": "features.slot-1.center.0",
+      "target": 60.0,
+      "tolerance_lower": -0.2,
+      "tolerance_upper": 0.2,
+      "locked": false,
+      "source": {"kind": "form", "ref": "slot-center-x"}
+    }
+  ],
+  "constraints": [
+    {
+      "id": "constraint-containment",
+      "type": "features_inside_outline",
+      "entity_ids": ["outline-plate", "hole-1", "slot-1", "cutout-1"],
+      "parameters": {"minimum_edge_distance": 2.0},
+      "required": true
+    },
+    {
+      "id": "constraint-non-overlap",
+      "type": "non_overlap",
+      "entity_ids": ["hole-1", "slot-1", "cutout-1"],
+      "parameters": {"minimum_ligament": 1.5},
+      "required": true
+    }
+  ],
+  "free_parameters": [
+    {
+      "id": "free-slot-x",
+      "path": "features.slot-1.center.0",
+      "minimum": 55.0,
+      "maximum": 65.0,
+      "step": 0.001,
+      "unit": "mm"
+    }
+  ],
+  "manufacturing_profile": {
+    "id": "profile-custom-1",
+    "process": "custom",
+    "kerf": 0.2,
+    "tool_diameter": null,
+    "minimum_feature": 1.0,
+    "minimum_ligament": 1.5,
+    "confirmed_by_user": true
+  },
+  "metadata": {
+    "project_name": "Sample Mounting Plate",
+    "revision": "A",
+    "notes": "Public synthetic fixture"
+  },
+  "contract_hash": null
+}

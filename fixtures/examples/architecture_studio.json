@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0.0",
+  "design_kind": "architectural_plan",
+  "units": "mm",
+  "datum": {
+    "id": "datum-main",
+    "origin": [0, 0],
+    "x_axis": [1, 0],
+    "y_axis": [0, 1],
+    "plane": "XY",
+    "locked": true
+  },
+  "grids": [
+    {"id": "grid-x-a", "label": "A", "start": [0, -700], "end": [0, 8700], "axis": "x", "locked": true},
+    {"id": "grid-x-b", "label": "B", "start": [4000, -700], "end": [4000, 8700], "axis": "x", "locked": true},
+    {"id": "grid-x-c", "label": "C", "start": [8000, -700], "end": [8000, 8700], "axis": "x", "locked": true},
+    {"id": "grid-x-d", "label": "D", "start": [12000, -700], "end": [12000, 8700], "axis": "x", "locked": true},
+    {"id": "grid-y-1", "label": "1", "start": [-700, 0], "end": [12700, 0], "axis": "y", "locked": true},
+    {"id": "grid-y-2", "label": "2", "start": [-700, 4000], "end": [12700, 4000], "axis": "y", "locked": true},
+    {"id": "grid-y-3", "label": "3", "start": [-700, 8000], "end": [12700, 8000], "axis": "y", "locked": true}
+  ],
+  "walls": [
+    {"id": "wall-south", "start": [0, 0], "end": [12000, 0], "thickness": 200, "wall_type": "exterior"},
+    {"id": "wall-east", "start": [12000, 0], "end": [12000, 8000], "thickness": 200, "wall_type": "exterior"},
+    {"id": "wall-north", "start": [12000, 8000], "end": [0, 8000], "thickness": 200, "wall_type": "exterior"},
+    {"id": "wall-west", "start": [0, 8000], "end": [0, 0], "thickness": 200, "wall_type": "exterior"},
+    {"id": "wall-core", "start": [4000, 0], "end": [4000, 8000], "thickness": 100, "wall_type": "interior"},
+    {"id": "wall-studio", "start": [4000, 4000], "end": [12000, 4000], "thickness": 100, "wall_type": "interior"}
+  ],
+  "openings": [
+    {"id": "door-entry", "type": "door", "wall_id": "wall-south", "offset": 1200, "width": 1000, "height": 2100},
+    {"id": "door-core", "type": "door", "wall_id": "wall-core", "offset": 1400, "width": 900, "height": 2100},
+    {"id": "door-meeting", "type": "door", "wall_id": "wall-studio", "offset": 2300, "width": 900, "height": 2100},
+    {"id": "window-north", "type": "window", "wall_id": "wall-north", "offset": 2800, "width": 1800, "height": 1500, "sill_height": 900},
+    {"id": "window-east", "type": "window", "wall_id": "wall-east", "offset": 4700, "width": 1800, "height": 1500, "sill_height": 900}
+  ],
+  "columns": [
+    {"id": "column-a", "type": "rectangular_column", "center": [4000, 4000], "width": 400, "depth": 400, "rotation_deg": 0}
+  ],
+  "room_seeds": [
+    {"id": "room-service", "name": "Service / Entry", "point": [2000, 4000], "expected_area": 32000000},
+    {"id": "room-studio", "name": "Open Studio", "point": [8000, 2000], "expected_area": 32000000},
+    {"id": "room-meeting", "name": "Meeting / Review", "point": [8000, 6000], "expected_area": 32000000}
+  ],
+  "dimensions": [
+    {"id": "dim-south-length", "path": "walls.wall-south.length", "target": 12000, "tolerance_lower": -0.001, "tolerance_upper": 0.001, "locked": true, "source": {"kind": "form", "ref": "wall-south"}},
+    {"id": "dim-west-length", "path": "walls.wall-west.length", "target": 8000, "tolerance_lower": -0.001, "tolerance_upper": 0.001, "locked": true, "source": {"kind": "form", "ref": "wall-west"}},
+    {"id": "dim-entry-width", "path": "openings.door-entry.width", "target": 1000, "tolerance_lower": -0.001, "tolerance_upper": 0.001, "locked": true, "source": {"kind": "form", "ref": "door-entry"}},
+    {"id": "dim-column-x", "path": "columns.column-a.center.0", "target": 4000, "tolerance_lower": -0.001, "tolerance_upper": 0.001, "locked": true, "source": {"kind": "form", "ref": "column-a-x"}}
+  ],
+  "constraints": [
+    {"id": "constraint-exterior", "type": "exterior_closed_loop", "entity_ids": ["wall-south", "wall-east", "wall-north", "wall-west"], "parameters": {"tolerance": 1}, "required": true},
+    {"id": "constraint-connected", "type": "walls_connected", "entity_ids": ["wall-south", "wall-east", "wall-north", "wall-west", "wall-core", "wall-studio"], "parameters": {"tolerance": 1}, "required": true},
+    {"id": "constraint-openings", "type": "openings_inside_walls", "entity_ids": ["door-entry", "door-core", "door-meeting", "window-north", "window-east"], "parameters": {}, "required": true},
+    {"id": "constraint-rooms", "type": "room_resolved", "entity_ids": ["room-service", "room-studio", "room-meeting"], "parameters": {}, "required": true},
+    {"id": "constraint-column-grid", "type": "column_grid_alignment", "entity_ids": ["column-a"], "parameters": {"tolerance": 1}, "required": true},
+    {"id": "constraint-duplicates", "type": "duplicate_geometry", "entity_ids": [], "parameters": {}, "required": true}
+  ],
+  "free_parameters": [],
+  "drawing_profile": {
+    "id": "architecture-profile-default",
+    "sheet_size": "A3",
+    "scale_denominator": 100,
+    "include_dimensions": true,
+    "include_room_labels": true,
+    "title_block": true
+  },
+  "metadata": {
+    "project_name": "DatumGuard Small Architecture Studio",
+    "revision": "A",
+    "notes": "Synthetic public architecture fixture"
+  },
+  "contract_hash": null,
+  "intent_text": null
+}

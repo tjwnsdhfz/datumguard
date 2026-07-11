@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "datumguard"
+version = "0.1.0"
+description = "Contract-first engineering drawing generation and independent DXF verification harness"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+  "ezdxf>=1.3.5",
+  "fastapi>=0.115.0",
+  "mcp>=1.9.0",
+  "ortools>=9.11.0",
+  "pydantic>=2.9.0",
+  "reportlab>=4.2.0",
+  "shapely>=2.0.6",
+  "uvicorn[standard]>=0.34.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.28.0",
+  "mypy>=1.14.0",
+  "pytest>=8.3.0",
+  "pytest-cov>=6.0.0",
+  "ruff>=0.9.0",
+]
+
+[project.scripts]
+datumguard-api = "datumguard.api:main"
+datumguard-mcp = "datumguard.mcp_server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/datumguard"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["datumguard"]
+disable_error_code = ["import-untyped"]
