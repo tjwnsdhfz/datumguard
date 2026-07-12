@@ -23,10 +23,12 @@ test.describe("public product case study", () => {
     await expect(openBimLink).toHaveAttribute("href", "/openbim");
     await expect(page.getByText(/DG_ARCH_EXTERIOR_OPEN/)).toBeVisible();
     await expect(page.getByText(/계획 중인 100 golden \+ 50 language benchmark/)).toBeVisible();
-    await expect(page.getByRole("link", { name: "OPEN LIVE ARCHITECTURE" })).toHaveAttribute(
-      "href",
-      "/",
-    );
+    const frameActions = page.getByRole("link", { name: "RUN VERIFIED FRAME" });
+    await expect(frameActions).toHaveCount(2);
+    await expect(frameActions.first()).toHaveAttribute("href", "/frame");
+    const architectureActions = page.getByRole("link", { name: "OPEN ARCHITECTURE" });
+    await expect(architectureActions).toHaveCount(2);
+    await expect(architectureActions.first()).toHaveAttribute("href", "/");
     await expect(page.getByRole("link", { name: "Skip to case study content" })).toHaveAttribute(
       "href",
       "#case-study-content",
@@ -76,14 +78,15 @@ test.describe("public product case study", () => {
     await expect(navigation).toBeVisible();
     await expect(navigation.getByRole("link", { name: "Method" })).toBeVisible();
     await expect(navigation.getByRole("link", { name: "Evidence" })).toBeVisible();
-    await expect(navigation.getByRole("link", { name: "Open CAD" })).toBeVisible();
-    const openCadBox = await navigation.getByRole("link", { name: "Open CAD" }).boundingBox();
-    expect(openCadBox?.height).toBeGreaterThanOrEqual(44);
+    await expect(navigation.getByRole("link", { name: "Open Frame" })).toBeVisible();
+    const openFrameBox = await navigation.getByRole("link", { name: "Open Frame" }).boundingBox();
+    expect(openFrameBox?.height).toBeGreaterThanOrEqual(44);
 
     const privacyBox = await page.getByRole("link", { name: "PRIVACY / LOCAL DATA" }).boundingBox();
     expect(privacyBox?.height).toBeGreaterThanOrEqual(44);
     const reducedTransitionSeconds = await page
-      .getByRole("link", { name: "OPEN LIVE ARCHITECTURE" })
+      .getByRole("link", { name: "RUN VERIFIED FRAME" })
+      .first()
       .evaluate((element) => Number.parseFloat(getComputedStyle(element).transitionDuration));
     expect(reducedTransitionSeconds).toBeLessThanOrEqual(0.000001);
 
@@ -94,7 +97,7 @@ test.describe("public product case study", () => {
     for (const viewport of [
       { width: 375, height: 812 },
       { width: 768, height: 1024 },
-      { width: 1024, height: 768 },
+      { width: 1440, height: 960 },
     ]) {
       await page.setViewportSize(viewport);
       const metrics = await page.evaluate(() => ({
