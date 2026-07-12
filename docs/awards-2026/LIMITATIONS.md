@@ -25,15 +25,20 @@
 ## 외부·배포 gate
 
 - IDS는 고정 XSD와 IfcTester에서 검증했지만 별도 상용 checker 교차검증은 하지 않았다.
-- buildingSMART IFC Validation Service의 clean 대표 IFC 외부 결과는 아직 보존하지 못했다.
-- BCF는 `bcf-client` semantic round-trip과 ZIP/XML 구조 테스트만 통과했다. 독립 BCF viewer import,
-  component 시각 확인, full-corpus BCF 평가를 완료하지 않았으므로 조건부 BCF 연구 gate는 미통과다.
+- buildingSMART IFC Validation Service는 로그인 필요 화면까지 확인했지만 계정을 만들거나 파일을
+  업로드하지 않아 clean 대표 IFC의 hosted 결과는 아직 보존하지 못했다. 오프라인
+  `ifcopenshell.validate(express_rules=True)`에서는 clean·authorized·corrected가 schema statement 0,
+  faulty가 의도한 `IfcRoot.UR1` 중복 GlobalId 1건이었으나 hosted 결과로 대체해 주장하지 않는다.
+- BCF는 `bcf-client` semantic round-trip, buildingSMART BCF 3.0 tag의 공식 `bcf-tool 1.0.7`, 공식
+  XSD 26/26, `bcf-client`를 쓰지 않은 .NET 의미 검사 482/482를 통과했다. 그러나 독립 graphical
+  BCF viewer import, component 시각 확인, full-corpus BCF 평가는 완료하지 않아 조건부 viewer
+  연구 gate는 아직 미통과다.
 - `bcf-client==0.8.5` wheel의 GPLv3 classifier와 현재 IfcOpenShell source 표의
   LGPL-3.0-or-later 표기가 일치하지 않는다. `ifctester`가 이를 전이 설치하므로 최종 배포 license
   검토 전 `ifctester`도 `openbim`/`dev` extra로 분리하고, BCF 직접 pin은 `bcf`/`dev` extra에만 둬
   base Docker distribution과 기본 Web 요청에서 제외한다.
-- 이 Windows 환경에는 Docker CLI가 없어 Linux container gate를 실행하지 못했다. 해당 gate는 CI 또는
-  Docker가 있는 별도 환경에서 수행해야 한다.
+- 이 Windows 환경에는 Docker CLI가 없다. draft PR CI에 Ubuntu backend/web, 공식 BCF checker,
+  두 Docker build, SBOM과 Trivy gate를 연결했으며 실제 원격 결과가 통과하기 전에는 완료로 보지 않는다.
 - `/openbim`과 API는 unreleased local research preview다. production 배포·cold-start·CORS·부하 smoke는
   완료되지 않았다.
 

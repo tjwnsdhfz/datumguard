@@ -34,6 +34,8 @@
 - [한계·타당성 위협](LIMITATIONS.md)
 - [제3자 라이브러리·AI 사용 고지](THIRD_PARTY_AND_AI_USE.md)
 - [machine-generated evidence](evidence/README.md)
+- [외부 IFC·BCF validation audit](evidence/external_validation_audit.json)
+- [제3자 package license audit](evidence/third_party_license_audit.json)
 - [post-freeze correction audit](evidence/ANALYSIS_CORRECTION.md)
 - [최초 engine run 보존 index](evidence/PRESERVED_ENGINE_RUN.md)
 - [대표 JSON·HTML·BCF bundle](evidence/representative/README.md)
@@ -45,8 +47,8 @@
 - AI/LLM은 IFC 판정, ground truth 생성과 metric 계산 경로에서 제외한다.
 - 실제 FAB·기업 자료 없이 IFC4 합성 데이터만 사용한다.
 - `research_validation_only=true`, `approval_eligible=false`를 고정한다.
-- BCF는 same-library round-trip까지만 통과했다. 독립 viewer와 license gate가 끝나기 전 제목이나
-  핵심 성과로 주장하지 않는다.
+- BCF는 same-library round-trip 외에 buildingSMART BCF 3.0 공식 checker와 독립 .NET XSD·의미
+  검증까지 통과했다. 독립 graphical viewer와 license gate가 끝나기 전 핵심 성과로 주장하지 않는다.
 - API의 BCF packaging은 별도 `DATUMGUARD_ENABLE_BCF=false` gate로 기본 차단한다.
 - `/openbim`은 unreleased local preview이며 현재 v0.2.1 production 배포에 포함되지 않는다.
 - Render blueprint도 외부 gate 완료 전 `DATUMGUARD_ENABLE_OPENBIM=false`로 고정한다.
@@ -97,7 +99,7 @@ uv run --frozen python tools/run_openbim_experiment.py --reanalyze-existing `
    component/status를 화면 증거로 남긴다.
 2. buildingSMART IFC Validation Service에서 clean 대표 IFC의 외부 결과를 보존한다.
 3. `bcf-client==0.8.5` source/wheel license 표기 차이를 최종 배포 방식 기준으로 검토한다.
-4. Docker/Linux CI, production cold-start·CORS·부하 smoke를 실행한다.
+4. PR의 Docker/Linux CI와 production cold-start·CORS·부하 smoke를 실행한다.
 5. 공모전 원고에서 실제 산업 일반화, 안전·법규·제작 승인 표현을 제거한다.
 
 이 외부 gate는 구현·합성 실험의 완료 여부와 분리해 공개하며, 미완료 상태를 성과로 바꾸어 쓰지 않는다.

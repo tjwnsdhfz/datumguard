@@ -17,8 +17,9 @@ uv run --frozen python tools/export_openbim_representative.py
 - `openbim-evidence-manifest.json`: 두 BCF 파일을 각각 기록하는 input/artifact hash manifest
 - `representative-verification.json`: source commit·dirty 상태, source hash와 범용 ZIP/XML 구조검증 결과
 
-범용 ZIP/XML parse와 `bcf-client` semantic round-trip은 독립 BCF viewer import를 대체하지 않는다.
-viewer에서 topic, status와 component가 보이는지 확인하기 전 external viewer gate는 미완료다.
+범용 ZIP/XML parse와 `bcf-client` semantic round-trip 외에 공식 `bcf-tool`과 독립 .NET 검증 결과는
+`../external_validation_audit.json`에 기록했다. 이 자동 검증도 graphical viewer import를 대체하지
+않으므로 viewer에서 topic, status와 component가 보이는지 확인하기 전 external viewer gate는 미완료다.
 
 대표 faulty case는 `failed_verification`, issue/BCF topic 12개이며 input hash 독립 재계산과
 manifest-artifact 교차검증을 통과했다. 생성 commit·dirty 상태와 정확한 artifact hash는

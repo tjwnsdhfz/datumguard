@@ -1,0 +1,101 @@
+{
+  "schema_version": "1.0",
+  "recorded_on": "2026-07-12",
+  "research_validation_only": true,
+  "representative_source_commit": "4cd1665eea517e6fa13bac17c406f94966f7e72d",
+  "hosted_buildingsmart_validation": {
+    "service_url": "https://validate.buildingsmart.org/",
+    "status": "BLOCKED_AUTHENTICATION_REQUIRED",
+    "login_page_observed": true,
+    "account_created": false,
+    "file_uploaded": false,
+    "result_preserved": false
+  },
+  "offline_ifc_schema_validation": {
+    "engine": "ifcopenshell.validate",
+    "engine_version": "0.8.5",
+    "express_rules": true,
+    "results": [
+      {
+        "file": "fixtures/openbim/representative/v0_clean.ifc",
+        "schema": "IFC4",
+        "statement_count": 0
+      },
+      {
+        "file": "fixtures/openbim/representative/v1_authorized.ifc",
+        "schema": "IFC4",
+        "statement_count": 0
+      },
+      {
+        "file": "fixtures/openbim/representative/v1_faulty.ifc",
+        "schema": "IFC4",
+        "statement_count": 1,
+        "expected_intentional_violation": "IfcRoot.UR1 duplicate GlobalId"
+      },
+      {
+        "file": "fixtures/openbim/representative/v2_corrected.ifc",
+        "schema": "IFC4",
+        "statement_count": 0
+      }
+    ],
+    "hosted_service_result_claimed": false
+  },
+  "bcf_artifact": {
+    "standard_filename": "docs/awards-2026/evidence/representative/openbim-evidence.bcf",
+    "legacy_filename": "docs/awards-2026/evidence/representative/openbim-evidence.bcfzip",
+    "identical_bytes": true,
+    "byte_size": 20541,
+    "sha256": "edf31c97ab419fa9864e143f7d2be7aa5f3d7028cb93751c761e9648ff10ec76"
+  },
+  "official_bcf_checker": {
+    "schema_repository": "https://github.com/buildingSMART/BCF-XML",
+    "schema_tag": "v3.0",
+    "schema_commit": "5834466b2477ac700d7a61990b4e67ec1005cc68",
+    "tool": "bcf-tool.CommandLine",
+    "tool_version": "1.0.7",
+    "tool_dll_sha256": "0409626bba8a017620da95fa1b52f3bfe4f3147b9771a0e604a616a78650c3dc",
+    "checks": [
+      "Schema",
+      "UniqueGuid",
+      "File contents"
+    ],
+    "standard_filename_status": "OK",
+    "legacy_filename_status": "OK"
+  },
+  "independent_dotnet_validation": {
+    "bcf_client_used": false,
+    "zip_reader": "System.IO.Compression",
+    "xml_reader": "System.Xml with DTD prohibited and XmlResolver null",
+    "xsd_xml_checked": 26,
+    "xsd_xml_valid": 26,
+    "xsd_xml_invalid": 0,
+    "semantic_checks": 482,
+    "semantic_errors": 0,
+    "semantic_warnings": 0,
+    "topics": 12,
+    "viewpoints": 11,
+    "selected_ifc_guids": 13,
+    "json_issues": 12,
+    "candidate_ifc_hash_match": true,
+    "topic_types": [
+      "IDS_REQUIREMENT",
+      "IFC_SCHEMA",
+      "PROJECT_GEOMETRY_RULE",
+      "PROJECT_REVISION_RULE"
+    ],
+    "topic_statuses": [
+      "Open"
+    ]
+  },
+  "third_party_viewer": {
+    "installed_product": "BIMcollab Zoom",
+    "installed_version": "9.8.14",
+    "offline_import_completed": false,
+    "status": "PENDING_FIRST_RUN_CONFIRMATION"
+  },
+  "open_gates": [
+    "Hosted buildingSMART Validation Service result",
+    "Independent graphical BCF viewer import",
+    "bcf-client 0.8.5 license metadata clarification"
+  ]
+}

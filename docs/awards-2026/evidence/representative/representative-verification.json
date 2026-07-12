@@ -3,18 +3,18 @@
   "approval_eligible": false,
   "artifacts": [
     {
-      "byte_size": 20538,
+      "byte_size": 20541,
       "filename": "openbim-evidence.bcf",
       "kind": "bcf",
       "media_type": "application/vnd.bcf+zip",
-      "sha256": "sha256:d8b74a99f607c59be7247b74c47ab242b945e15def3dd4c6c9a2bcc2fc6fda11"
+      "sha256": "sha256:edf31c97ab419fa9864e143f7d2be7aa5f3d7028cb93751c761e9648ff10ec76"
     },
     {
-      "byte_size": 20538,
+      "byte_size": 20541,
       "filename": "openbim-evidence.bcfzip",
       "kind": "bcfzip",
       "media_type": "application/vnd.bcf+zip",
-      "sha256": "sha256:d8b74a99f607c59be7247b74c47ab242b945e15def3dd4c6c9a2bcc2fc6fda11"
+      "sha256": "sha256:edf31c97ab419fa9864e143f7d2be7aa5f3d7028cb93751c761e9648ff10ec76"
     },
     {
       "byte_size": 13492,
@@ -35,13 +35,13 @@
       "filename": "openbim-evidence-manifest.json",
       "kind": "manifest",
       "media_type": "application/json",
-      "sha256": "sha256:1d64b750647808a07b60a198155086fb0a43ae82d01c0d3e3f6606043fe640c9"
+      "sha256": "sha256:f627524538e124a43b0c8eff686fd97bc194fb2bd20394a13eedd23e367d6365"
     }
   ],
   "bcf_filename_compatibility": {
     "identical_bytes": true,
     "legacy_filename": "openbim-evidence.bcfzip",
-    "sha256": "sha256:d8b74a99f607c59be7247b74c47ab242b945e15def3dd4c6c9a2bcc2fc6fda11",
+    "sha256": "sha256:edf31c97ab419fa9864e143f7d2be7aa5f3d7028cb93751c761e9648ff10ec76",
     "standard_filename": "openbim-evidence.bcf"
   },
   "bcf_generic_structure_check": {
@@ -62,7 +62,7 @@
     "python": "3.12.11"
   },
   "external_bcf_viewer_gate": "not_completed",
-  "git_dirty_before_export": true,
+  "git_dirty_before_export": false,
   "independently_computed_input_hashes": {
     "baseline": "sha256:ca699ccd8089890504c895612feb80e3210a48867a1da0779bc8699a449c3b1c",
     "candidate": "sha256:0ac0203f0e2a8004fe3def658034a3c0ae07951e0023a00b3536f5bf5aa5bf51",
@@ -82,7 +82,7 @@
   "research_validation_only": true,
   "rule_result_count": 14,
   "schema_version": "openbim-representative-export-v3",
-  "source_commit": "2ed02541f05fb8c3ddc491ffc8450602bb2b224d",
+  "source_commit": "4cd1665eea517e6fa13bac17c406f94966f7e72d",
   "source_tags": [],
   "status": "failed_verification",
   "uv_lock_sha256_lf_normalized": "sha256:b7e07dd056927397ae8820ee783530223df5be8beb408552c34c3f36ea810a30"
