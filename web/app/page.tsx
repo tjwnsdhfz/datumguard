@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 import BackendReadinessNotice from "@/app/components/backend-readiness";
 import LocalDraftNotice from "@/app/components/local-draft-notice";
+import { WorkspaceNavigation, WorkspaceSkipLink } from "@/app/components/workspace-navigation";
 import { apiErrorMessage, apiPostJson } from "@/lib/api-client";
 import { loadDraft, saveDraft } from "@/lib/draft-db";
 import { useBackendReadiness } from "@/lib/use-backend-readiness";
@@ -518,20 +519,13 @@ function PlateWorkspace() {
 
   return (
     <main data-testid="plate-designer">
+      <WorkspaceSkipLink targetId="designer" />
       <header className="site-header">
         <a className="brand" href="#top" aria-label="DatumGuard 처음으로">
           <span className="brand-mark" aria-hidden="true">DG</span>
           <span>DatumGuard</span>
         </a>
-        <nav aria-label="주요 링크">
-          <Link href="/">Architecture</Link>
-          <Link href="/piping">Piping</Link>
-          <Link href="/plate" aria-current="page">Plate</Link>
-          <Link href="/solid">3D Solid</Link>
-          <Link href="/intake">Artifact Lab</Link>
-          <Link href="/case-study">Case Study</Link>
-          <a href={GITHUB_URL} target="_blank" rel="noreferrer">GitHub</a>
-        </nav>
+        <WorkspaceNavigation active="plate" ariaLabel="주요 링크" />
       </header>
 
       <LocalDraftNotice error={storageError} onDismiss={() => setStorageError(null)} />
@@ -550,7 +544,7 @@ function PlateWorkspace() {
         </div>
       </section>
 
-      <section className="workspace" id="designer">
+      <section className="workspace" id="designer" tabIndex={-1}>
         <div className="form-column">
           <div className="section-heading">
             <div><span className="step">01</span><h2>설계 계약</h2></div>
@@ -715,7 +709,7 @@ function PlateWorkspace() {
       </section>
 
       <section className="boundary"><div><span>NOT A CERTIFICATION</span><h2>정확한 파일과 안전한 설계는 같은 말이 아닙니다.</h2></div><p>DatumGuard MVP는 파일의 치수·공차·간섭을 검사합니다. 구조 안전, 법규, 재료 성능, 공정 적합성은 자격 있는 엔지니어와 제작자가 별도로 검토해야 합니다. PDF는 <b>DO NOT SCALE</b>이며 검증 ZIP의 DXF만 제작 기준입니다.</p></section>
-      <footer><span>DatumGuard / Open engineering accuracy harness</span><span>Stateless · No account · No server project storage · <Link href="/privacy">Privacy & local data</Link></span></footer>
+      <footer><span>DatumGuard / Open engineering accuracy harness</span><span>Stateless · No account · No server project storage · <Link href="/privacy">Privacy & local data</Link> · <a href={GITHUB_URL} target="_blank" rel="noreferrer">GitHub source</a></span></footer>
     </main>
   );
 }
