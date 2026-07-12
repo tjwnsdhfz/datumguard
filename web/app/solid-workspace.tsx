@@ -66,6 +66,7 @@ type SolidResult = {
 };
 
 const DRAFT_KEY = "solid-contract-draft-v1";
+const GITHUB_URL = process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com";
 
 const PLATE: Draft = {
   family: "mounting_plate", projectName: "Semiconductor tool mounting plate", revision: "A",
@@ -195,7 +196,7 @@ export default function SolidWorkspace() {
     <main className="solid-shell" data-testid="solid-workspace" data-run-status={loading ? "running" : result?.status || "idle"}>
       <header className="lab-topbar">
         <Link href="/" className="lab-brand"><span>DG</span><div><strong>DatumGuard</strong><small>OpenCascade solid assurance</small></div></Link>
-        <nav aria-label="Engineering workspaces"><Link href="/">Architecture</Link><Link href="/piping">Piping</Link><Link href="/plate">Plate</Link><Link href="/solid" aria-current="page">3D Solid</Link><Link href="/intake">Artifact Lab</Link></nav>
+        <nav aria-label="Engineering workspaces"><Link href="/">Architecture</Link><Link href="/piping">Piping</Link><Link href="/plate">Plate</Link><Link href="/solid" aria-current="page">3D Solid</Link><Link href="/intake">Artifact Lab</Link><Link href="/case-study">Case Study</Link></nav>
       </header>
 
       <LocalDraftNotice error={storageError} onDismiss={() => setStorageError(null)} />
@@ -224,6 +225,17 @@ export default function SolidWorkspace() {
           </div>
           <details className="solid-contract-json"><summary>Structured contract preview</summary><pre>{JSON.stringify(contract, null, 2)}</pre></details>
           <BackendReadinessNotice readiness={readiness} />
+          {readiness.state === "failed" && (
+            <aside className="solid-hosted-fallback" data-testid="solid-hosted-fallback" aria-labelledby="solid-hosted-fallback-title">
+              <span>HOSTED FALLBACK</span>
+              <strong id="solid-hosted-fallback-title">Static verified STEP evidence is still available.</strong>
+              <p>The hosted demo may leave its heavyweight OpenCascade worker disabled. Review the saved STEP re-import evidence or inspect the implementation before trying an unavailable run.</p>
+              <div>
+                <Link href="/case-study">Open verified case study</Link>
+                <a href={GITHUB_URL} target="_blank" rel="noreferrer">Inspect GitHub source</a>
+              </div>
+            </aside>
+          )}
           <button data-testid="solid-run-button" type="button" className="lab-primary" disabled={loading || readiness.state !== "ready"} onClick={run}>{loading ? <><span className="lab-spinner" />OPEN CASCADE WORKERS RUNNING</> : readiness.state !== "ready" ? "BACKEND READINESS" : error ? "RETRY MANUALLY" : "GENERATE STEP + INDEPENDENTLY VERIFY"}</button>
           {error && <div className="lab-error" role="alert"><strong>CONTRACT / KERNEL ERROR</strong><span>{error}</span><button type="button" onClick={run}>수동 재시도</button></div>}
         </section>

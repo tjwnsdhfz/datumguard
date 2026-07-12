@@ -364,6 +364,30 @@
 .solid-contract-json summary { min-height: 44px; padding: 12px; cursor: pointer; font: 600 9px "DM Mono", monospace; }
 .solid-contract-json pre { max-height: 230px; overflow: auto; margin: 0; padding: 12px; border-top: 1px solid var(--lab-line); background: #111116; color: #dcdce3; font: 400 9px/1.6 "DM Mono", monospace; }
 .solid-properties .lab-error { margin: 14px 18px 0; }
+.solid-hosted-fallback {
+  display: grid;
+  gap: 7px;
+  margin: 14px 18px;
+  padding: 15px;
+  border: 1px solid #b8b8bf;
+  background: #f6f6f8;
+  color: #4f5057;
+}
+.solid-hosted-fallback > span { color: var(--lab-blue); font: 700 8px "DM Mono", monospace; letter-spacing: .12em; }
+.solid-hosted-fallback > strong { color: var(--lab-ink); font-size: 12px; }
+.solid-hosted-fallback > p { margin: 0; font-size: 10px; line-height: 1.65; }
+.solid-hosted-fallback > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 3px; }
+.solid-hosted-fallback a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid var(--lab-ink);
+  color: var(--lab-ink);
+  font: 700 9px "DM Mono", monospace;
+}
+.solid-hosted-fallback a:first-child { background: var(--lab-ink); color: #fff; }
 .solid-preview-panel .mesh-figure svg { height: 400px; }
 .solid-empty-preview svg { width: 170px; fill: none; stroke: #606069; stroke-width: 1.5; }
 .solid-pipeline { border-top: 1px solid var(--lab-line); }
@@ -439,6 +463,7 @@
   .mesh-figure svg,
   .lab-dxf-figure > img { min-height: 300px; height: 300px; }
   .solid-downloads { flex-direction: column; }
+  .solid-hosted-fallback > div { flex-direction: column; }
 }
 
 @media (prefers-reduced-motion: reduce) {

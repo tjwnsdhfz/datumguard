@@ -657,6 +657,7 @@ export default function PipingWorkspace() {
       data-verification-status={verification}
       data-preset-id={draft.presetId}
     >
+      <h1 className="piping-page-title">Plant piping accuracy workspace</h1>
       <header className="piping-topbar">
         <div className="piping-brand">
           <span aria-hidden="true">DG</span>
@@ -669,9 +670,11 @@ export default function PipingWorkspace() {
         </div>
         <nav aria-label="Engineering workspaces">
           <Link href="/">Architecture</Link>
-          <Link href="/plate">Mechanical / Ship Plate</Link>
+          <Link href="/piping" aria-current="page">Piping</Link>
+          <Link href="/plate">Plate</Link>
           <Link href="/solid">3D Solid</Link>
           <Link href="/intake">Artifact Lab</Link>
+          <Link href="/case-study">Case Study</Link>
           <a href="#piping-verification">Evidence</a>
         </nav>
       </header>
@@ -912,7 +915,7 @@ export default function PipingWorkspace() {
 
       <section className={`piping-verification ${verification}`} id="piping-verification" aria-labelledby="piping-result-title">
         <div className="piping-result-head">
-          <div><span>INDEPENDENT SERIALIZED-DXF EVIDENCE</span><h1 id="piping-result-title">{verification === "passed" ? "Piping geometry verified" : verification === "failed" ? "Official output blocked" : verification === "running" ? "Remeasuring the DXF" : "Approval evidence"}</h1><p aria-live="polite">{message}</p></div>
+          <div><span>INDEPENDENT SERIALIZED-DXF EVIDENCE</span><h2 id="piping-result-title">{verification === "passed" ? "Piping geometry verified" : verification === "failed" ? "Official output blocked" : verification === "running" ? "Remeasuring the DXF" : "Approval evidence"}</h2><p aria-live="polite">{message}</p></div>
           <div data-testid="piping-verified-badge" className={`piping-verified ${verification}`} role="status" aria-label={`Verification status: ${verification}`}>
             {verification === "passed" ? <Icon name="check" /> : verification === "failed" ? <Icon name="alert" /> : null}
             <span>{verification === "passed" ? "VERIFIED" : verification.toUpperCase()}</span>

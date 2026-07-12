@@ -23,6 +23,14 @@ async function dragCenterToCenter(page: Page, sourceTestId: string, targetTestId
   await page.mouse.up();
 }
 
+async function expectNoHorizontalPageOverflow(page: Page) {
+  const metrics = await page.evaluate(() => ({
+    scrollWidth: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth),
+    viewportWidth: window.innerWidth,
+  }));
+  expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.viewportWidth);
+}
+
 test.describe("plant and semiconductor utility piping workspace", () => {
   test("is deep-linkable and exposes the three engineering domains", async ({ page }) => {
     await page.goto("/piping");
@@ -33,6 +41,19 @@ test.describe("plant and semiconductor utility piping workspace", () => {
     await expect(page.getByTestId("piping-preset-clearance-fail")).toBeVisible();
     await expect(page.locator('a[href="/"]')).toHaveCount(1);
     await expect(page.locator('a[href="/plate"]')).toHaveCount(1);
+  });
+
+  test("keeps Piping navigation and content inside a 390 px viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/piping");
+
+    await expect(page.getByRole("heading", { level: 1, name: "Plant piping accuracy workspace", includeHidden: true })).toHaveCount(1);
+    const navigation = page.getByRole("navigation", { name: "Engineering workspaces" });
+    await expect(navigation).toBeVisible();
+    await expect(navigation.getByRole("link", { name: "Piping", exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(navigation.getByRole("link", { name: "Architecture", exact: true })).toBeVisible();
+    await expect(navigation.getByRole("link", { name: "Case Study", exact: true })).toBeVisible();
+    await expectNoHorizontalPageOverflow(page);
   });
 
   test("snaps an inline valve and verifies the serialized DXF with the real API", async ({

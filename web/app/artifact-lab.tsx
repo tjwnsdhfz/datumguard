@@ -340,7 +340,7 @@ export default function ArtifactLab() {
     <main className="lab-shell" data-testid="artifact-lab">
       <header className="lab-topbar">
         <Link href="/" className="lab-brand"><span>DG</span><div><strong>DatumGuard</strong><small>Engineering artifact assurance</small></div></Link>
-        <nav aria-label="Engineering workspaces"><Link href="/">Architecture</Link><Link href="/piping">Piping</Link><Link href="/plate">Plate</Link><Link href="/solid">3D Solid</Link><Link href="/intake" aria-current="page">Artifact Lab</Link></nav>
+        <nav aria-label="Engineering workspaces"><Link href="/">Architecture</Link><Link href="/piping">Piping</Link><Link href="/plate">Plate</Link><Link href="/solid">3D Solid</Link><Link href="/intake" aria-current="page">Artifact Lab</Link><Link href="/case-study">Case Study</Link></nav>
       </header>
 
       <section className="lab-hero">

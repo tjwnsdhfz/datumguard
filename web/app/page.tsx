@@ -525,9 +525,11 @@ function PlateWorkspace() {
         </a>
         <nav aria-label="주요 링크">
           <Link href="/">Architecture</Link>
-          <Link href="/piping">Plant Piping</Link>
+          <Link href="/piping">Piping</Link>
+          <Link href="/plate" aria-current="page">Plate</Link>
           <Link href="/solid">3D Solid</Link>
           <Link href="/intake">Artifact Lab</Link>
+          <Link href="/case-study">Case Study</Link>
           <a href={GITHUB_URL} target="_blank" rel="noreferrer">GitHub</a>
         </nav>
       </header>
