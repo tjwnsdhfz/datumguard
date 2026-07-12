@@ -1,0 +1,76 @@
+{
+  "analysis_tag": "analysis-v1.0.2",
+  "approval_eligible": false,
+  "artifacts": [
+    {
+      "byte_size": 20432,
+      "filename": "openbim-evidence.bcfzip",
+      "kind": "bcfzip",
+      "media_type": "application/vnd.bcf+zip",
+      "sha256": "sha256:ded2013c86aaaf0c80da3c58458d501b2089fac28a16f47b99b0af85da07fb2b"
+    },
+    {
+      "byte_size": 13492,
+      "filename": "openbim-evidence.json",
+      "kind": "evidence_json",
+      "media_type": "application/json",
+      "sha256": "sha256:c39a92868ba66ab90c89e051847efaff998be02e4ac17bf566348c721744d8dd"
+    },
+    {
+      "byte_size": 7163,
+      "filename": "openbim-evidence.html",
+      "kind": "html",
+      "media_type": "text/html; charset=utf-8",
+      "sha256": "sha256:f634822f51171509dd54ab2a718d00acc6fd01725004e1c116cabcbcca07f092"
+    },
+    {
+      "byte_size": 1046,
+      "filename": "openbim-evidence-manifest.json",
+      "kind": "manifest",
+      "media_type": "application/json",
+      "sha256": "sha256:2fe4ef0a783235ca5f408eb5077a96f9661d3c270ffd907699bdc546b56b2a20"
+    }
+  ],
+  "bcf_generic_structure_check": {
+    "entry_count": 38,
+    "generic_zip_xml_parse": true,
+    "independent_viewer_import": false,
+    "topic_markup_count": 12,
+    "xml_entry_count": 26
+  },
+  "environment": {
+    "packages": {
+      "bcf-client": "0.8.5",
+      "datumguard": "0.2.1",
+      "ifcopenshell": "0.8.5",
+      "ifctester": "0.8.5"
+    },
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.11"
+  },
+  "external_bcf_viewer_gate": "not_completed",
+  "git_dirty_before_export": false,
+  "independently_computed_input_hashes": {
+    "baseline": "sha256:ca699ccd8089890504c895612feb80e3210a48867a1da0779bc8699a449c3b1c",
+    "candidate": "sha256:0ac0203f0e2a8004fe3def658034a3c0ae07951e0023a00b3536f5bf5aa5bf51",
+    "ids": "sha256:aaa35fdc26da695476240aee4ae862c1ab121917009fa2e950b789281effcd0e"
+  },
+  "input_files": {
+    "baseline": "fixtures/openbim/representative/v0_clean.ifc",
+    "candidate": "fixtures/openbim/representative/v1_faulty.ifc",
+    "ids": "fixtures/openbim/virtual_fab_v1.ids"
+  },
+  "issue_count": 12,
+  "manifest_cross_check": true,
+  "profile_hash": "sha256:2f4028459e99135b508c0db803e8d81df48c32cb55d8b10a271058467d938e37",
+  "profile_id": "virtual-fab-v1",
+  "protocol_sha256_lf_normalized": "sha256:d18cf856bde7879d6887091fb4851502d3979ab998ef6f96d6eb22c86c275b36",
+  "protocol_tag_commit": "40f1f7a991e592511033a480c6799516578a45f8",
+  "research_validation_only": true,
+  "rule_result_count": 14,
+  "schema_version": "openbim-representative-export-v2",
+  "source_commit": "38fa62a80468ec558a0b517bdb4b9211c62e6fd8",
+  "source_tags": [],
+  "status": "failed_verification",
+  "uv_lock_sha256_lf_normalized": "sha256:b7e07dd056927397ae8820ee783530223df5be8beb408552c34c3f36ea810a30"
+}
