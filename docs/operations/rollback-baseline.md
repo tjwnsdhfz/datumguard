@@ -1,39 +1,39 @@
-# Rollback Baseline — v0.2.0 pre-case-study
+# Rollback Baseline — v0.2.0 release
 
 ## 고정 기준점
 
 | 항목 | 식별자 | 의미 |
 |---|---|---|
-| Known-good source | `b2dd6e5ebd7f21780295f2f37331dadce14eaf68` | v0.2.0 pre-case-study evidence 기준점 |
-| Vercel deployment | GitHub deployment `5406289230` | 위 SHA의 Production web |
-| Render deployment | GitHub deployment `5406318427` | 위 SHA의 Production API |
-| Deployment smoke | [run `29163908612`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29163908612) | API v0.2.0, 5 engineering route, Architecture/Artifact canary, Solid fail-closed, CORS pass |
-| CI | [run `29163874605`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29163874605) | 256 pytest, 19 Playwright, web/container pass |
-| Historical backup tag | `ops-backup-20260712` → `eefad164c952d6c859327592eaedc1e2508d5e64` | pre-operations-hardening snapshot; `b2dd6e5`의 ancestor가 아니므로 현재 rollback 대상으로 직접 사용하지 않음 |
+| Known-good source | `v0.2.0` → `40dd132ae8ca3267a79283f65058d6c8bbcee44b` | annotated public release tag |
+| Vercel deployment | GitHub deployment `5410073153` | 위 SHA의 Production web |
+| Render deployment | GitHub deployment `5410097749` | 위 SHA의 Production API |
+| Deployment smoke | [run `29181279413`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181279413) | API v0.2.0, 6 public route, Architecture/Artifact canary, Solid fail-closed, CORS pass |
+| CI | [run `29181254550`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181254550) | 256 pytest, 24 Playwright, web/container/SBOM pass |
+| Security | [run `29181254569`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181254569) | dependency review, pip audit와 두 CodeQL language pass |
+| Previous v0.2 fallback | `b2dd6e5ebd7f21780295f2f37331dadce14eaf68` | Case Study 이전 fallback; Vercel `5406289230`, Render `5406318427` |
+| Historical backup tag | `ops-backup-20260712` → `eefad164c952d6c859327592eaedc1e2508d5e64` | pre-operations-hardening snapshot; 현재 rollback 대상으로 직접 사용하지 않음 |
 | Legacy v0.1 fallback | `2d1f08e6cfabe0a653500302cac1045ccb3b7a2f` | v0.2 자체 결함 시에만 web/API를 함께 내리는 비상 호환 기준 |
 
-Case Study merge 뒤 Production SHA와 deployment ID는 달라진다. 새 release의 여섯-route smoke가 통과하면
-그 SHA와 deployment ID를 이 표에 추가한다. 그 전까지 `b2dd6e5`는 검증된 v0.2.0 fallback이며,
-이 기준으로 rollback하면 `/case-study`가 없어지는 것은 예상된 기능 감소다.
+Release tag, 두 deployment와 검증 run은 같은 `40dd132` 기준이다. `main`의 후속 문서·dependency
+commit과 무관하게 이 tag를 known-good rollback target으로 유지한다.
 
 ## v0.2.0 fallback 절차
 
 1. **Wrong PASS 또는 부적격 export가 의심되면 API를 먼저 차단한다.** 독립적인 export kill-switch
    flag가 없으므로 Render에서 서비스를 suspend하거나 known-good deploy로 즉시 rollback한다. CORS
    제거는 direct API 호출을 막지 못하므로 kill switch가 아니다.
-2. Render를 GitHub deployment `5406318427`이 가리키는 `b2dd6e5` build로 rollback한다.
-3. Vercel을 deployment `5406289230`으로 Instant Rollback한다. `/case-study` 404는 이 fallback에서
-   예상되는 상태다.
+2. Render를 GitHub deployment `5410097749`가 가리키는 `40dd132` build로 rollback한다.
+3. Vercel을 deployment `5410073153`으로 Instant Rollback한다.
 4. `/api/v1/health`가 `status: ok`, `version: 0.2.0`을 반환하는지 확인한다.
 5. `/api/v1/domains`가 Architecture, Piping, Plate, Artifact Lab 4개만 반환하는지 확인한다. Solid은
    registry에 없어야 하며 `/api/v1/solid/designs/run`은 `503 DG_CAPABILITY_DISABLED`여야 한다.
-6. Production alias의 `/`, `/piping`, `/plate`, `/solid`, `/intake` DOM sentinel을 확인한다.
+6. Production alias의 `/case-study`, `/`, `/piping`, `/plate`, `/solid`, `/intake` DOM sentinel을 확인한다.
 7. Architecture approval canary, Artifact Lab audit canary와 CORS를 확인한다.
 8. 상태 공지에 영향 시간, export 중단 여부, 사라진 route, 복구한 version/SHA를 기록한다.
 
 ## Legacy v0.1 비상 fallback
 
-v0.2.0 자체가 사고 원인이고 `b2dd6e5`로 복구할 수 없을 때만 사용한다.
+v0.2.0 release 자체가 사고 원인이고 `40dd132`로 복구할 수 없을 때만 사용한다.
 
 - Render deployment `5404701175`, Vercel deployment `5404705357`을 한 변경 창에서 함께 복구한다.
 - `/api/v1/health`의 예상 version은 `0.1.0`, `/api/v1/domains`는 base 3개 domain이다.
