@@ -40,7 +40,7 @@ export default function CaseStudyPage() {
           <a href="#method">Method</a>
           <a href="#evidence">Evidence</a>
           <a href="#scope">Scope</a>
-          <Link className={styles.navCta} href="/">Open CAD</Link>
+          <Link className={styles.navCta} href="/frame">Open Frame</Link>
         </nav>
       </header>
 
@@ -62,12 +62,12 @@ export default function CaseStudyPage() {
             측정합니다. 검증에 실패한 artifact는 공식 export가 될 수 없습니다.
           </p>
           <div className={styles.actions}>
-            <Link className={styles.primaryAction} href="/">
-              OPEN LIVE ARCHITECTURE
+            <Link className={styles.primaryAction} href="/frame">
+              RUN VERIFIED FRAME
             </Link>
-            <a className={styles.secondaryAction} href={repositoryUrl} target="_blank" rel="noreferrer">
-              INSPECT SOURCE
-            </a>
+            <Link className={styles.secondaryAction} href="/">
+              OPEN ARCHITECTURE
+            </Link>
           </div>
         </div>
         <div className={styles.orbit} aria-hidden="true">
@@ -319,7 +319,8 @@ export default function CaseStudyPage() {
         <p>CONTRACT → SERIALIZED ARTIFACT → INDEPENDENT REMEASUREMENT → GATE</p>
         <h2>검증 evidence가 없는 CAD 자동화는 공식 산출물이 아닙니다.</h2>
         <div className={styles.actions}>
-          <Link className={styles.primaryAction} href="/">RUN THE LIVE DEMO</Link>
+          <Link className={styles.primaryAction} href="/frame">RUN VERIFIED FRAME</Link>
+          <Link className={styles.secondaryAction} href="/">OPEN ARCHITECTURE</Link>
           <a className={styles.secondaryAction} href={repositoryUrl} target="_blank" rel="noreferrer">READ THE CODE</a>
         </div>
       </section>

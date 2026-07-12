@@ -83,7 +83,10 @@
   align-items: center;
   gap: 3px;
   color: #a9b2af;
+  scrollbar-width: none;
 }
+
+.nav::-webkit-scrollbar { display: none; }
 
 .nav a {
   display: inline-flex;
@@ -1464,6 +1467,16 @@
   font: 500 8px "DM Mono", monospace;
   letter-spacing: .08em;
 }
+
+.footer a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding-inline: 4px;
+  color: #c1cbc7;
+}
+
+.footer a:hover { color: #fff; }
 
 @media (max-width: 1260px) {
   .topbar {

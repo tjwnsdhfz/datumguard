@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
+import { PRODUCTION_ORIGIN } from "../lib/site-config";
+
 const SOCIAL_IMAGE = {
-  url: "/opengraph-image",
+  url: `${PRODUCTION_ORIGIN}/opengraph-image`,
   width: 1200,
   height: 630,
   alt: "DatumGuard independent CAD assurance pipeline",
@@ -16,15 +18,17 @@ export function pageMetadata({
   description: string;
   path: `/${string}` | "/";
 }): Metadata {
+  const canonicalUrl = `${PRODUCTION_ORIGIN}${path}`;
+
   return {
     title,
     description,
-    alternates: { canonical: path },
+    alternates: { canonical: canonicalUrl },
     openGraph: {
       type: "website",
       locale: "ko_KR",
       siteName: "DatumGuard",
-      url: path,
+      url: canonicalUrl,
       title,
       description,
       images: [SOCIAL_IMAGE],

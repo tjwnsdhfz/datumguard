@@ -17,6 +17,7 @@
   "dependencies": {
     "@fontsource/dm-mono": "5.2.7",
     "@fontsource/noto-sans-kr": "5.2.9",
+    "@vercel/analytics": "2.0.1",
     "next": "16.2.10",
     "react": "19.2.7",
     "react-dom": "19.2.7"

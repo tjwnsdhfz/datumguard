@@ -8,6 +8,10 @@ import { API_URL } from "@/lib/api-client";
 import FrameAssuranceLab from "./frame-assurance-lab";
 import styles from "./frame.module.css";
 
+const repositoryUrl =
+  process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/tjwnsdhfz/datumguard";
+const releaseUrl = `${repositoryUrl.replace(/\/$/, "")}/releases/tag/v0.3.0`;
+
 type PresetId = "verified" | "missing-brace";
 type EngineState = "checking" | "offline" | "ready" | "warming";
 type RunState = "idle" | "running" | "passed" | "failed";
@@ -411,6 +415,7 @@ export default function FrameWorkspace() {
       data-testid="frame-workspace"
       data-run-status={runState}
       data-preset={preset}
+      lang="en"
     >
       <header className={styles.topbar}>
         <Link href="/frame" className={styles.brand} aria-label="FrameGuard home">
@@ -423,6 +428,7 @@ export default function FrameWorkspace() {
           <Link href="/plate">Plate</Link>
           <Link href="/solid">3D Solid</Link>
           <Link href="/frame" aria-current="page">Frame</Link>
+          <Link href="/case-study">Case Study</Link>
         </nav>
         <div className={`${styles.engine} ${styles[engineState]}`} data-testid="frame-engine-state">
           <span aria-hidden="true" />
@@ -712,7 +718,13 @@ export default function FrameWorkspace() {
 
       <footer className={styles.footer}>
         <span>DATUMGUARD · TRACEABLE ENGINEERING AUTOMATION</span>
-        <span>STRUCTURAL MODEL / SOLVER EVIDENCE / HUMAN APPROVAL</span>
+        <span>
+          <Link href="/case-study">CASE STUDY</Link>
+          {" / "}
+          <a href={releaseUrl} target="_blank" rel="noreferrer">RELEASE EVIDENCE</a>
+          {" / "}
+          <a href={repositoryUrl} target="_blank" rel="noreferrer">SOURCE</a>
+        </span>
       </footer>
     </main>
   );
