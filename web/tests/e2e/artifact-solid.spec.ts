@@ -106,7 +106,14 @@ test.describe("real CAD artifact and solid workspaces", () => {
     await page.goto("/solid");
     const readiness = page.locator('[data-readiness-state="failed"]');
     await expect(readiness).toContainText("비활성화", { timeout: 5_000 });
-    await expect(page.getByTestId("solid-run-button")).toBeDisabled();
+    const fallback = page.getByTestId("solid-hosted-fallback");
+    const runButton = page.getByTestId("solid-run-button");
+    await expect(fallback).toBeVisible();
+    await expect(fallback).toContainText("Static verified STEP evidence");
+    await expect(fallback.getByRole("link", { name: "Open verified case study" })).toHaveAttribute("href", "/case-study");
+    await expect(fallback.getByRole("link", { name: "Inspect GitHub source" })).toHaveAttribute("href", /github/i);
+    await expect(page.locator('[data-testid="solid-hosted-fallback"] ~ [data-testid="solid-run-button"]')).toHaveCount(1);
+    await expect(runButton).toBeDisabled();
     expect(domainCalls).toBe(1);
   });
 

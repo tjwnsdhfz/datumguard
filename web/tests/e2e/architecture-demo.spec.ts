@@ -40,6 +40,14 @@ async function waitForArchitectureReady(page: Page) {
   await expect(page.getByTestId("architecture-run-verification")).toBeEnabled();
 }
 
+async function expectNoHorizontalPageOverflow(page: Page) {
+  const metrics = await page.evaluate(() => ({
+    scrollWidth: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth),
+    viewportWidth: window.innerWidth,
+  }));
+  expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.viewportWidth);
+}
+
 test.describe("interactive architecture demo", () => {
   test("serves the frontend security policy headers", async ({ page }) => {
     const response = await page.goto("/");
@@ -75,8 +83,21 @@ test.describe("interactive architecture demo", () => {
       await expect(page.getByTestId(`architecture-stage-${id}`)).toContainText(label);
     }
     await expect(page.locator('a[href="/plate"]')).toHaveCount(1);
-    await expect(page.getByRole("link", { name: /plant piping/i })).toHaveAttribute("href", "/piping");
+    await expect(page.getByRole("link", { name: "Piping", exact: true })).toHaveAttribute("href", "/piping");
     await expect(page.getByText(/not a certification/i)).toBeVisible();
+  });
+
+  test("keeps Architecture navigation and content inside a 390 px viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+
+    await expect(page.getByRole("heading", { level: 1, name: "Architecture accuracy workspace", includeHidden: true })).toHaveCount(1);
+    const navigation = page.getByRole("navigation", { name: "Engineering workspaces" });
+    await expect(navigation).toBeVisible();
+    await expect(navigation.getByRole("link", { name: "Architecture", exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(navigation.getByRole("link", { name: "Piping", exact: true })).toBeVisible();
+    await expect(navigation.getByRole("link", { name: "Case Study", exact: true })).toBeVisible();
+    await expectNoHorizontalPageOverflow(page);
   });
 
   test("supports snapped constrained drag, 1 mm inspector edits, view controls, and capped history", async ({ page }) => {
@@ -231,7 +252,20 @@ test("keeps the detailed plate designer deep-linkable", async ({ page }) => {
   await expect(page.getByRole("img", { name: /실시간 형상 미리보기/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /DXF 생성 및 독립 검증/i })).toBeEnabled();
   await expect(page.getByRole("link", { name: /architecture/i })).toHaveAttribute("href", "/");
-  await expect(page.getByRole("link", { name: /plant piping/i })).toHaveAttribute("href", "/piping");
+  await expect(page.getByRole("link", { name: "Piping", exact: true })).toHaveAttribute("href", "/piping");
+});
+
+test("keeps Plate navigation usable inside a 390 px viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/plate");
+
+  const navigation = page.getByRole("navigation", { name: "주요 링크" });
+  await expect(navigation).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "Plate", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(navigation.getByRole("link", { name: "Architecture", exact: true })).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "Case Study", exact: true })).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "GitHub", exact: true })).toBeVisible();
+  await expectNoHorizontalPageOverflow(page);
 });
 
 test("verifies the mechanical and ship plate preset with the real API", async ({ page }) => {

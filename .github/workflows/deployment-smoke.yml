@@ -147,8 +147,8 @@ jobs:
             )
           fi
 
-          routes=(/ /piping /plate)
-          sentinels=('data-testid="architecture-demo"' 'data-testid="piping-demo"' 'data-testid="plate-designer"')
+          routes=(/case-study / /piping /plate)
+          sentinels=('data-testid="case-study"' 'data-testid="architecture-demo"' 'data-testid="piping-demo"' 'data-testid="plate-designer"')
           if [[ -f web/app/solid/page.tsx ]]; then
             routes+=(/solid)
             sentinels+=('data-testid="solid-workspace"')
