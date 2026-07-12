@@ -30,6 +30,11 @@
 
 ## 문서와 증거
 
+- [BIM Awards 2026 학생부 Research 제출 가이드](SUBMISSION_GUIDE.md)
+- [3매 출품 설명서 원고](COMPETITION_DESCRIPTION.md)
+- [편집 가능한 3매 DOCX](BIM_AWARDS_2026_STUDENT_RESEARCH_DESCRIPTION.docx)
+- [Student Design Edition PRD](PRD_STUDENT_EDITION.md)
+- [실제 학생 설계 적용 가능성 감사](STUDENT_DESIGN_FEASIBILITY.md)
 - [개발 계획](DEVELOPMENT_PLAN.md)
 - [연구 계획](RESEARCH_PLAN.md)
 - [동결 protocol](protocol.yaml)

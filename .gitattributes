@@ -1,4 +1,5 @@
 docs/awards-2026/** text eol=lf
+docs/awards-2026/*.docx binary
 docs/awards-2026/evidence/representative/*.bcfzip binary
 fixtures/openbim/** text eol=lf
 fixtures/openbim/**/*.ifc text eol=crlf
