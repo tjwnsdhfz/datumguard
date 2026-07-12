@@ -182,6 +182,10 @@ jobs:
             routes+=(/intake)
             sentinels+=('data-testid="artifact-lab"')
           fi
+          if [[ -f web/app/openbim/page.tsx ]]; then
+            routes+=(/openbim)
+            sentinels+=('data-testid="openbim-workspace"')
+          fi
 
           for index in "${!routes[@]}"; do
             body="$(mktemp)"

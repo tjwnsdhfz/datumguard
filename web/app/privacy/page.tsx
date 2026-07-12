@@ -19,7 +19,7 @@ export default function PrivacyPage() {
         <article>
           <span>01 / SERVER PROCESSING</span>
           <h2>Oregon에서 일시 처리</h2>
-          <p>업로드한 DXF·STEP·IFC·IDS는 API로 전송되어 메모리 또는 임시 작업 디렉터리에서 검사됩니다. 현재 공개 v0.2.1은 미국 Oregon의 Render API를 사용하며, unreleased OpenBIM preview는 연결한 환경의 API에서 처리됩니다. DatumGuard 애플리케이션은 요청 파일을 서버 프로젝트 저장소나 데이터베이스에 장기 보관하지 않습니다.</p>
+          <p>업로드한 DXF·STEP·IFC·IDS는 활성화된 API로 전송되어 메모리 또는 임시 작업 디렉터리에서 검사됩니다. 현재 공개 v0.3.0은 미국 Oregon의 Render API를 사용하며, OpenBIM은 공개 UI와 동결 evidence만 제공하고 hosted 실행은 비활성입니다. 로컬 또는 별도 연결 환경에서 OpenBIM 실행을 켜도 같은 stateless 처리 경계를 따릅니다. DatumGuard 애플리케이션은 요청 파일을 서버 프로젝트 저장소나 데이터베이스에 장기 보관하지 않습니다.</p>
           <p>호스팅·네트워크 제공자는 보안과 운영을 위해 IP, 시간, 경로 같은 요청 메타데이터를 각 제공자 정책에 따라 기록할 수 있습니다.</p>
         </article>
         <article>

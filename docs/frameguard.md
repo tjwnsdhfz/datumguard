@@ -6,8 +6,10 @@
 
 ![FrameGuard의 Rhino/GH exchange, DXF 재개봉, OpenSees parity와 REVIEW_REQUIRED 화면](assets/demo/frame-assurance-pipeline.png)
 
-위 이미지는 local source와 실제 API interaction을 캡처한 시현 evidence다. 현재 v0.2.1 public
-Vercel/Render에 배포되었다는 증거가 아니며, hosted capability 표시는 production smoke 이후에만 한다.
+위 이미지는 실제 API interaction을 캡처한 시현 evidence다. `/frame`과 assurance API는 v0.3.0
+Vercel/Render production에 배포되었고, exact release SHA·capability·canary·CORS는
+[strict smoke 29195107475](https://github.com/tjwnsdhfz/datumguard/actions/runs/29195107475)에서
+검증됐다. 이 배포 사실은 구조 안전 인증을 의미하지 않는다.
 
 ## 1. PRD-lite
 
@@ -321,4 +323,7 @@ uv run ruff check src/datumguard/api.py src/datumguard/mcp_server.py \
 
 MCP dispatcher와 FastAPI application을 다른 domain도 공유하므로 release 전에 전체 backend
 suite를 실행한다. OpenSeesPy와 PyG는 base runtime이 아닌 선택형 research workflow에서 설치·검증한다.
-현재 `/frame` source route와 assurance API는 아직 v0.2.1 Vercel/Render production에 배포되지 않았다.
+v0.3.0은 [CI 29194952632](https://github.com/tjwnsdhfz/datumguard/actions/runs/29194952632)의
+376 pytest·35 Playwright·container gate와
+[research run 29194964854](https://github.com/tjwnsdhfz/datumguard/actions/runs/29194964854)를
+통과했으며, 공개 데모는 [Vercel `/frame`](https://datumguard-tjwnsdhfz.vercel.app/frame)에서 조회한다.

@@ -5,6 +5,11 @@
 
 ## 현재 상태
 
+- OpenBIM source와 `/openbim` 웹 경로는 v0.3.0 production source
+  [`472df5fe...`](https://github.com/tjwnsdhfz/datumguard/commit/472df5fe431277244fc0fcda1ee9aa3b6284ddff)에 포함됐다.
+- 공개 Render에서는 `DATUMGUARD_ENABLE_OPENBIM=false`, `DATUMGUARD_ENABLE_BCF=false`이므로
+  hosted evidence 실행과 BCF export는 fail-closed 상태다. 웹 경로 공개를 검증 서비스 운영이나
+  산업 적용으로 해석하지 않는다.
 - 별도 `/openbim` 연구용 workspace와 `POST /api/v1/openbim/evidence/run`을 구현했다.
 - IFC4 baseline/candidate와 IDS 1.0을 독립 worker에서 다시 열어 정보요구조건, IFC integrity,
   project AABB clearance와 protected revision을 검사한다.
@@ -50,8 +55,21 @@
 - BCF는 same-library round-trip 외에 buildingSMART BCF 3.0 공식 checker와 독립 .NET XSD·의미
   검증까지 통과했다. 독립 graphical viewer와 license gate가 끝나기 전 핵심 성과로 주장하지 않는다.
 - API의 BCF packaging은 별도 `DATUMGUARD_ENABLE_BCF=false` gate로 기본 차단한다.
-- `/openbim`은 unreleased local preview이며 현재 v0.2.1 production 배포에 포함되지 않는다.
-- Render blueprint도 외부 gate 완료 전 `DATUMGUARD_ENABLE_OPENBIM=false`로 고정한다.
+- `/openbim` 웹 경로는 v0.3.0에 배포됐지만 hosted API 실행은 비활성인 research preview다.
+- Render production은 외부 gate 완료 전 `DATUMGUARD_ENABLE_OPENBIM=false`와
+  `DATUMGUARD_ENABLE_BCF=false`로 고정한다.
+
+## v0.3.0 통합·배포 증거
+
+- Main SHA: [`472df5fe431277244fc0fcda1ee9aa3b6284ddff`](https://github.com/tjwnsdhfz/datumguard/commit/472df5fe431277244fc0fcda1ee9aa3b6284ddff)
+- CI: [run `29194952632`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29194952632) — 376 pytest, 35 Playwright, OpenBIM interoperability와 두 container build 성공
+- Security: [run `29194952607`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29194952607) — pip audit와 Python·JavaScript/TypeScript CodeQL 성공
+- Production deployments: Vercel `5413026696`; Render `5413009032` / `dep-d99pkfeq1p3s73d3gjj0`
+- Strict smoke: [run `29195107475`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29195107475) 성공
+
+위 CI는 source·브라우저·container의 회귀를 검증한다. strict production smoke는 OpenBIM-enabled
+API canary를 수행하지 않으며, 공개 Render의 OpenBIM gate가 꺼져 있다는 경계를 바꾸지 않는다.
+v0.2.1은 production rollback baseline이다.
 
 ## 동결 provenance
 
@@ -99,7 +117,7 @@ uv run --frozen python tools/run_openbim_experiment.py --reanalyze-existing `
    component/status를 화면 증거로 남긴다.
 2. buildingSMART IFC Validation Service에서 clean 대표 IFC의 외부 결과를 보존한다.
 3. `bcf-client==0.8.5` source/wheel license 표기 차이를 최종 배포 방식 기준으로 검토한다.
-4. PR의 Docker/Linux CI와 production cold-start·CORS·부하 smoke를 실행한다.
+4. OpenBIM gate를 켠 별도 후보 환경에서 cold-start·CORS·최대 입력·동시성 smoke를 실행한다.
 5. 공모전 원고에서 실제 산업 일반화, 안전·법규·제작 승인 표현을 제거한다.
 
 이 외부 gate는 구현·합성 실험의 완료 여부와 분리해 공개하며, 미완료 상태를 성과로 바꾸어 쓰지 않는다.

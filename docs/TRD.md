@@ -670,7 +670,7 @@ MCP 공개 도구 수와 이름은 유지하고 `design_kind`로 plate/architect
 - Backend/MCP는 하나의 Python package와 Docker image에서 build한다.
 - Web은 정적 frontend와 stateless API URL로 구성한다.
 - 현재 CI 순서: format/lint/type check → unit/property/API/MCP integration → web build/E2E → backend·web Docker build → SBOM → fixed-critical scan.
-- 현재 release에는 source tag, schema·sample contract·MCP 설치법·공개 웹 URL과 backend/web CycloneDX SBOM을 포함한다. 100+50 benchmark report와 registry에 publish한 signed Docker image는 M8b 후속 release 목표이며 v0.2.1 완료 조건으로 주장하지 않는다.
+- 현재 release에는 source tag, schema·sample contract·MCP 설치법·공개 웹 URL과 backend/web CycloneDX SBOM을 포함한다. 100+50 benchmark report와 registry에 publish한 signed Docker image는 M8b 후속 release 목표이며 v0.3.0 완료 조건으로 주장하지 않는다.
 
 ## 23. 구현 순서
 
@@ -776,7 +776,9 @@ GraphSAGE는 GAT보다 모든 metric이 우수해서가 아니라 NumPy inferenc
 
 선택형 `.github/workflows/frame-research.yml`만 Python 3.12에 base+dev+ml과 OpenSeesPy 3.8을
 설치한다. focused Rhino/DXF/OpenSees/GNN tests와 작은 training/inference parity smoke를 실행하되
-base Docker dependency를 변경하지 않는다. `/frame`과 assurance endpoint는 현재 source/CI 기능이며
-v0.2.1 production에는 아직 배포되지 않았다. 다음 release는 Vercel `/frame` sentinel,
-`structural_frame` domain, exact solver canary, API `release_sha`와 CORS를 같은 배포 revision에서
-통과해야만 hosted capability로 표시한다.
+base Docker dependency를 변경하지 않는다. `/frame`과 assurance endpoint는 v0.3.0 production에
+배포되었다. Vercel `/frame` sentinel, `structural_frame` domain, exact solver canary, API
+`release_sha`와 CORS는 같은 revision의
+[strict smoke 29195107475](https://github.com/tjwnsdhfz/datumguard/actions/runs/29195107475)에서
+통과했고, optional research runtime은
+[run 29194964854](https://github.com/tjwnsdhfz/datumguard/actions/runs/29194964854)에서 검증했다.

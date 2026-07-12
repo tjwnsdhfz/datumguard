@@ -11,10 +11,10 @@ test.describe("public product case study", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: /cad command success is not accuracy evidence/i }),
     ).toBeVisible();
-    await expect(page.getByText("256", { exact: true })).toBeVisible();
-    await expect(page.getByText("24", { exact: true })).toBeVisible();
-    await expect(page.getByText("256 pytest + 24 Playwright", { exact: true })).toBeVisible();
-    await expect(page.getByText("295 pytest + 27 Playwright", { exact: true })).toBeVisible();
+    await expect(page.getByText("376", { exact: true })).toBeVisible();
+    await expect(page.getByText("35", { exact: true })).toBeVisible();
+    await expect(page.getByText("376 pytest + 35 Playwright", { exact: true })).toBeVisible();
+    await expect(page.getByText("OpenSees 6/6 + PyG 90 cases", { exact: true })).toBeVisible();
     await expect(page.getByText("30 cases · 330 TP · 0 FP · 0 FN", { exact: true })).toBeVisible();
     await expect(page.getByText(/research_validation_only: true/)).toBeVisible();
     const openBimLink = page
@@ -31,9 +31,9 @@ test.describe("public product case study", () => {
       "href",
       "#case-study-content",
     );
-    await expect(page.getByRole("link", { name: /Open the v0\.2\.1 release evidence/i })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: /Open the v0\.3\.0 release evidence/i })).toHaveAttribute(
       "href",
-      /\/releases\/tag\/v0\.2\.1$/,
+      /\/releases\/tag\/v0\.3\.0$/,
     );
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       "href",
