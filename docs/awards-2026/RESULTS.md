@@ -25,6 +25,18 @@
 - C: TP 270, FP 0, FN 60, Recall 0.818182, F1 0.900000
 - D: TP 330, FP 0, FN 0, Recall 1.000000, F1 1.000000
 
+## Incremental recall contribution
+
+- A_to_B: +0.181818
+- B_to_C: +0.181818
+- C_to_D: +0.181818
+
+## Paired per-case incremental recall
+
+- A_to_B: cases 30, mean +0.181818, median +0.181818, range [+0.181818, +0.181818]
+- B_to_C: cases 30, mean +0.181818, median +0.181818, range [+0.181818, +0.181818]
+- C_to_D: cases 30, mean +0.181818, median +0.181818, range [+0.181818, +0.181818]
+
 ## Fault-family F1
 
 - Geometry: micro-F1 1.000000; supported-rule macro-F1 1.0
@@ -33,11 +45,11 @@
 - Integrity: micro-F1 1.000000; supported-rule macro-F1 1.0
 - Revision: micro-F1 1.000000; supported-rule macro-F1 1.0
 
-## Preregistered target status
+## Preregistered target assessment
 
-- Information supported-rule macro-F1 >= 0.95: **PASS** (actual 1.0)
+- Information macro-F1 >= 0.95: **NOT_CONCLUSIVE** (post-freeze sensitivity 1.0; mean F1 across supported rules only) — post-freeze supported-rule macro; zero-support policy not preregistered
 - Geometry F1 >= 0.95: **PASS** (actual 1.0)
-- Revision supported-rule macro-F1 >= 0.95: **PASS** (actual 1.0)
+- Revision macro-F1 >= 0.95: **NOT_CONCLUSIVE** (post-freeze sensitivity 1.0; mean F1 across supported rules only) — post-freeze supported-rule macro; zero-support policy not preregistered
 - Clean false positives = 0: **PASS** (actual 0)
 - Authorized false positives = 0: **PASS** (actual 0)
 - Engine p95 < 5000 ms: **PASS** (actual 1876.2216)
@@ -55,6 +67,13 @@
 - Canonical JSON determinism covers timestamp/run-ID-excluded engine payloads only.
 - BCFZIP byte determinism was not part of the repeated-run experiment.
 
+## Issue traceability
+
+- All detected issues — source hash coverage: 360/360
+- All detected issues — registered rule ID coverage: 360/360
+- All detected issues — entity reference coverage: 330/360
+- Primary issues — source/rule/entity coverage: 330/330, 330/330, 330/330
+
 ## Bootstrap
 
 - Iterations: 10000
@@ -63,13 +82,14 @@
 
 ## Post-freeze analysis correction
 
-- Revision: `post-freeze-evaluator-fix-1`
+- Revision: `post-freeze-evaluator-fix-2`
 - Audit: `evidence/ANALYSIS_CORRECTION.md`
 - No engine rerun and no detector, input, truth, rule, or threshold changes.
 
 ## Open gates and negative findings
 
-- The first frozen aggregation exposed three evaluator defects; the preserved raw reports were reanalyzed without rerunning the detector.
+- The first frozen aggregation exposed two evaluator defects; the preserved raw reports were reanalyzed without rerunning the detector.
+- Information/revision supported-rule macro-F1 is a post-freeze sensitivity metric; the preregistered hypotheses are not declared confirmed because zero-support handling was not frozen.
 - Independent BCF viewer import and final distribution-license review are not completed.
 - Docker/Linux CI and production deployment gates are outside this local experiment.
 - No detector miss remained in this synthetic corpus after evaluator correction; this is not evidence of performance on real industrial IFC files.

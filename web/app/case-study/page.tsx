@@ -200,8 +200,8 @@ export default function CaseStudyPage() {
           <article className={styles.failCard}>
             <span>OPEN GATES</span>
             <strong>Perfect synthetic score is not industrial approval</strong>
-            <p>독립 BCF viewer, 최종 license 검토, Docker/Linux CI와 production smoke는 미완료입니다.</p>
-            <code>protocol-v1 → analysis-v1.0.1 · detector rerun: false</code>
+            <p>독립 BCF viewer, buildingSMART 외부 validation, license 검토, Docker/Linux CI와 production smoke는 미완료입니다.</p>
+            <code>protocol-v1 → analysis-v1.0.2 · detector rerun: false</code>
           </article>
         </div>
         <Link className={styles.secondaryAction} href="/openbim">OPEN LOCAL RESEARCH WORKSPACE</Link>
@@ -295,7 +295,7 @@ export default function CaseStudyPage() {
         </div>
         <div className={styles.releaseGrid}>
           <article><span>TEST</span><strong>256 pytest + 24 Playwright</strong><p>v0.2.1 release baseline</p></article>
-          <article><span>OPENBIM LOCAL</span><strong>294 pytest + 27 Playwright</strong><p>unreleased research branch gate</p></article>
+          <article><span>OPENBIM LOCAL</span><strong>295 pytest + 27 Playwright</strong><p>unreleased research branch gate</p></article>
           <article><span>CI</span><strong>Type · lint · build · containers</strong><p>SBOM, CodeQL, audit, Trivy 포함</p></article>
           <article><span>DEPLOY</span><strong>Vercel + Render</strong><p>DOM, API capability, canary, CORS smoke</p></article>
           <article><span>ROLLBACK</span><strong>Known-good SHA + deployment IDs</strong><p>Wrong PASS를 SEV1으로 처리</p></article>

@@ -105,12 +105,14 @@ release 수치 또는 hosted capability로 해석하지 않는다.
 연구 provenance:
 
 - `protocol-v1` → `40f1f7a991e592511033a480c6799516578a45f8`
-- `analysis-v1.0.1` → `0ed7ff7716e9f625998a1a17342de9f9fa9cd9b9`
+- `analysis-v1.0.2` → `9d147e30aa33a7c3571a83174d6b18a557662880`
 - 30 held-out cases, 120 candidate records, 1,200 measured runs, engine error 0
 - corrected Full TP/FP/FN `330/0/0`; clean·authorized FP 0; corrected 신규 issue 0
-- local branch gate: pytest 294 passed, Chromium Playwright 27 passed, web typecheck·lint·build pass
+- local branch gate: pytest 295 passed, Chromium Playwright 27 passed, web typecheck·lint·build pass
 - 최초 raw hash `sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9`
 - detector 재실행 없이 clean analysis tag에서 evaluator field만 재계산
+- 전체 issue source/rule coverage `360/360`, entity coverage `330/360`; primary issue는 모두 `330/330`
+- buildingSMART IFC Validation Service 외부 확인은 아직 미완료
 
 공식 연구 진입점은 [`awards-2026/README.md`](awards-2026/README.md)다. BCF 독립 viewer,
 `bcf-client` license 검토, Docker/Linux CI와 production cold-start·CORS·부하 smoke는 아직 완료되지
@@ -121,4 +123,5 @@ release 수치 또는 hosted capability로 해석하지 않는다.
 1. 계획 상태인 100개 golden contract + 자연어 50개 benchmark를 실행하고 결과를 공개한다.
 2. Render Free가 아닌 후보 환경에서 동시성·최대 upload 부하 검증과 rollback drill을 수행한다.
 3. 외부 uptime/error tracking과 장기 metric retention은 비용 승인 뒤 연결한다.
-4. OpenBIM 외부 BCF viewer·license·Docker/Linux·production smoke gate를 별도 evidence로 완료한다.
+4. OpenBIM 외부 BCF viewer·buildingSMART validation·license·Docker/Linux·production smoke gate를
+   별도 evidence로 완료한다.

@@ -53,9 +53,11 @@ evidence로 공식 CAD bundle을 승인하는 오픈소스 Engineering Design As
 1,200 measured engine run에서 engine error 0, canonical payload 10/10 일치를 기록했다. 수정 후 Full
 pipeline은 TP/FP/FN `330/0/0`, clean·authorized false positive 0, engine p95 1,876.222ms였다.
 
-최초 집계에서 발견한 evaluator 구현 오류 3건은 detector를 재실행하지 않고 보존 raw
-`sha256:58dcf7dc...`에서 별도 `analysis-v1.0.1`로 재분석했다. 전체 provenance, 수정 전후 수치와
-한계는 [BIM Awards 2026 연구 evidence](docs/awards-2026/README.md)에 공개한다. BCF 독립 viewer,
+최초 집계에서 발견한 evaluator 구현 오류 2건은 detector를 재실행하지 않고 보존 raw
+`sha256:58dcf7dc...`에서 `analysis-v1.0.2`로 재분석했다. 사전등록하지 않은 zero-support 처리의
+supported-rule macro-F1은 별도 post-freeze sensitivity로만 남겨 두 가설을 `NOT_CONCLUSIVE`로
+표시했다. 전체 provenance, 수정 전후 수치와 한계는
+[BIM Awards 2026 연구 evidence](docs/awards-2026/README.md)에 공개한다. BCF 독립 viewer,
 배포 license와 production smoke는 아직 gate가 열려 있으므로 BCF 또는 실사업장 성능을 핵심 성과로
 주장하지 않는다.
 
@@ -226,7 +228,7 @@ Set-Location web
 npm run test:e2e
 ```
 
-현재 `codex/bim-awards-2026`의 local pre-release gate는 backend **294 passed**, Chromium
+현재 `codex/bim-awards-2026`의 local pre-release gate는 backend **295 passed**, Chromium
 Playwright **27 passed**, web typecheck·lint·14-page build 통과다. 이 수치는 아래 v0.2.1 release
 baseline을 대체하지 않으며, 이 머신에는 Docker CLI가 없어 container/Linux gate는 실행하지 못했다.
 

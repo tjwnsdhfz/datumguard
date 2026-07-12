@@ -1,7 +1,7 @@
 {
   "analysis_audit": "analysis_correction.json",
-  "analysis_commit": "0ed7ff7716e9f625998a1a17342de9f9fa9cd9b9",
-  "analysis_revision": "post-freeze-evaluator-fix-1",
+  "analysis_commit": "9d147e30aa33a7c3571a83174d6b18a557662880",
+  "analysis_revision": "post-freeze-evaluator-fix-2",
   "approval_eligible": false,
   "case_count": 30,
   "completed_candidate_runs": 120,
@@ -10,6 +10,7 @@
   "engine_errors": 0,
   "measured_engine_runs": 1200,
   "metrics": {
+    "ablation_denominator_consistent": true,
     "ablations": {
       "A": {
         "admissible_secondary": 0,
@@ -107,6 +108,39 @@
       "Information": 1.0,
       "Integrity": 1.0,
       "Revision": 1.0
+    },
+    "incremental_recall": {
+      "A_to_B": 0.181818182,
+      "B_to_C": 0.181818182,
+      "C_to_D": 0.181818182
+    },
+    "incremental_true_positives": {
+      "A_to_B": 60,
+      "B_to_C": 60,
+      "C_to_D": 60
+    },
+    "paired_incremental_recall": {
+      "A_to_B": {
+        "case_count": 30,
+        "maximum": 0.181818182,
+        "mean": 0.181818182,
+        "median": 0.181818182,
+        "minimum": 0.181818182
+      },
+      "B_to_C": {
+        "case_count": 30,
+        "maximum": 0.181818182,
+        "mean": 0.181818182,
+        "median": 0.181818182,
+        "minimum": 0.181818182
+      },
+      "C_to_D": {
+        "case_count": 30,
+        "maximum": 0.181818182,
+        "mean": 0.181818182,
+        "median": 0.181818182,
+        "minimum": 0.181818182
+      }
     },
     "rules": {
       "GEO-01": {
@@ -222,6 +256,26 @@
       "wall_iqr_ms": 314.584075,
       "wall_median_ms": 1864.64575,
       "wall_p95_ms": 2811.615785
+    },
+    "traceability": {
+      "all_issues": {
+        "entity_reference_coverage": 0.916666667,
+        "entity_reference_coverage_count": 330,
+        "issue_count": 360,
+        "rule_id_coverage": 1.0,
+        "rule_id_coverage_count": 360,
+        "source_hash_coverage": 1.0,
+        "source_hash_coverage_count": 360
+      },
+      "primary_issues": {
+        "entity_reference_coverage": 1.0,
+        "entity_reference_coverage_count": 330,
+        "issue_count": 330,
+        "rule_id_coverage": 1.0,
+        "rule_id_coverage_count": 330,
+        "source_hash_coverage": 1.0,
+        "source_hash_coverage_count": 330
+      }
     }
   },
   "pre_fix_raw_results_hash": "sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9",
@@ -250,22 +304,28 @@
       "threshold": 0.95,
       "value": 1.0
     },
-    "Information supported-rule macro-F1 >= 0.95": {
+    "Information macro-F1 >= 0.95": {
+      "basis": "post-freeze supported-rule macro; zero-support policy not preregistered",
       "operator": ">=",
-      "status": "PASS",
+      "sensitivity_definition": "mean F1 across supported rules only",
+      "sensitivity_value": 1.0,
+      "status": "NOT_CONCLUSIVE",
       "threshold": 0.95,
-      "value": 1.0
+      "value": null
     },
-    "Revision supported-rule macro-F1 >= 0.95": {
+    "Revision macro-F1 >= 0.95": {
+      "basis": "post-freeze supported-rule macro; zero-support policy not preregistered",
       "operator": ">=",
-      "status": "PASS",
+      "sensitivity_definition": "mean F1 across supported rules only",
+      "sensitivity_value": 1.0,
+      "status": "NOT_CONCLUSIVE",
       "threshold": 0.95,
-      "value": 1.0
+      "value": null
     }
   },
   "protocol_hash": "sha256:d18cf856bde7879d6887091fb4851502d3979ab998ef6f96d6eb22c86c275b36",
   "raw_engine_results_hash": "sha256:87b7d2edfda50dbe1c6d09bfd63f0cc9995df623911c62340115c3fe9d98b32e",
-  "raw_results_hash": "sha256:9b663d7604c710a0edac3e4580a66fe1b1d9b9a7c00984f021c81289b42be037",
+  "raw_results_hash": "sha256:fd1fb788c67d231a6d344c9297ba730058c419c7473d4b32f13276261229d33c",
   "research_validation_only": true,
   "schema_version": "openbim-experiment-summary-v1",
   "split": "evaluation",

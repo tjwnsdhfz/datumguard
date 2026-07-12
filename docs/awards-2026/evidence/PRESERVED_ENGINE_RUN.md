@@ -11,6 +11,8 @@ byte 단위로 보존한다.
 | `experiment_summary_pre_analysis_fix.json` | 최초 자동 집계 326/4/4 summary | `sha256:47ef83149dd88ebf1516b36bd06229ae5c5c8957daa4ebb8c64a1ef06ee802cb` |
 | `engine_reproduction_protocol_v1.log` | 최초 실행 명령과 source hash | `sha256:9b02ee29a9009fd2082259dde480b24b3c38df0349ad46bdeb4cbce2a61971fd` |
 
-`analysis-v1.0.1` commit `0ed7ff7716e9f625998a1a17342de9f9fa9cd9b9`는 detector를
-재실행하지 않고 위 raw source에서 evaluator field만 다시 계산했다. 수정 이유, 네 영향 case,
-전후 metric, tag 검증은 `ANALYSIS_CORRECTION.md`와 `analysis_correction.json`에 기록한다.
+`analysis-v1.0.1` commit `0ed7ff7716e9f625998a1a17342de9f9fa9cd9b9`는 첫 correction 이력이다.
+최종 `analysis-v1.0.2` commit `9d147e30aa33a7c3571a83174d6b18a557662880`는 detector를
+재실행하지 않고 위 raw source에서 evaluator field를 다시 계산하고, zero-support 정책이 동결되지 않은
+macro-F1을 post-freeze sensitivity로 분리했다. GEO pair 영향 4개 case, ablation denominator 영향
+30개 case와 전후 metric은 `ANALYSIS_CORRECTION.md`와 `analysis_correction.json`에 기록한다.

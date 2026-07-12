@@ -57,19 +57,18 @@
 <!-- ANALYSIS_CORRECTION_START -->
 ## Post-freeze 평가 구현 수정
 
-동결된 engine report의 최초 집계에서 GEO-01 pair key, ablation recall denominator,
-family target macro-F1 구현 오류 3건을 발견했다.
+동결된 engine report를 처음 집계할 때 GEO-01 pair key와 ablation recall denominator 구현 오류가 발견됐다.
 
-- 영향 case: EVAL-L1-S2102, EVAL-L2-S2202, EVAL-L2-S2206, EVAL-L3-S2308
+- 영향 case union: 30개
+- GEO-01 pair 영향: 4개 case
+- ablation denominator 영향: 30개 case
 - 최초 full TP/FP/FN: 326/4/4
 - 최초 Geometry F1: 0.933333333
 - 수정 후 full TP/FP/FN: 330/0/0
 - 수정 후 Geometry F1: 1.0
 - engine 재실행 없음; detector, 입력, truth, 규칙, threshold 변경 없음
-- 원본 byte SHA-256: `sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9`
-- 원본은 `evidence/raw_results_pre_analysis_fix.jsonl`로 보존
+- 원본 byte는 `evidence/raw_results_pre_analysis_fix.jsonl`로 보존
+- information/revision supported-rule macro-F1은 zero-support 정책을 사전등록하지 않아 post-freeze sensitivity로만 보고
 
-이는 detector 성능을 조정한 것이 아니라 사전등록한 matching, ablation, macro-F1 정의에 분석 코드를
-일치시킨 post-freeze evaluator correction이다. 상세 provenance는
-`evidence/ANALYSIS_CORRECTION.md`를 따른다.
+이는 모델 성능 수정이 아니라 사전등록한 matching/ablation 정의에 분석 코드를 일치시킨 post-freeze evaluator correction이다.
 <!-- ANALYSIS_CORRECTION_END -->
