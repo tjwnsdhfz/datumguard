@@ -1,0 +1,144 @@
+name: frame-research
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_training_smoke:
+        description: Run a small 30-case, 3-epoch GraphSAGE/GAT training parity smoke
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frame-research-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frame-research:
+    name: OpenSeesPy and PyG evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install pinned uv
+        run: python -m pip install uv==0.8.22
+
+      - name: Install base, dev, ML, and genuine OpenSeesPy runtime
+        run: |
+          set -euo pipefail
+          uv sync --frozen --extra dev --extra ml
+          uv pip install openseespy==3.8.0.0
+
+      - name: Record research runtime versions
+        run: |
+          set -euo pipefail
+          uv run --no-sync python - <<'PY'
+          import importlib.metadata
+          import platform
+
+          import openseespy.opensees as ops
+          import torch
+          import torch_geometric
+
+          assert platform.python_version_tuple()[:2] == ("3", "12")
+          assert importlib.metadata.version("openseespy") == "3.8.0.0"
+          assert str(ops.version()).startswith("3.8")
+          print(
+              {
+                  "python": platform.python_version(),
+                  "openseespy": importlib.metadata.version("openseespy"),
+                  "opensees_engine": ops.version(),
+                  "torch": torch.__version__,
+                  "torch_geometric": torch_geometric.__version__,
+              }
+          )
+          PY
+
+      - name: Run focused CAD, parity, and uncertainty tests
+        run: |
+          set -euo pipefail
+          uv run --no-sync pytest \
+            tests/test_frame_rhino_adapter.py \
+            tests/test_frame_dxf.py \
+            tests/test_frame_cad_service.py \
+            tests/test_frame_opensees.py \
+            tests/test_frame_gnn.py \
+            tests/test_frame_surrogate.py \
+            tests/test_frame_assurance_api.py
+
+      - name: Run genuine six-case OpenSeesPy parity smoke
+        run: |
+          set -euo pipefail
+          report="${RUNNER_TEMP}/frame-opensees-parity.json"
+          uv run --no-sync python tools/run_frame_opensees_parity.py \
+            --output "${report}" \
+            --no-package-copy
+          uv run --no-sync python - "${report}" <<'PY'
+          import json
+          import sys
+
+          payload = json.load(open(sys.argv[1], encoding="utf-8"))
+          summary = payload["summary"]
+          assert summary["case_count"] == 6, summary
+          assert summary["passed_count"] == 6, summary
+          assert summary["failed_count"] == 0, summary
+          assert summary["skipped_count"] == 0, summary
+          assert payload["availability"]["package_version"] == "3.8.0.0"
+          assert all(case["status"] == "PASSED" for case in payload["cases"])
+          PY
+
+      - name: Run small PyG training and portable-inference parity smoke
+        if: ${{ inputs.run_training_smoke }}
+        run: |
+          set -euo pipefail
+          output_dir="${RUNNER_TEMP}/frame-gnn"
+          package_model="${RUNNER_TEMP}/frame-graphsage-smoke.json"
+          package_benchmark="${RUNNER_TEMP}/frame-gnn-smoke.json"
+          uv run --no-sync python tools/train_frame_gnn.py \
+            --cases 30 \
+            --epochs 3 \
+            --hidden-channels 8 \
+            --model-seeds 7 17 \
+            --output-dir "${output_dir}" \
+            --package-artifact "${package_model}" \
+            --package-benchmark "${package_benchmark}" \
+            > "${RUNNER_TEMP}/frame-gnn-stdout.json"
+          uv run --no-sync python - "${package_benchmark}" <<'PY'
+          import json
+          import sys
+
+          payload = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert payload["dataset"]["requested_cases"] == 30
+          assert set(payload["models"]) == {"graphsage", "gat"}
+          assert payload["split"]["case_id_leakage"] == 0
+          assert payload["split"]["contract_hash_leakage"] == 0
+          parity = payload["portable_artifact"]["pyg_numpy_parity"]
+          assert parity["all_within_tolerance"] is True, parity
+          assert len(parity["cases"]) == 3, parity
+          assert payload["claims"]["official_solver_remains_separate"] is True
+          assert payload["claims"]["is_authoritative_pass_source"] is False
+          PY
+
+      - name: Upload temporary research smoke reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: frame-research-smoke-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/frame-opensees-parity.json
+            ${{ runner.temp }}/frame-gnn-smoke.json
+            ${{ runner.temp }}/frame-graphsage-smoke.json
+          if-no-files-found: warn
+          retention-days: 14

@@ -436,8 +436,18 @@ SVG·PDF·JSON의 feature ID는 DXF XDATA와 일치해야 한다. PDF에는 `DO 
 | `drawing_compare` | baseline, candidate | dimension/feature/constraint diff |
 | `export_bundle` | passed verification | local bundle path |
 | `rhino_preview` | verified artifact | secondary evidence/mismatch |
+| `artifact_audit` | DXF/STEP/IFC bytes | immutable informational audit |
+| `artifact_compare` | baseline/candidate artifacts | revision evidence |
+| `solid_generate_verify` | limited solid contract | STEP round-trip evidence |
+| `frame_analyze` | structural frame contract | deterministic screening evidence |
+| `frame_repair_propose` | structural frame contract | bounded section proposal |
+| `frame_rhino_adapt` | Rhino/GH exchange | normalized mm contract/confirmation |
+| `frame_dxf_generate_verify` | structural frame contract | exact solve + reopened DXF gate |
+| `frame_surrogate_predict` | structural frame contract | PREDICTED/REVIEW_REQUIRED only |
+| `frame_opensees_parity_evidence` | 없음 | packaged 6-case parity evidence |
 
 MCP 로컬 artifact는 사용자가 지정한 workspace 아래 `.datumguard/runs/{contract_hash}/`에 저장한다. 입력 경로 밖 쓰기와 임의 명령 실행을 허용하지 않는다.
+현재 public MCP surface는 기존 9개 contract 도구와 위 확장 9개를 합한 18개다.
 
 ## 14. HTTP API
 
@@ -454,6 +464,15 @@ Base path는 `/api/v1`이다.
 | POST | `/drawings/compare` | 버전 비교 |
 | POST | `/exports` | 승인 bundle 다운로드 |
 | POST | `/rhino/preview` | 로컬 adapter 요청; 공개 서버는 비활성 |
+| GET | `/schema/frame-contract` | `StructuralFrameContract` schema |
+| GET | `/schema/rhino-frame-exchange` | `RhinoFrameExchange` schema |
+| POST | `/frame/contracts/validate` | frame contract validation/hash |
+| POST | `/frame/designs/run` | 공식 deterministic 2D screening |
+| POST | `/frame/rhino/adapt` | 명시적 unit/datum exchange 정규화 |
+| POST | `/frame/cad/run` | solver + R2013 DXF re-open assurance |
+| POST | `/frame/surrogate/predict` | 비공식 portable GraphSAGE triage |
+| GET | `/frame/benchmarks/opensees` | packaged genuine OpenSeesPy evidence |
+| GET | `/frame/benchmarks/gnn` | packaged PyG topology-holdout evidence |
 
 API는 stateless이며 요청 본문 또는 같은 요청에서 발급한 짧은 수명의 signed payload로 상태를 전달한다. MVP 공개 서버는 사용자 파일과 prompt 원문을 영구 저장하지 않는다.
 
@@ -635,6 +654,15 @@ MCP 공개 도구 수와 이름은 유지하고 `design_kind`로 plate/architect
 | DG-FR-021 | solid_models + `/solid` | Pydantic schema, three family and exact input tests |
 | DG-FR-022 | solid_service + cad_worker | isolated OpenCascade STEP writer/re-import and pass-only bundle tests |
 | DG-FR-023 | RhinoCode local smoke | STEP→headless RhinoDoc→3DM unit/bbox evidence |
+| DG-FRAME-FR-001~010 | frame_models/solver/service + `/frame` | deterministic contract/solver/repair/API/MCP/UI tests |
+| DG-FRAME-FR-011 | frame_rhino_adapter + integrations | unit/datum/metadata/order/merge-boundary tests |
+| DG-FRAME-FR-012 | frame_dxf + frame_cad_service | R2013/mm/XDATA/tamper/re-open/download-gate tests |
+| DG-FRAME-FR-013 | frame_opensees | genuine 3.8 six-case parity and fail-closed tests |
+| DG-FRAME-FR-014 | frame_gnn + benchmark JSON | 90-case topology holdout, leakage and GraphSAGE/GAT tests |
+| DG-FRAME-FR-015 | frame_surrogate | missing/corrupt/OOD/high-uncertainty REVIEW_REQUIRED tests |
+| DG-FRAME-FR-016 | frame_cad_service + frame_surrogate | official solver separation and no-authoritative-AI tests |
+| DG-FRAME-FR-017 | API + MCP | assurance schema/routes and 18-tool inventory tests |
+| DG-FRAME-FR-018 | `/frame` + deployment smoke | DOM/domain/deterministic canary/release SHA/CORS gate |
 | DG-NFR-001~010 | 전체 | CI, security, performance, compatibility suites |
 
 ## 22. 배포와 CI
@@ -654,6 +682,9 @@ MCP 공개 도구 수와 이름은 유지하고 `design_kind`로 plate/architect
 6. FastAPI와 MCP
 7. Rhino adapter
 8. QA·benchmark·release
+9. FrameGuard deterministic structural screening
+10. FrameGuard Rhino/GH exchange와 independent DXF gate
+11. OpenSeesPy/PyG research validation, uncertainty와 deployment gate
 
 각 단계는 [prompts/INDEX.md](../prompts/INDEX.md)의 단일 작업 프롬프트와 일대일 대응한다.
 
@@ -667,7 +698,85 @@ MCP 공개 도구 수와 이름은 유지하고 `design_kind`로 plate/architect
 - `SolidPartContract`는 `mounting_plate`, `angle_bracket`, `flange` discriminated union이다.
 - STEP은 writer timestamp를 canonicalize하여 동일 contract의 artifact와 bundle hash를 재현한다.
 - 웹 mesh는 재입력 STEP의 tessellation이며 공식 치수 판정 source가 아니다.
-- 기존 9개 MCP contract 도구는 변경하지 않고 `artifact_audit`, `artifact_compare`,
-  `solid_generate_verify`를 추가해 총 12개 tool을 제공한다.
+- 기존 9개 MCP contract 도구는 변경하지 않고 Artifact/Solid 3개와 FrameGuard 6개를 추가해
+  총 18개 tool을 제공한다.
 - Rhino 8 smoke는 hosted API 밖의 repository-owned driver만 RhinoCode로 실행한다. 결과는 secondary
   interoperability evidence이며 OpenCascade 공식 verifier를 덮어쓰지 않는다.
+
+## 25. FrameGuard CAD bridge와 research validation
+
+### 25.1 판정 경계
+
+FrameGuard의 공식 screening source는 `datumguard_numpy_2d_frame_v1`과 독립 DXF verifier다.
+OpenSeesPy는 공식 solver를 대체하지 않는 parity evidence이고, GraphSAGE/GAT는 preview용
+surrogate다. 어떤 research 결과도 exact solver 또는 DXF gate를 우회하거나 `PASS`를 만들 수 없다.
+
+```text
+Rhino / Grasshopper
+  -> RhinoFrameExchange(unit + datum + metadata)
+  -> StructuralFrameContract(mm)
+  -> exact 2D solver
+  -> serialized R2013/mm DXF
+  -> independent DXF re-open verifier (0.001 mm)
+  -> screening PASS/FAIL
+
+StructuralFrameContract
+  -> portable GraphSAGE ensemble
+  -> PREDICTED or REVIEW_REQUIRED
+  -> exact solver still required
+```
+
+### 25.2 Rhino·Grasshopper exchange와 datum
+
+- Rhino/GH는 직선 centerline, point support/load, section metadata만 `RhinoFrameExchange 1.0.0`으로
+  추출한다. `integrations/rhino/`와 `integrations/grasshopper/` script만 RhinoCommon에 의존한다.
+- document unit은 `mm`, `cm`, `m`, `in`, `ft` 중 하나를 명시한다. unset/unknown이면 추정하지 않고
+  `needs_confirmation`과 `DG_FRAME_RHINO_UNIT_CONFIRMATION_REQUIRED`를 반환한다.
+- datum은 오른손 직교 단위축이며 World XY와 평행해야 한다. XY 내부 회전은 허용하지만 기울어진
+  work plane과 `0.001 mm`를 넘는 out-of-plane geometry는 차단한다.
+- geometry와 길이 차원 section 값은 mm/mm²/mm⁴로 정규화하고 force는 N, stress/modulus는 MPa를
+  유지한다. 자동 node 병합은 하지 않으며 명시된 merge tolerance만 사용한다.
+
+### 25.3 DXF 독립 재개봉 gate
+
+Writer는 R2013, `$INSUNITS=4(mm)`와 `S-FRAME`, `S-SUPP`, `S-LOAD`, `DG-META` layer를 사용하고
+`DATUMGUARD` XDATA에 contract hash, entity ID/type, revision, normalized datum과 unit을 기록한다.
+Verifier는 writer memory geometry를 받지 않고 serialized DXF bytes를 ezdxf로 다시 열어 version,
+unit, layer, XDATA, entity count, endpoint/support/load coordinate, Z deviation과 duplicate centerline을
+재측정한다. 최대 좌표 편차는 `0.001 mm`다. exact solver와 DXF verifier가 모두 통과할 때만
+`POST /api/v1/frame/cad/run`이 download payload를 제공한다.
+
+### 25.4 genuine OpenSeesPy parity
+
+`openseespy==3.8.0.0`, engine `3.8.0`의 실제 `elasticBeamColumn` 결과를 공식 NumPy solver와
+비교한다. node displacement/rotation/reaction, signed local member force, combined stress,
+utilization과 global equilibrium을 combined absolute/relative tolerance로 검사한다. 패키지 보고서
+`src/datumguard/data/frame_opensees_parity.json`의 현재 결과는 cantilever, portal, 2/3/4-bay rack,
+의도된 failure fixture **6/6 PASSED**다. failure fixture는 두 solver가 모두 screening FAIL을
+반환했기 때문에 parity PASSED다. 이는 범용 FEA 동등성이나 구조 안전 인증이 아니다.
+
+### 25.5 PyG topology holdout와 uncertainty
+
+패키지 보고서 `src/datumguard/data/frame_gnn_benchmark.json`은 Python 3.12.11,
+PyTorch 2.13.0 CPU, PyG 2.8.0에서 생성한 solver-labeled 90-case 결과다. train 48와 validation
+12는 2/3-bay, test 30은 학습에서 보지 않은 4-bay다. case/contract leakage는 0이며 test는
+threshold calibration에 사용하지 않았다.
+
+| Model | displacement MAE/R² | utilization MAE/R² |
+|---|---:|---:|
+| GraphSAGE 3-seed ensemble | `0.627426 mm / 0.804861` | `0.0371842 / 0.732706` |
+| GAT 3-seed ensemble | `0.651228 mm / 0.792357` | `0.0294386 / 0.806528` |
+
+GraphSAGE는 GAT보다 모든 metric이 우수해서가 아니라 NumPy inference로 export할 수 있고 PyG와
+`1e-4` 이내 parity가 확인되어 선택했다. base Docker와 production inference에는 Torch를 넣지
+않는다. validation-only uncertainty threshold, train-only feature/count bounds, model/schema/hash
+검사 중 하나라도 실패하면 `REVIEW_REQUIRED`다. `PREDICTED`도 authoritative PASS가 아니다.
+
+### 25.6 CI와 배포 상태
+
+선택형 `.github/workflows/frame-research.yml`만 Python 3.12에 base+dev+ml과 OpenSeesPy 3.8을
+설치한다. focused Rhino/DXF/OpenSees/GNN tests와 작은 training/inference parity smoke를 실행하되
+base Docker dependency를 변경하지 않는다. `/frame`과 assurance endpoint는 현재 source/CI 기능이며
+v0.2.1 production에는 아직 배포되지 않았다. 다음 release는 Vercel `/frame` sentinel,
+`structural_frame` domain, exact solver canary, API `release_sha`와 CORS를 같은 배포 revision에서
+통과해야만 hosted capability로 표시한다.

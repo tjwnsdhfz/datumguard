@@ -1,0 +1,830 @@
+{
+  "availability": {
+    "engine_version": "3.8.0",
+    "package": "openseespy",
+    "package_version": "3.8.0.0",
+    "reason": null,
+    "runtime": "CPython 3.12.11",
+    "status": "AVAILABLE"
+  },
+  "benchmark_id": "datumguard-frame-opensees-parity",
+  "cases": [
+    {
+      "case_id": "cantilever",
+      "contract_hash": "sha256:d9cc2a33d96798ca1b8e7707ffbc45a19fdb2056893d12cdafc6da0db03b9fb0",
+      "equilibrium": {
+        "numpy_force_residual_n": 0.0,
+        "numpy_moment_residual_nmm": 2.3358855590534712e-09,
+        "opensees_force_residual_n": 0.0,
+        "opensees_moment_residual_nmm": 2.3283064365386963e-10
+      },
+      "errors": [],
+      "expected_screening_status": "PASS",
+      "metrics": [
+        {
+          "absolute_tolerance": 1e-07,
+          "max_absolute_error": 3.552713678800501e-15,
+          "max_relative_error": 6.315935428978661e-16,
+          "metric": "node_displacement",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 4,
+          "unit": "mm",
+          "worst_entity_dof": "tip.uy"
+        },
+        {
+          "absolute_tolerance": 1e-10,
+          "max_absolute_error": 2.168404344971009e-18,
+          "max_relative_error": 7.709882115452464e-16,
+          "metric": "node_rotation",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 2,
+          "unit": "rad",
+          "worst_entity_dof": "tip.rz"
+        },
+        {
+          "absolute_tolerance": 1e-05,
+          "max_absolute_error": 3.410605131648481e-13,
+          "max_relative_error": 3.410605131648481e-08,
+          "metric": "node_reaction_force",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 4,
+          "unit": "N",
+          "worst_entity_dof": "tip.reaction_fy"
+        },
+        {
+          "absolute_tolerance": 0.01,
+          "max_absolute_error": 2.7939677238464355e-09,
+          "max_relative_error": 7.979300183554495e-08,
+          "metric": "node_reaction_moment",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 2,
+          "unit": "N*mm",
+          "worst_entity_dof": "fixed.reaction_mz"
+        },
+        {
+          "absolute_tolerance": 1e-05,
+          "max_absolute_error": 3.410605131648481e-13,
+          "max_relative_error": 3.4106051316484795e-16,
+          "metric": "member_local_axial_shear",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 4,
+          "unit": "N",
+          "worst_entity_dof": "cantilever.start_shear_n"
+        },
+        {
+          "absolute_tolerance": 0.01,
+          "max_absolute_error": 2.7939677238464355e-09,
+          "max_relative_error": 7.979300183554495e-08,
+          "metric": "member_local_moment",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 2,
+          "unit": "N*mm",
+          "worst_entity_dof": "cantilever.start_moment_nmm"
+        },
+        {
+          "absolute_tolerance": 1e-08,
+          "max_absolute_error": 2.842170943040401e-14,
+          "max_relative_error": 7.579122514774394e-16,
+          "metric": "member_combined_stress",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 1,
+          "unit": "MPa",
+          "worst_entity_dof": "cantilever.max_combined_stress"
+        },
+        {
+          "absolute_tolerance": 1e-10,
+          "max_absolute_error": 1.1102230246251565e-16,
+          "max_relative_error": 7.401486830834369e-16,
+          "metric": "member_utilization",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 1,
+          "unit": "ratio",
+          "worst_entity_dof": "cantilever.utilization"
+        }
+      ],
+      "numpy_screening_status": "PASS",
+      "opensees_screening_status": "PASS",
+      "status": "PASSED",
+      "tag_mapping": {
+        "members": {
+          "cantilever": 1
+        },
+        "nodes": {
+          "fixed": 1,
+          "tip": 2
+        }
+      }
+    },
+    {
+      "case_id": "portal",
+      "contract_hash": "sha256:710d0e891c87eeb58e255eba0f32ab3eef35342a1ad965a3c02eb153f24b91be",
+      "equilibrium": {
+        "numpy_force_residual_n": 2.000888343900442e-11,
+        "numpy_moment_residual_nmm": 5.168840289115906e-08,
+        "opensees_force_residual_n": 2.7284841053187847e-12,
+        "opensees_moment_residual_nmm": 1.6880221664905548e-09
+      },
+      "errors": [],
+      "expected_screening_status": "PASS",
+      "metrics": [
+        {
+          "absolute_tolerance": 1e-07,
+          "max_absolute_error": 1.021405182655144e-14,
+          "max_relative_error": 3.094602334359875e-14,
+          "metric": "node_displacement",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 8,
+          "unit": "mm",
+          "worst_entity_dof": "eave-right.ux"
+        },
+        {
+          "absolute_tolerance": 1e-10,
+          "max_absolute_error": 1.951563910473908e-18,
+          "max_relative_error": 2.74507961240084e-15,
+          "metric": "node_rotation",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 4,
+          "unit": "rad",
+          "worst_entity_dof": "eave-left.rz"
+        },
+        {
+          "absolute_tolerance": 1e-05,
+          "max_absolute_error": 1.2846612662542611e-10,
+          "max_relative_error": 1.284661266254261e-05,
+          "metric": "node_reaction_force",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 8,
+          "unit": "N",
+          "worst_entity_dof": "eave-left.reaction_fy"
+        },
+        {
+          "absolute_tolerance": 0.01,
+          "max_absolute_error": 5.587935447692871e-08,
+          "max_relative_error": 6.984919309616089e-07,
+          "metric": "node_reaction_moment",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 4,
+          "unit": "N*mm",
+          "worst_entity_dof": "base-right.reaction_mz"
+        },
+        {
+          "absolute_tolerance": 1e-05,
+          "max_absolute_error": 1.1732481652870774e-10,
+          "max_relative_error": 3.0952042303950936e-14,
+          "metric": "member_local_axial_shear",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 12,
+          "unit": "N",
+          "worst_entity_dof": "column-left.start_axial_n"
+        },
+        {
+          "absolute_tolerance": 0.01,
+          "max_absolute_error": 5.21540641784668e-08,
+          "max_relative_error": 3.001070906738953e-15,
+          "metric": "member_local_moment",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 6,
+          "unit": "N*mm",
+          "worst_entity_dof": "column-right.start_moment_nmm"
+        },
+        {
+          "absolute_tolerance": 1e-08,
+          "max_absolute_error": 1.0658141036401503e-13,
+          "max_relative_error": 3.311874507960748e-15,
+          "metric": "member_combined_stress",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 3,
+          "unit": "MPa",
+          "worst_entity_dof": "column-right.max_combined_stress"
+        },
+        {
+          "absolute_tolerance": 1e-10,
+          "max_absolute_error": 4.163336342344337e-16,
+          "max_relative_error": 3.234252449180418e-15,
+          "metric": "member_utilization",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 3,
+          "unit": "ratio",
+          "worst_entity_dof": "column-right.utilization"
+        }
+      ],
+      "numpy_screening_status": "PASS",
+      "opensees_screening_status": "PASS",
+      "status": "PASSED",
+      "tag_mapping": {
+        "members": {
+          "beam": 1,
+          "column-left": 2,
+          "column-right": 3
+        },
+        "nodes": {
+          "base-left": 1,
+          "base-right": 2,
+          "eave-left": 3,
+          "eave-right": 4
+        }
+      }
+    },
+    {
+      "case_id": "pipe-rack-2-bay",
+      "contract_hash": "sha256:d97597801b768facfbe6e2b5425af2eb343b105f690642e33846b4d602d2307d",
+      "equilibrium": {
+        "numpy_force_residual_n": 1.673470251262188e-10,
+        "numpy_moment_residual_nmm": 9.772849540613536e-07,
+        "opensees_force_residual_n": 2.9103830456733704e-11,
+        "opensees_moment_residual_nmm": 1.5388826505598228e-07
+      },
+      "errors": [],
+      "expected_screening_status": "PASS",
+      "metrics": [
+        {
+          "absolute_tolerance": 1e-07,
+          "max_absolute_error": 2.0250467969162855e-13,
+          "max_relative_error": 1.4879047015541968e-13,
+          "metric": "node_displacement",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 18,
+          "unit": "mm",
+          "worst_entity_dof": "N-L2-C1.ux"
+        },
+        {
+          "absolute_tolerance": 1e-10,
+          "max_absolute_error": 4.5319650809894085e-17,
+          "max_relative_error": 2.366793946937135e-14,
+          "metric": "node_rotation",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 9,
+          "unit": "rad",
+          "worst_entity_dof": "N-L2-C2.rz"
+        },
+        {
+          "absolute_tolerance": 1e-05,
+          "max_absolute_error": 5.905349098611623e-09,
+          "max_relative_error": 0.0005238689482212067,
+          "metric": "node_reaction_force",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 18,
+          "unit": "N",
+          "worst_entity_dof": "N-L0-C0.reaction_fy"
+        },
+        {
+          "absolute_tolerance": 0.01,
+          "max_absolute_error": 1.2665987014770508e-07,
+          "max_relative_error": 1.4435499906539917e-06,
+          "metric": "node_reaction_moment",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 9,
+          "unit": "N*mm",
+          "worst_entity_dof": "N-L0-C0.reaction_mz"
+        },
+        {
+          "absolute_tolerance": 1e-05,
+          "max_absolute_error": 4.718458512797952e-09,
+          "max_relative_error": 2.9034981138984255e-13,
+          "metric": "member_local_axial_shear",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 48,
+          "unit": "N",
+          "worst_entity_dof": "COL-L0-C0.start_axial_n"
+        },
+        {
+          "absolute_tolerance": 0.01,
+          "max_absolute_error": 8.195638656616211e-07,
+          "max_relative_error": 4.128425065812683e-14,
+          "metric": "member_local_moment",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 24,
+          "unit": "N*mm",
+          "worst_entity_dof": "COL-L1-C1.end_moment_nmm"
+        },
+        {
+          "absolute_tolerance": 1e-08,
+          "max_absolute_error": 1.7621459846850485e-12,
+          "max_relative_error": 3.925271383826738e-14,
+          "metric": "member_combined_stress",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 12,
+          "unit": "MPa",
+          "worst_entity_dof": "COL-L1-C0.max_combined_stress"
+        },
+        {
+          "absolute_tolerance": 1e-10,
+          "max_absolute_error": 9.381384558082573e-15,
+          "max_relative_error": 3.9228399635607936e-14,
+          "metric": "member_utilization",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 12,
+          "unit": "ratio",
+          "worst_entity_dof": "COL-L1-C0.utilization"
+        }
+      ],
+      "numpy_screening_status": "PASS",
+      "opensees_screening_status": "PASS",
+      "status": "PASSED",
+      "tag_mapping": {
+        "members": {
+          "BEAM-L1-B0": 1,
+          "BEAM-L1-B1": 2,
+          "BEAM-L2-B0": 3,
+          "BEAM-L2-B1": 4,
+          "BRACE-B0": 5,
+          "BRACE-B1": 6,
+          "COL-L0-C0": 7,
+          "COL-L0-C1": 8,
+          "COL-L0-C2": 9,
+          "COL-L1-C0": 10,
+          "COL-L1-C1": 11,
+          "COL-L1-C2": 12
+        },
+        "nodes": {
+          "N-L0-C0": 1,
+          "N-L0-C1": 2,
+          "N-L0-C2": 3,
+          "N-L1-C0": 4,
+          "N-L1-C1": 5,
+          "N-L1-C2": 6,
+          "N-L2-C0": 7,
+          "N-L2-C1": 8,
+          "N-L2-C2": 9
+        }
+      }
+    },
+    {
+      "case_id": "pipe-rack-3-bay",
+      "contract_hash": "sha256:f0b36d603bb6db62924e3b1887cf58f3c0520007a6bca6522dbb6b26366fa792",
+      "equilibrium": {
+        "numpy_force_residual_n": 8.58335624798201e-11,
+        "numpy_moment_residual_nmm": 1.4171194608855029e-08,
+        "opensees_force_residual_n": 7.275957614183426e-12,
+        "opensees_moment_residual_nmm": 2.0156099151090016e-07
+      },
+      "errors": [],
+      "expected_screening_status": "PASS",
+      "metrics": [
+        {
+          "absolute_tolerance": 1e-07,
+          "max_absolute_error": 3.730349362740526e-14,
+          "max_relative_error": 2.405191400491556e-14,
+          "metric": "node_displacement",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 24,
+          "unit": "mm",
+          "worst_entity_dof": "N-L2-C3.ux"
+        },
+        {
+          "absolute_tolerance": 1e-10,
+          "max_absolute_error": 8.023096076392733e-18,
+          "max_relative_error": 1.1124770456438459e-14,
+          "metric": "node_rotation",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 12,
+          "unit": "rad",
+          "worst_entity_dof": "N-L2-C0.rz"
+        },
+        {
+          "absolute_tolerance": 1e-05,
+          "max_absolute_error": 2.7912392397411168e-09,
+          "max_relative_error": 0.0002791239239741117,
+          "metric": "node_reaction_force",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 24,
+          "unit": "N",
+          "worst_entity_dof": "N-L1-C1.reaction_fy"
+        },
+        {
+          "absolute_tolerance": 0.01,
+          "max_absolute_error": 2.8172507882118225e-08,
+          "max_relative_error": 1.3387762010097504e-06,
+          "metric": "node_reaction_moment",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 12,
+          "unit": "N*mm",
+          "worst_entity_dof": "N-L0-C2.reaction_mz"
+        },
+        {
+          "absolute_tolerance": 1e-05,
+          "max_absolute_error": 2.371962182223797e-09,
+          "max_relative_error": 8.116824896865809e-14,
+          "metric": "member_local_axial_shear",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 68,
+          "unit": "N",
+          "worst_entity_dof": "COL-L1-C0.start_axial_n"
+        },
+        {
+          "absolute_tolerance": 0.01,
+          "max_absolute_error": 1.862645149230957e-07,
+          "max_relative_error": 3.671296773601604e-14,
+          "metric": "member_local_moment",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 34,
+          "unit": "N*mm",
+          "worst_entity_dof": "COL-L1-C1.start_moment_nmm"
+        },
+        {
+          "absolute_tolerance": 1e-08,
+          "max_absolute_error": 4.689582056016661e-13,
+          "max_relative_error": 2.926037045623231e-14,
+          "metric": "member_combined_stress",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 17,
+          "unit": "MPa",
+          "worst_entity_dof": "COL-L1-C1.max_combined_stress"
+        },
+        {
+          "absolute_tolerance": 1e-10,
+          "max_absolute_error": 2.0539125955565396e-15,
+          "max_relative_error": 2.928648405555205e-14,
+          "metric": "member_utilization",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 17,
+          "unit": "ratio",
+          "worst_entity_dof": "COL-L1-C1.utilization"
+        }
+      ],
+      "numpy_screening_status": "PASS",
+      "opensees_screening_status": "PASS",
+      "status": "PASSED",
+      "tag_mapping": {
+        "members": {
+          "BEAM-L1-B0": 1,
+          "BEAM-L1-B1": 2,
+          "BEAM-L1-B2": 3,
+          "BEAM-L2-B0": 4,
+          "BEAM-L2-B1": 5,
+          "BEAM-L2-B2": 6,
+          "BRACE-B0": 7,
+          "BRACE-B1": 8,
+          "BRACE-B2": 9,
+          "COL-L0-C0": 10,
+          "COL-L0-C1": 11,
+          "COL-L0-C2": 12,
+          "COL-L0-C3": 13,
+          "COL-L1-C0": 14,
+          "COL-L1-C1": 15,
+          "COL-L1-C2": 16,
+          "COL-L1-C3": 17
+        },
+        "nodes": {
+          "N-L0-C0": 1,
+          "N-L0-C1": 2,
+          "N-L0-C2": 3,
+          "N-L0-C3": 4,
+          "N-L1-C0": 5,
+          "N-L1-C1": 6,
+          "N-L1-C2": 7,
+          "N-L1-C3": 8,
+          "N-L2-C0": 9,
+          "N-L2-C1": 10,
+          "N-L2-C2": 11,
+          "N-L2-C3": 12
+        }
+      }
+    },
+    {
+      "case_id": "pipe-rack-4-bay",
+      "contract_hash": "sha256:449bde4223f9eaa433fc09f3b65a1ba03a3f9183e3669a5cff20eec0f4f8b940",
+      "equilibrium": {
+        "numpy_force_residual_n": 1.234808715757871e-10,
+        "numpy_moment_residual_nmm": 9.118590909777887e-07,
+        "opensees_force_residual_n": 1.4551915228366852e-11,
+        "opensees_moment_residual_nmm": 2.0649514411899925e-07
+      },
+      "errors": [],
+      "expected_screening_status": "PASS",
+      "metrics": [
+        {
+          "absolute_tolerance": 1e-07,
+          "max_absolute_error": 4.1744385725905886e-14,
+          "max_relative_error": 3.9244672265798343e-13,
+          "metric": "node_displacement",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 30,
+          "unit": "mm",
+          "worst_entity_dof": "N-L2-C4.ux"
+        },
+        {
+          "absolute_tolerance": 1e-10,
+          "max_absolute_error": 8.131516293641283e-18,
+          "max_relative_error": 2.0376436404763573e-14,
+          "metric": "node_rotation",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 15,
+          "unit": "rad",
+          "worst_entity_dof": "N-L2-C4.rz"
+        },
+        {
+          "absolute_tolerance": 1e-05,
+          "max_absolute_error": 3.346031007822603e-09,
+          "max_relative_error": 0.00027030182536691427,
+          "metric": "node_reaction_force",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 30,
+          "unit": "N",
+          "worst_entity_dof": "N-L0-C0.reaction_fy"
+        },
+        {
+          "absolute_tolerance": 0.01,
+          "max_absolute_error": 2.0489096641540527e-08,
+          "max_relative_error": 1.5017576515674591e-06,
+          "metric": "node_reaction_moment",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 15,
+          "unit": "N*mm",
+          "worst_entity_dof": "N-L0-C2.reaction_mz"
+        },
+        {
+          "absolute_tolerance": 1e-05,
+          "max_absolute_error": 3.168679540976882e-09,
+          "max_relative_error": 3.924320984063936e-13,
+          "metric": "member_local_axial_shear",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 88,
+          "unit": "N",
+          "worst_entity_dof": "COL-L0-C0.start_axial_n"
+        },
+        {
+          "absolute_tolerance": 0.01,
+          "max_absolute_error": 2.980232238769531e-07,
+          "max_relative_error": 3.070513029632324e-14,
+          "metric": "member_local_moment",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 44,
+          "unit": "N*mm",
+          "worst_entity_dof": "COL-L1-C3.end_moment_nmm"
+        },
+        {
+          "absolute_tolerance": 1e-08,
+          "max_absolute_error": 4.511946372076636e-13,
+          "max_relative_error": 2.9075558077223076e-14,
+          "metric": "member_combined_stress",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 22,
+          "unit": "MPa",
+          "worst_entity_dof": "COL-L1-C2.max_combined_stress"
+        },
+        {
+          "absolute_tolerance": 1e-10,
+          "max_absolute_error": 1.9984014443252818e-15,
+          "max_relative_error": 2.9058314558688767e-14,
+          "metric": "member_utilization",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 22,
+          "unit": "ratio",
+          "worst_entity_dof": "COL-L1-C2.utilization"
+        }
+      ],
+      "numpy_screening_status": "PASS",
+      "opensees_screening_status": "PASS",
+      "status": "PASSED",
+      "tag_mapping": {
+        "members": {
+          "BEAM-L1-B0": 1,
+          "BEAM-L1-B1": 2,
+          "BEAM-L1-B2": 3,
+          "BEAM-L1-B3": 4,
+          "BEAM-L2-B0": 5,
+          "BEAM-L2-B1": 6,
+          "BEAM-L2-B2": 7,
+          "BEAM-L2-B3": 8,
+          "BRACE-B0": 9,
+          "BRACE-B1": 10,
+          "BRACE-B2": 11,
+          "BRACE-B3": 12,
+          "COL-L0-C0": 13,
+          "COL-L0-C1": 14,
+          "COL-L0-C2": 15,
+          "COL-L0-C3": 16,
+          "COL-L0-C4": 17,
+          "COL-L1-C0": 18,
+          "COL-L1-C1": 19,
+          "COL-L1-C2": 20,
+          "COL-L1-C3": 21,
+          "COL-L1-C4": 22
+        },
+        "nodes": {
+          "N-L0-C0": 1,
+          "N-L0-C1": 2,
+          "N-L0-C2": 3,
+          "N-L0-C3": 4,
+          "N-L0-C4": 5,
+          "N-L1-C0": 6,
+          "N-L1-C1": 7,
+          "N-L1-C2": 8,
+          "N-L1-C3": 9,
+          "N-L1-C4": 10,
+          "N-L2-C0": 11,
+          "N-L2-C1": 12,
+          "N-L2-C2": 13,
+          "N-L2-C3": 14,
+          "N-L2-C4": 15
+        }
+      }
+    },
+    {
+      "case_id": "failure-fixture",
+      "contract_hash": "sha256:ba868c33543fbfdda1ccaaea450daea508fb05bd54ae8eb18d872dbe08c2e9c2",
+      "equilibrium": {
+        "numpy_force_residual_n": 1.127773430198431e-10,
+        "numpy_moment_residual_nmm": 3.4365803003311157e-07,
+        "opensees_force_residual_n": 3.637978807091713e-12,
+        "opensees_moment_residual_nmm": 5.309993866831064e-08
+      },
+      "errors": [],
+      "expected_screening_status": "FAIL",
+      "metrics": [
+        {
+          "absolute_tolerance": 1e-07,
+          "max_absolute_error": 2.3447910280083306e-12,
+          "max_relative_error": 9.929312539875187e-14,
+          "metric": "node_displacement",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 12,
+          "unit": "mm",
+          "worst_entity_dof": "N6.ux"
+        },
+        {
+          "absolute_tolerance": 1e-10,
+          "max_absolute_error": 1.0928757898653885e-15,
+          "max_relative_error": 9.936219572151582e-14,
+          "metric": "node_rotation",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 6,
+          "unit": "rad",
+          "worst_entity_dof": "N6.rz"
+        },
+        {
+          "absolute_tolerance": 1e-05,
+          "max_absolute_error": 6.295522325672209e-09,
+          "max_relative_error": 0.0006295522325672209,
+          "metric": "node_reaction_force",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 12,
+          "unit": "N",
+          "worst_entity_dof": "N6.reaction_fx"
+        },
+        {
+          "absolute_tolerance": 0.01,
+          "max_absolute_error": 3.0100345611572266e-06,
+          "max_relative_error": 2.2584572434425354e-06,
+          "metric": "node_reaction_moment",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 6,
+          "unit": "N*mm",
+          "worst_entity_dof": "N3.reaction_mz"
+        },
+        {
+          "absolute_tolerance": 1e-05,
+          "max_absolute_error": 5.1620645535876974e-09,
+          "max_relative_error": 3.723472831848923e-12,
+          "metric": "member_local_axial_shear",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 20,
+          "unit": "N",
+          "worst_entity_dof": "B-R.start_axial_n"
+        },
+        {
+          "absolute_tolerance": 0.01,
+          "max_absolute_error": 3.0100345611572266e-06,
+          "max_relative_error": 9.928947338775464e-14,
+          "metric": "member_local_moment",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 10,
+          "unit": "N*mm",
+          "worst_entity_dof": "C-M.start_moment_nmm"
+        },
+        {
+          "absolute_tolerance": 1e-08,
+          "max_absolute_error": 2.1657342585967854e-11,
+          "max_relative_error": 9.31906451436757e-14,
+          "metric": "member_combined_stress",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 5,
+          "unit": "MPa",
+          "worst_entity_dof": "B-L.max_combined_stress"
+        },
+        {
+          "absolute_tolerance": 1e-10,
+          "max_absolute_error": 2.4069635173873394e-13,
+          "max_relative_error": 9.31748394033189e-14,
+          "metric": "member_utilization",
+          "passed": true,
+          "relative_tolerance": 1e-07,
+          "sample_count": 5,
+          "unit": "ratio",
+          "worst_entity_dof": "B-L.utilization"
+        }
+      ],
+      "numpy_screening_status": "FAIL",
+      "opensees_screening_status": "FAIL",
+      "status": "PASSED",
+      "tag_mapping": {
+        "members": {
+          "B-L": 1,
+          "B-R": 2,
+          "C-L": 3,
+          "C-M": 4,
+          "C-R": 5
+        },
+        "nodes": {
+          "N1": 1,
+          "N2": 2,
+          "N3": 3,
+          "N4": 4,
+          "N5": 5,
+          "N6": 6
+        }
+      }
+    }
+  ],
+  "claims": [
+    "Independent solver parity benchmark, not a structural safety certification.",
+    "Any unavailable engine, solver failure, entity mismatch, or tolerance mismatch fails closed.",
+    "OpenSees parity does not add code compliance, nonlinear, buckling, fatigue, or seismic checks."
+  ],
+  "contract_hash": "sha256:be9b903c83cf6f6b78a18fea0ef47c00d2daaa4fa001291f4f2babcf00be7c6b",
+  "platform": {
+    "executable": "python.exe",
+    "machine": "AMD64",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.11",
+    "python_implementation": "CPython",
+    "release": "11",
+    "system": "Windows"
+  },
+  "report_kind": "frame_opensees_parity_v1",
+  "schema_version": "frame-opensees-parity-v1",
+  "status": "PASSED",
+  "summary": {
+    "case_count": 6,
+    "fail_closed": true,
+    "failed_count": 0,
+    "passed_count": 6,
+    "skipped_count": 0
+  },
+  "tolerances": {
+    "displacement_abs_mm": 1e-07,
+    "force_abs_n": 1e-05,
+    "moment_abs_nmm": 0.01,
+    "relative": 1e-07,
+    "rotation_abs_rad": 1e-10,
+    "stress_abs_mpa": 1e-08,
+    "utilization_abs": 1e-10
+  },
+  "versions": {
+    "datumguard": "0.2.1",
+    "numpy": "2.4.6",
+    "numpy_solver": "datumguard_numpy_2d_frame_v1",
+    "opensees_adapter": "openseespy_elastic_beam_column_2d_v1",
+    "opensees_engine": "3.8.0",
+    "openseespy": "3.8.0.0",
+    "openseespywin": "3.8.0.0"
+  }
+}

@@ -85,6 +85,29 @@ Production smoke:
 
 이 목록의 immutable run·deployment ID는 [v0.2.1 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.1)에 기록한다.
 
+## Unreleased FrameGuard assurance branch
+
+`agent/frameguard-rhino-gnn`의 FrameGuard full pipeline은 source와 local evidence 단계이며 아직
+v0.2.1 Vercel/Render production 기능이 아니다.
+
+- Web: `/frame`
+- Exact screening: `datumguard_numpy_2d_frame_v1`; 2D linear-elastic Euler–Bernoulli only
+- CAD input: Rhino/GH straight centerline, support, load, section metadata와 explicit unit/datum
+- CAD gate: serialized R2013/mm DXF를 별도 reader가 `0.001 mm` 기준으로 재개봉
+- OpenSees evidence: genuine `openseespy==3.8.0.0`, engine 3.8, required 6 cases `6/6 PASSED`
+- PyG evidence: 90 cases, train/validation/test `48/12/30`, 4-bay topology holdout, leakage 0
+- GraphSAGE test: displacement MAE/R² `0.627426/0.804861`, utilization `0.0371842/0.732706`
+- GAT test: displacement MAE/R² `0.651228/0.792357`, utilization `0.0294386/0.806528`
+- Surrogate boundary: `PREDICTED` 또는 `REVIEW_REQUIRED`; 항상 `authoritative=false`,
+  `exact_solver_required=true`
+- Packaged evidence: `src/datumguard/data/frame_opensees_parity.json`,
+  `src/datumguard/data/frame_gnn_benchmark.json`
+- Research dependency: 선택형 `frame-research` workflow에만 PyG/OpenSeesPy 설치; base Docker 제외
+
+배포 완료 조건은 PR merge 뒤 Vercel `/frame` sentinel, Render `structural_frame` domain,
+deterministic canary, health `release_sha`, CORS가 같은 revision에서 통과하는 것이다. 원격 run과
+deployment ID가 없으므로 현재 hosted capability 또는 production 성과로 표시하지 않는다.
+
 ## Unreleased OpenBIM research branch
 
 `codex/bim-awards-2026`은 v0.2.1 production과 분리된 학생 연구 preview다. production route,

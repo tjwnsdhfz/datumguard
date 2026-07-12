@@ -47,6 +47,12 @@ def test_mcp_exposes_exact_public_tool_set() -> None:
         "artifact_audit",
         "artifact_compare",
         "solid_generate_verify",
+        "frame_analyze",
+        "frame_repair_propose",
+        "frame_rhino_adapt",
+        "frame_dxf_generate_verify",
+        "frame_surrogate_predict",
+        "frame_opensees_parity_evidence",
     }
 
 

@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0.0",
+  "design_kind": "structural_frame",
+  "units": "mm",
+  "nodes": [
+    {"id": "N1", "point": [0, 0], "locked": true},
+    {"id": "N2", "point": [4000, 0], "locked": true},
+    {"id": "N3", "point": [8000, 0], "locked": true},
+    {"id": "N4", "point": [0, 3000], "locked": true},
+    {"id": "N5", "point": [4000, 3000], "locked": true},
+    {"id": "N6", "point": [8000, 3000], "locked": true},
+    {"id": "N7", "point": [0, 6000], "locked": true},
+    {"id": "N8", "point": [4000, 6000], "locked": true},
+    {"id": "N9", "point": [8000, 6000], "locked": true}
+  ],
+  "members": [
+    {"id": "C1-L", "start_node_id": "N1", "end_node_id": "N4", "area_mm2": 5000, "inertia_mm4": 100000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 350, "locked": true},
+    {"id": "C1-M", "start_node_id": "N2", "end_node_id": "N5", "area_mm2": 5000, "inertia_mm4": 100000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 350, "locked": true},
+    {"id": "C1-R", "start_node_id": "N3", "end_node_id": "N6", "area_mm2": 5000, "inertia_mm4": 100000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 350, "locked": true},
+    {"id": "C2-L", "start_node_id": "N4", "end_node_id": "N7", "area_mm2": 4500, "inertia_mm4": 85000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 320, "locked": true},
+    {"id": "C2-M", "start_node_id": "N5", "end_node_id": "N8", "area_mm2": 4500, "inertia_mm4": 85000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 320, "locked": true},
+    {"id": "C2-R", "start_node_id": "N6", "end_node_id": "N9", "area_mm2": 4500, "inertia_mm4": 85000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 320, "locked": true},
+    {"id": "B1-L", "start_node_id": "N4", "end_node_id": "N5", "area_mm2": 3500, "inertia_mm4": 70000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 300, "locked": true},
+    {"id": "B1-R", "start_node_id": "N5", "end_node_id": "N6", "area_mm2": 3500, "inertia_mm4": 70000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 300, "locked": true},
+    {"id": "B2-L", "start_node_id": "N7", "end_node_id": "N8", "area_mm2": 3500, "inertia_mm4": 70000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 300, "locked": true},
+    {"id": "B2-R", "start_node_id": "N8", "end_node_id": "N9", "area_mm2": 3500, "inertia_mm4": 70000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 300, "locked": true},
+    {"id": "BR-L", "start_node_id": "N4", "end_node_id": "N8", "area_mm2": 2200, "inertia_mm4": 8000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 140, "locked": true},
+    {"id": "BR-R", "start_node_id": "N8", "end_node_id": "N6", "area_mm2": 2200, "inertia_mm4": 8000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 140, "locked": true}
+  ],
+  "loads": [
+    {"id": "L-N7", "node_id": "N7", "fx_n": 5000, "fy_n": -18000, "mz_nmm": 0},
+    {"id": "L-N8", "node_id": "N8", "fx_n": 8000, "fy_n": -28000, "mz_nmm": 0},
+    {"id": "L-N9", "node_id": "N9", "fx_n": 5000, "fy_n": -18000, "mz_nmm": 0}
+  ],
+  "supports": [
+    {"id": "S-N1", "node_id": "N1", "ux": true, "uy": true, "rz": true},
+    {"id": "S-N2", "node_id": "N2", "ux": true, "uy": true, "rz": true},
+    {"id": "S-N3", "node_id": "N3", "ux": true, "uy": true, "rz": true}
+  ],
+  "limits": {"max_displacement_mm": 20, "allowable_stress_mpa": 250},
+  "free_parameters": [],
+  "metadata": {
+    "project_name": "Semiconductor Utility Pipe Rack",
+    "revision": "A",
+    "notes": "FrameGuard deterministic screening demo. Not a safety certification."
+  }
+}

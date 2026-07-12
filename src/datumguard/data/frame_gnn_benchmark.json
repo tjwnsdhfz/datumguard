@@ -1,0 +1,392 @@
+{
+  "benchmark_kind": "frame_gnn_benchmark_v1",
+  "claims": {
+    "is_authoritative_pass_source": false,
+    "is_gnn": true,
+    "is_safety_certification": false,
+    "metrics_are_unclipped_observations": true,
+    "official_solver_remains_separate": true
+  },
+  "dataset": {
+    "attempted_cases": 96,
+    "excluded_singular": 6,
+    "label_solver": "datumguard_numpy_2d_frame_v1",
+    "requested_cases": 90,
+    "seed": 20260712,
+    "topology_counts": {
+      "pipe_rack_2_bay": 30,
+      "pipe_rack_3_bay": 30,
+      "pipe_rack_4_bay": 30
+    }
+  },
+  "environment": {
+    "python": "3.12.11",
+    "torch": "2.13.0+cpu",
+    "torch_geometric": "2.8.0"
+  },
+  "experiment_kind": "pyg_topology_holdout_deep_ensemble",
+  "models": {
+    "gat": {
+      "architecture": "gat",
+      "ensemble_seeds": [
+        7,
+        17,
+        29
+      ],
+      "partitions": {
+        "test": {
+          "count": 30,
+          "ensemble_metrics": {
+            "max_displacement_mm": {
+              "mae": 0.6512280930594773,
+              "r2": 0.7923566425977571
+            },
+            "max_utilization": {
+              "mae": 0.029438605451858,
+              "r2": 0.806528140323097
+            }
+          },
+          "interval_coverage": {
+            "max_displacement_mm": 0.7666666666666667,
+            "max_utilization": 0.9666666666666667
+          },
+          "mean_interval_width": {
+            "max_displacement_mm": 2.62705290860982,
+            "max_utilization": 0.27139978120260355
+          },
+          "mean_predictive_std": {
+            "max_displacement_mm": 0.2755115019054563,
+            "max_utilization": 0.012047265869401446
+          }
+        },
+        "train": {
+          "count": 48,
+          "ensemble_metrics": {
+            "max_displacement_mm": {
+              "mae": 0.36970542307481574,
+              "r2": 0.9542188089292208
+            },
+            "max_utilization": {
+              "mae": 0.01585009769243107,
+              "r2": 0.9651104633604034
+            }
+          },
+          "interval_coverage": {
+            "max_displacement_mm": 0.8958333333333334,
+            "max_utilization": 0.9791666666666666
+          },
+          "mean_interval_width": {
+            "max_displacement_mm": 2.230436101039897,
+            "max_utilization": 0.22380100274989476
+          },
+          "mean_predictive_std": {
+            "max_displacement_mm": 0.23391641564875754,
+            "max_utilization": 0.009518947709481316
+          }
+        },
+        "validation": {
+          "count": 12,
+          "ensemble_metrics": {
+            "max_displacement_mm": {
+              "mae": 1.2416301485331391,
+              "r2": 0.7828025351654062
+            },
+            "max_utilization": {
+              "mae": 0.03943906329476452,
+              "r2": 0.8271002511428259
+            }
+          },
+          "interval_coverage": {
+            "max_displacement_mm": 0.8333333333333334,
+            "max_utilization": 0.8333333333333334
+          },
+          "mean_interval_width": {
+            "max_displacement_mm": 4.518724392143571,
+            "max_utilization": 0.370462131569826
+          },
+          "mean_predictive_std": {
+            "max_displacement_mm": 0.473900064934399,
+            "max_utilization": 0.0163146937120948
+          }
+        }
+      },
+      "seed_runs": [
+        {
+          "best_validation_loss": 0.10802045464515686,
+          "epochs_trained": 120,
+          "seed": 7,
+          "test_metrics": {
+            "max_displacement_mm": {
+              "mae": 0.7819447086517748,
+              "r2": 0.6942485758600616
+            },
+            "max_utilization": {
+              "mae": 0.03597314673859273,
+              "r2": 0.7323481221671835
+            }
+          }
+        },
+        {
+          "best_validation_loss": 0.11491508036851883,
+          "epochs_trained": 120,
+          "seed": 17,
+          "test_metrics": {
+            "max_displacement_mm": {
+              "mae": 0.6824711439086154,
+              "r2": 0.7807031252453855
+            },
+            "max_utilization": {
+              "mae": 0.03240392486358081,
+              "r2": 0.781683041106741
+            }
+          }
+        },
+        {
+          "best_validation_loss": 0.07194244861602783,
+          "epochs_trained": 117,
+          "seed": 29,
+          "test_metrics": {
+            "max_displacement_mm": {
+              "mae": 0.6093987049246871,
+              "r2": 0.8195274037171095
+            },
+            "max_utilization": {
+              "mae": 0.027113881239485695,
+              "r2": 0.8479867234490392
+            }
+          }
+        }
+      ],
+      "uncertainty_calibration": {
+        "conformal_multipliers": [
+          4.767592079533782,
+          11.779497191017896
+        ],
+        "conformal_quantile": 0.9,
+        "relative_floors": [
+          0.1249360850559452,
+          0.006689568125618902
+        ],
+        "relative_score_quantile": 0.95,
+        "relative_score_threshold": 0.13463091408596578,
+        "source_partition": "validation_only",
+        "validation_interval_coverage": {
+          "max_displacement_mm": 0.8333333333333334,
+          "max_utilization": 0.8333333333333334
+        }
+      }
+    },
+    "graphsage": {
+      "architecture": "graphsage",
+      "ensemble_seeds": [
+        7,
+        17,
+        29
+      ],
+      "partitions": {
+        "test": {
+          "count": 30,
+          "ensemble_metrics": {
+            "max_displacement_mm": {
+              "mae": 0.6274263249691736,
+              "r2": 0.8048612994904083
+            },
+            "max_utilization": {
+              "mae": 0.037184196576754126,
+              "r2": 0.7327058739598059
+            }
+          },
+          "interval_coverage": {
+            "max_displacement_mm": 0.9666666666666667,
+            "max_utilization": 0.9
+          },
+          "mean_interval_width": {
+            "max_displacement_mm": 4.370551863082,
+            "max_utilization": 0.22935669613225734
+          },
+          "mean_predictive_std": {
+            "max_displacement_mm": 0.3730987137559626,
+            "max_utilization": 0.011245006475377439
+          }
+        },
+        "train": {
+          "count": 48,
+          "ensemble_metrics": {
+            "max_displacement_mm": {
+              "mae": 0.38086842403381943,
+              "r2": 0.9656522960112458
+            },
+            "max_utilization": {
+              "mae": 0.019451902287058204,
+              "r2": 0.9492425784488715
+            }
+          },
+          "interval_coverage": {
+            "max_displacement_mm": 0.9166666666666666,
+            "max_utilization": 0.9583333333333334
+          },
+          "mean_interval_width": {
+            "max_displacement_mm": 2.5176951086875743,
+            "max_utilization": 0.14980273087189436
+          },
+          "mean_predictive_std": {
+            "max_displacement_mm": 0.2110038268269361,
+            "max_utilization": 0.007270693712149144
+          }
+        },
+        "validation": {
+          "count": 12,
+          "ensemble_metrics": {
+            "max_displacement_mm": {
+              "mae": 0.921734324457996,
+              "r2": 0.8590620362687427
+            },
+            "max_utilization": {
+              "mae": 0.04300017641791328,
+              "r2": 0.8380484337651106
+            }
+          },
+          "interval_coverage": {
+            "max_displacement_mm": 0.8333333333333334,
+            "max_utilization": 0.8333333333333334
+          },
+          "mean_interval_width": {
+            "max_displacement_mm": 4.548410423125088,
+            "max_utilization": 0.19094466478671868
+          },
+          "mean_predictive_std": {
+            "max_displacement_mm": 0.3811946895187031,
+            "max_utilization": 0.009252464438702932
+          }
+        }
+      },
+      "seed_runs": [
+        {
+          "best_validation_loss": 0.10584378987550735,
+          "epochs_trained": 120,
+          "seed": 7,
+          "test_metrics": {
+            "max_displacement_mm": {
+              "mae": 0.8810356762339784,
+              "r2": 0.6111752931745202
+            },
+            "max_utilization": {
+              "mae": 0.041322471188350765,
+              "r2": 0.6781518187459755
+            }
+          }
+        },
+        {
+          "best_validation_loss": 0.06340072304010391,
+          "epochs_trained": 120,
+          "seed": 17,
+          "test_metrics": {
+            "max_displacement_mm": {
+              "mae": 0.7684728402674791,
+              "r2": 0.7457707087984413
+            },
+            "max_utilization": {
+              "mae": 0.04123726243846606,
+              "r2": 0.6739322757410138
+            }
+          }
+        },
+        {
+          "best_validation_loss": 0.06676150113344193,
+          "epochs_trained": 120,
+          "seed": 29,
+          "test_metrics": {
+            "max_displacement_mm": {
+              "mae": 0.389558779801245,
+              "r2": 0.9154010980440732
+            },
+            "max_utilization": {
+              "mae": 0.03181123506163523,
+              "r2": 0.7966204388490933
+            }
+          }
+        }
+      ],
+      "uncertainty_calibration": {
+        "conformal_multipliers": [
+          5.965993950319608,
+          10.318584094633199
+        ],
+        "conformal_quantile": 0.9,
+        "relative_floors": [
+          0.1249360850559452,
+          0.006689568125618902
+        ],
+        "relative_score_quantile": 0.95,
+        "relative_score_threshold": 0.11142202141343954,
+        "source_partition": "validation_only",
+        "validation_interval_coverage": {
+          "max_displacement_mm": 0.8333333333333334,
+          "max_utilization": 0.8333333333333334
+        }
+      }
+    }
+  },
+  "portable_artifact": {
+    "package_path": "src/datumguard/data/frame_graphsage_ensemble_v1.json",
+    "pyg_numpy_parity": {
+      "all_within_tolerance": true,
+      "cases": [
+        {
+          "max_abs_error": 3.155162104917508e-07,
+          "portable_status": "PREDICTED",
+          "topology_group": "pipe_rack_2_bay"
+        },
+        {
+          "max_abs_error": 7.421016334774322e-08,
+          "portable_status": "REVIEW_REQUIRED",
+          "topology_group": "pipe_rack_3_bay"
+        },
+        {
+          "max_abs_error": 1.7112320804812953e-07,
+          "portable_status": "REVIEW_REQUIRED",
+          "topology_group": "pipe_rack_4_bay"
+        }
+      ],
+      "tolerance": 0.0001
+    },
+    "research_path": "artifacts/models/frame-gnn/frame_graphsage_ensemble_v1.json",
+    "selected_architecture": "graphsage",
+    "selection_reason": "deterministic NumPy parity and base-image portability; not a claim that GraphSAGE has the best test score",
+    "sha256": "sha256:b86b4ebc12605f321d9472f8f13809f7edd712b024bee8724d3d977c721084e8",
+    "torch_required_at_inference": false
+  },
+  "schema_version": "frame-gnn-benchmark-v1",
+  "split": {
+    "case_id_leakage": 0,
+    "contract_hash_leakage": 0,
+    "seed": 314159,
+    "strategy": "4_bay_topology_test_holdout_with_stratified_validation",
+    "test_count": 30,
+    "test_groups": [
+      "pipe_rack_4_bay"
+    ],
+    "test_used_for_threshold_calibration": false,
+    "train_count": 48,
+    "train_groups": [
+      "pipe_rack_2_bay",
+      "pipe_rack_3_bay"
+    ],
+    "validation_count": 12,
+    "validation_groups": [
+      "pipe_rack_2_bay",
+      "pipe_rack_3_bay"
+    ]
+  },
+  "training": {
+    "device": "cpu",
+    "epochs_cap": 120,
+    "hidden_channels": 24,
+    "model_seeds": [
+      7,
+      17,
+      29
+    ],
+    "target_transform": "log1p_then_train_standardization"
+  }
+}

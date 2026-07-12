@@ -98,8 +98,10 @@ jobs:
           )"
           has_solid=false
           has_artifact=false
+          has_frame=false
           [[ -f web/app/solid/page.tsx ]] && has_solid=true
           [[ -f web/app/intake/page.tsx ]] && has_artifact=true
+          [[ -f web/app/frame/page.tsx ]] && has_frame=true
           read -r manifest_solid manifest_artifact < <(python - <<'PY'
           import re
           from pathlib import Path
@@ -120,18 +122,21 @@ jobs:
           )
 
           strict_version=false
+          expected_frame=false
           expected_solid=false
           expected_artifact=false
           case "${CAPABILITY_MODE}" in
             base) ;;
             full)
               strict_version=true
+              expected_frame="${has_frame}"
               expected_solid=true
               expected_artifact=true
               ;;
             auto)
               if [[ "${TRIGGER_KIND}" == "render" || "${TRIGGER_KIND}" == "manual" ]]; then
                 strict_version=true
+                if [[ "${has_frame}" == "true" ]]; then expected_frame=true; fi
                 if [[ "${has_solid}" == "true" ]]; then expected_solid="${manifest_solid}"; fi
                 if [[ "${has_artifact}" == "true" ]]; then expected_artifact="${manifest_artifact}"; fi
               fi
@@ -141,6 +146,7 @@ jobs:
 
           echo "expected_version=${expected_version}" >> "${GITHUB_OUTPUT}"
           echo "strict_version=${strict_version}" >> "${GITHUB_OUTPUT}"
+          echo "expected_frame=${expected_frame}" >> "${GITHUB_OUTPUT}"
           echo "expected_solid=${expected_solid}" >> "${GITHUB_OUTPUT}"
           echo "expected_artifact=${expected_artifact}" >> "${GITHUB_OUTPUT}"
           require_release_sha=false
@@ -148,8 +154,8 @@ jobs:
             require_release_sha=true
           fi
           echo "require_release_sha=${require_release_sha}" >> "${GITHUB_OUTPUT}"
-          echo "Expected optional capabilities: solid=${expected_solid}, artifact=${expected_artifact}"
-          if [[ "${strict_version}" != "true" && ( "${has_solid}" == "true" || "${has_artifact}" == "true" ) ]]; then
+          echo "Expected capabilities: frame=${expected_frame}, solid=${expected_solid}, artifact=${expected_artifact}"
+          if [[ "${strict_version}" != "true" && ( "${has_frame}" == "true" || "${has_solid}" == "true" || "${has_artifact}" == "true" ) ]]; then
             echo "Compatibility mode: the deployed web is checked against the current base API; optional canaries run only when advertised."
           fi
 
@@ -166,8 +172,8 @@ jobs:
             )
           fi
 
-          routes=(/case-study / /piping /plate)
-          sentinels=('data-testid="case-study"' 'data-testid="architecture-demo"' 'data-testid="piping-demo"' 'data-testid="plate-designer"')
+          routes=(/case-study / /piping /frame /plate)
+          sentinels=('data-testid="case-study"' 'data-testid="architecture-demo"' 'data-testid="piping-demo"' 'data-testid="frame-workspace"' 'data-testid="plate-designer"')
           if [[ -f web/app/solid/page.tsx ]]; then
             routes+=(/solid)
             sentinels+=('data-testid="solid-workspace"')
@@ -210,6 +216,7 @@ jobs:
           EXPECTED_RELEASE_SHA: ${{ steps.target.outputs.expected_sha }}
           REQUIRE_RELEASE_SHA: ${{ steps.contract.outputs.require_release_sha }}
           STRICT_VERSION: ${{ steps.contract.outputs.strict_version }}
+          EXPECTED_FRAME: ${{ steps.contract.outputs.expected_frame }}
           EXPECTED_SOLID: ${{ steps.contract.outputs.expected_solid }}
           EXPECTED_ARTIFACT: ${{ steps.contract.outputs.expected_artifact }}
         run: |
@@ -225,7 +232,7 @@ jobs:
                 "${API_URL}/api/v1/health" --output "${health}" && \
               curl --fail --silent --show-error --connect-timeout 10 --max-time 30 \
                 "${API_URL}/api/v1/domains" --output "${domains}" && \
-              python - "${health}" "${domains}" "${EXPECTED_VERSION}" "${EXPECTED_RELEASE_SHA}" "${REQUIRE_RELEASE_SHA}" "${STRICT_VERSION}" "${EXPECTED_SOLID}" "${EXPECTED_ARTIFACT}" <<'PY'
+              python - "${health}" "${domains}" "${EXPECTED_VERSION}" "${EXPECTED_RELEASE_SHA}" "${REQUIRE_RELEASE_SHA}" "${STRICT_VERSION}" "${EXPECTED_FRAME}" "${EXPECTED_SOLID}" "${EXPECTED_ARTIFACT}" <<'PY'
           import json
           import sys
 
@@ -235,10 +242,15 @@ jobs:
           expected_release_sha = sys.argv[4]
           require_release_sha = sys.argv[5] == "true"
           strict = sys.argv[6] == "true"
-          expected_solid = sys.argv[7] == "true"
-          expected_artifact = sys.argv[8] == "true"
+          expected_frame = sys.argv[7] == "true"
+          expected_solid = sys.argv[8] == "true"
+          expected_artifact = sys.argv[9] == "true"
           ids = {item.get("id") for item in domains if isinstance(item, dict)}
-          base = {"architecture", "plant_piping", "mechanical_ship_plate"}
+          base = {
+              "architecture",
+              "plant_piping",
+              "mechanical_ship_plate",
+          }
           if health.get("status") != "ok" or not base.issubset(ids):
               raise SystemExit(1)
           if strict and health.get("version") != expected:
@@ -246,6 +258,7 @@ jobs:
           if require_release_sha and health.get("release_sha") != expected_release_sha:
               raise SystemExit(1)
           for capability, required in {
+              "structural_frame": expected_frame,
               "solid_part": expected_solid,
               "artifact_lab": expected_artifact,
           }.items():
@@ -268,13 +281,15 @@ jobs:
 
           api_version="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "${health}")"
           api_release_sha="$(python -c 'import json,sys; print(json.load(open(sys.argv[1])).get("release_sha", "unknown"))' "${health}")"
+          frame_supported="$(python -c 'import json,sys; print(str(any(x.get("id") == "structural_frame" for x in json.load(open(sys.argv[1])))).lower())' "${domains}")"
           solid_supported="$(python -c 'import json,sys; print(str(any(x.get("id") == "solid_part" for x in json.load(open(sys.argv[1])))).lower())' "${domains}")"
           artifact_supported="$(python -c 'import json,sys; print(str(any(x.get("id") == "artifact_lab" for x in json.load(open(sys.argv[1])))).lower())' "${domains}")"
           echo "version=${api_version}" >> "${GITHUB_OUTPUT}"
           echo "release_sha=${api_release_sha}" >> "${GITHUB_OUTPUT}"
+          echo "frame_supported=${frame_supported}" >> "${GITHUB_OUTPUT}"
           echo "solid_supported=${solid_supported}" >> "${GITHUB_OUTPUT}"
           echo "artifact_supported=${artifact_supported}" >> "${GITHUB_OUTPUT}"
-          echo "API version ${api_version}; release_sha=${api_release_sha}; solid=${solid_supported}, artifact=${artifact_supported}."
+          echo "API version ${api_version}; release_sha=${api_release_sha}; frame=${frame_supported}, solid=${solid_supported}, artifact=${artifact_supported}."
 
       - name: Run small architecture canary
         shell: bash
@@ -297,6 +312,34 @@ jobs:
           assert str(payload.get("artifact_hash", "")).startswith("sha256:"), "artifact hash missing"
           assert summary.get("gross_area_m2") == 96.0, summary
           assert len(payload.get("violations") or []) == 0, "unexpected violations"
+          PY
+
+      - name: Run deterministic FrameGuard canary
+        if: steps.api.outputs.frame_supported == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="${RUNNER_TEMP}/frame-canary.json"
+          curl --fail --silent --show-error --connect-timeout 10 --max-time 120 \
+            --header 'Content-Type: application/json' \
+            --data-binary @fixtures/examples/frame_pipe_rack.json \
+            "${API_URL}/api/v1/frame/designs/run?auto_repair=false" --output "${response}"
+          python - "${response}" <<'PY'
+          import json
+          import sys
+
+          payload = json.load(open(sys.argv[1], encoding="utf-8"))
+          summary = payload.get("summary") or {}
+          assert payload.get("status") == "passed", payload.get("status")
+          assert str(payload.get("contract_hash", "")).startswith("sha256:"), payload
+          assert str(payload.get("artifact_hash", "")).startswith("sha256:"), payload
+          assert summary.get("solver") == "datumguard_numpy_2d_frame_v1", summary
+          assert float(summary.get("max_displacement_mm", -1)) >= 0, summary
+          assert len(payload.get("violations") or []) == 0, payload.get("violations")
+          assert any(
+              item.get("type") == "engineering_screening_notice"
+              for item in payload.get("evidence") or []
+          ), "screening boundary evidence missing"
           PY
 
       - name: Run small solid canary when the API advertises support

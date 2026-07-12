@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0.0",
+  "design_kind": "structural_frame_exchange",
+  "document": {
+    "document_id": "rhino-frame-demo-001",
+    "units": "in",
+    "datum": {
+      "origin": [100.0, 50.0, 0.0],
+      "x_axis": [1.0, 0.0, 0.0],
+      "y_axis": [0.0, 1.0, 0.0],
+      "z_axis": [0.0, 0.0, 1.0]
+    }
+  },
+  "sections": [
+    {
+      "id": "W-demo",
+      "area": 10.0,
+      "inertia": 300.0,
+      "depth": 12.0,
+      "elastic_modulus_mpa": 200000.0,
+      "allowable_stress_mpa": 165.0
+    }
+  ],
+  "members": [
+    {
+      "id": "column-left",
+      "start": [100.0, 50.0, 0.0],
+      "end": [100.0, 170.0, 0.0],
+      "section_id": "W-demo",
+      "locked": true,
+      "source_object_id": "11111111-1111-1111-1111-111111111111"
+    },
+    {
+      "id": "beam-top",
+      "start": [100.0, 170.0, 0.0],
+      "end": [340.0, 170.0, 0.0],
+      "section_id": "W-demo",
+      "locked": true,
+      "source_object_id": "22222222-2222-2222-2222-222222222222"
+    },
+    {
+      "id": "column-right",
+      "start": [340.0, 170.0, 0.0],
+      "end": [340.0, 50.0, 0.0],
+      "section_id": "W-demo",
+      "locked": true,
+      "source_object_id": "33333333-3333-3333-3333-333333333333"
+    }
+  ],
+  "supports": [
+    {
+      "id": "support-left",
+      "point": [100.0, 50.0, 0.0],
+      "ux": true,
+      "uy": true,
+      "rz": true,
+      "source_object_id": "44444444-4444-4444-4444-444444444444"
+    },
+    {
+      "id": "support-right",
+      "point": [340.0, 50.0, 0.0],
+      "ux": true,
+      "uy": true,
+      "rz": true,
+      "source_object_id": "55555555-5555-5555-5555-555555555555"
+    }
+  ],
+  "loads": [
+    {
+      "id": "roof-load",
+      "point": [340.0, 170.0, 0.0],
+      "fx_n": 1500.0,
+      "fy_n": -12000.0,
+      "mz_n_document_unit": 0.0,
+      "source_object_id": "66666666-6666-6666-6666-666666666666"
+    }
+  ],
+  "limits": {
+    "max_displacement": 1.0,
+    "allowable_stress_mpa": 165.0
+  },
+  "metadata": {
+    "project_name": "Rhino Frame Exchange Demo",
+    "revision": "A",
+    "notes": "Neutral Rhino exchange fixture; section powers follow document length units."
+  },
+  "node_merge_tolerance": 0.001
+}
