@@ -5,8 +5,9 @@
   "representative_source_commit": "4cd1665eea517e6fa13bac17c406f94966f7e72d",
   "hosted_buildingsmart_validation": {
     "service_url": "https://validate.buildingsmart.org/",
-    "status": "BLOCKED_AUTHENTICATION_REQUIRED",
+    "status": "NOT_COMPLETED_LOGIN_UNAVAILABLE",
     "login_page_observed": true,
+    "user_reported_login_unavailable": true,
     "account_created": false,
     "file_uploaded": false,
     "result_preserved": false
@@ -90,12 +91,25 @@
   "third_party_viewer": {
     "installed_product": "BIMcollab Zoom",
     "installed_version": "9.8.14",
+    "first_run_attempted": true,
+    "first_run_activation_completed": false,
+    "login_prompt_observed": true,
+    "login_webview_status": "JAVASCRIPT_REQUIRED_ERROR",
     "offline_import_completed": false,
-    "status": "PENDING_FIRST_RUN_CONFIRMATION"
+    "artifact_bcf_version": "3.0",
+    "product_supported_bcf_versions": [
+      "1.0",
+      "2.0",
+      "2.1"
+    ],
+    "product_support_source": "https://helpcenter.bimcollab.com/en/articles/347383-why-can-t-others-read-the-bcf-files-i-create-with-bimcollab-zoom-application",
+    "compatibility_assessment": "NOT_A_VALID_BCF_3_0_VALIDATION_TARGET",
+    "status": "ATTEMPTED_NOT_APPLICABLE_UNSUPPORTED_BCF_VERSION",
+    "graphical_interoperability_claimed": false
   },
   "open_gates": [
-    "Hosted buildingSMART Validation Service result",
-    "Independent graphical BCF viewer import",
+    "Hosted buildingSMART Validation Service result (login unavailable; no upload)",
+    "Independent graphical import in a viewer that explicitly supports BCF 3.0",
     "bcf-client 0.8.5 license metadata clarification"
   ]
 }

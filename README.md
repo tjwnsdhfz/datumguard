@@ -83,9 +83,10 @@ pipeline은 TP/FP/FN `330/0/0`, clean·authorized false positive 0, engine p95 1
 `sha256:58dcf7dc...`에서 `analysis-v1.0.2`로 재분석했다. 사전등록하지 않은 zero-support 처리의
 supported-rule macro-F1은 별도 post-freeze sensitivity로만 남겨 두 가설을 `NOT_CONCLUSIVE`로
 표시했다. 전체 provenance, 수정 전후 수치와 한계는
-[BIM Awards 2026 연구 evidence](docs/awards-2026/README.md)에 공개한다. BCF 독립 viewer,
-배포 license와 production smoke는 아직 gate가 열려 있으므로 BCF 또는 실사업장 성능을 핵심 성과로
-주장하지 않는다.
+[BIM Awards 2026 연구 evidence](docs/awards-2026/README.md)에 공개한다. 공식 BCF 3.0 checker와
+독립 schema·semantic 검증, PR container/security/deployment smoke는 통과했다. BCF 3.0 graphical
+viewer와 배포 license gate는 열려 있고 OpenBIM production runtime은 비활성이므로 BCF 또는
+실사업장 성능을 핵심 성과로 주장하지 않는다.
 
 ### Plant / Semiconductor Piping demo
 

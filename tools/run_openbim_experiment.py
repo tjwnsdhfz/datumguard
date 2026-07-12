@@ -1333,11 +1333,13 @@ def panel_facts(
         "research_validation_only": True,
         "approval_eligible": False,
         "external_gates": {
-            "bcf_viewer_import": "not_completed",
-            "buildingSMART_ifc_validation_service": "not_completed",
-            "distribution_license_review": "not_completed",
-            "docker_linux_ci": "not_completed",
-            "production_smoke": "not_completed",
+            "bcf_viewer_import": "not_completed_no_qualified_bcf3_viewer",
+            "buildingSMART_ifc_validation_service": "not_completed_login_unavailable",
+            "distribution_license_review": "blocked_upstream_metadata_conflict",
+            "docker_linux_ci": "completed_pr20_run_29192363975",
+            "production_smoke": (
+                "preview_web_api_contract_completed_run_29192389643_openbim_runtime_disabled"
+            ),
         },
         "assurance_boundary": (
             "Synthetic research validation only; not structural, safety, code, fabrication, "
@@ -1570,8 +1572,17 @@ def write_results_markdown(
         "- Information/revision supported-rule macro-F1 is a post-freeze sensitivity metric; "
         "the preregistered hypotheses are not declared confirmed because zero-support handling "
         "was not frozen.",
-        "- Independent BCF viewer import and final distribution-license review are not completed.",
-        "- Docker/Linux CI and production deployment gates are outside this local experiment.",
+        "- A qualified BCF 3.0 graphical viewer import is not completed. BIMcollab Zoom 9.8.14 "
+        "was attempted but officially supports BCF only through 2.1, so it is not counted as a "
+        "BCF 3.0 validation result.",
+        "- Hosted buildingSMART validation was not completed because login was unavailable; "
+        "no upload is claimed.",
+        "- The distribution-license review found an unresolved `bcf-client==0.8.5` source/wheel "
+        "metadata conflict, so BCF remains opt-in and public distribution remains blocked "
+        "pending clarification.",
+        "- Draft PR Docker/Linux CI, container/SBOM/security gates and preview deployment smoke "
+        "passed; OpenBIM production runtime remains intentionally disabled and is not claimed as "
+        "production validation.",
         "- No detector miss remained in this synthetic corpus after evaluator correction; this is "
         "not evidence of performance on real industrial IFC files.",
         "",

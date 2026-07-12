@@ -34,23 +34,28 @@
   `DATUMGUARD_ENABLE_BCF=false`이므로 hosted OpenBIM evidence canary·cold-start·CORS·부하 검증을
   완료한 것이 아니다.
 - IDS는 고정 XSD와 IfcTester에서 검증했지만 별도 상용 checker 교차검증은 하지 않았다.
-- buildingSMART IFC Validation Service는 로그인 필요 화면까지 확인했지만 계정을 만들거나 파일을
-  업로드하지 않아 clean 대표 IFC의 hosted 결과는 아직 보존하지 못했다. 오프라인
+- buildingSMART IFC Validation Service는 로그인 필요 화면까지 확인했고 사용자가 로그인이 불가능하다고
+  확인했다. 계정을 만들거나 파일을 업로드하지 않아 clean 대표 IFC의 hosted 결과는 보존하지 못했다. 오프라인
   `ifcopenshell.validate(express_rules=True)`에서는 clean·authorized·corrected가 schema statement 0,
   faulty가 의도한 `IfcRoot.UR1` 중복 GlobalId 1건이었으나 hosted 결과로 대체해 주장하지 않는다.
 - BCF는 `bcf-client` semantic round-trip, buildingSMART BCF 3.0 tag의 공식 `bcf-tool 1.0.7`, 공식
-  XSD 26/26, `bcf-client`를 쓰지 않은 .NET 의미 검사 482/482를 통과했다. 그러나 독립 graphical
-  BCF viewer import, component 시각 확인, full-corpus BCF 평가는 완료하지 않아 조건부 viewer
-  연구 gate는 아직 미통과다.
+  XSD 26/26, `bcf-client`를 쓰지 않은 .NET 의미 검사 482/482를 통과했다. BIMcollab Zoom 9.8.14를
+  실제 실행했지만 최초 로그인 WebView가 JavaScript 필요 오류를 냈고, 더 근본적으로
+  [제품 공식 지원 범위가 BCF 1.0·2.0·2.1](https://helpcenter.bimcollab.com/en/articles/347383-why-can-t-others-read-the-bcf-files-i-create-with-bimcollab-zoom-application)이어서
+  BCF 3.0 합격 판정 도구가 아니다. BCF 3.0 지원 viewer의 graphical import, component 시각 확인,
+  full-corpus BCF 평가는 완료하지 않아 조건부 viewer 연구 gate는 아직 미통과다.
 - `bcf-client==0.8.5` wheel의 GPLv3 classifier와 현재 IfcOpenShell source 표의
   LGPL-3.0-or-later 표기가 일치하지 않는다. `ifctester`가 이를 전이 설치하므로 최종 배포 license
   검토 전 `ifctester`도 `openbim`/`dev` extra로 분리하고, BCF 직접 pin은 `bcf`/`dev` extra에만 둬
   base Docker distribution과 기본 Web 요청에서 제외한다.
-- 이 Windows 환경에는 Docker CLI가 없었지만 원격 Ubuntu CI에서 backend/web Docker build, SBOM과
-  fixed-critical scan이 통과했다. 이 결과는 Docker/Linux 회귀 gate를 닫지만 OpenBIM-enabled hosted
-  실행이나 외부 viewer·license gate를 대신하지 않는다.
-- `/openbim`은 공개 웹 route가 있는 research preview다. API source는 배포 image에 포함되지만
-  production gate가 꺼져 있으므로 hosted 실행·cold-start·CORS·부하 smoke는 완료되지 않았다.
+- 이 Windows 환경에는 Docker CLI가 없지만 draft PR의
+  [CI run 29192363975](https://github.com/tjwnsdhfz/datumguard/actions/runs/29192363975)에서 Ubuntu
+  backend/web, 공식 BCF checker, 두 Docker build, SBOM과 이미지 취약점 gate가 통과했다. v0.3.0
+  통합 CI에서도 이 Linux·container 회귀 gate를 유지한다.
+- [deployment smoke run 29192389643](https://github.com/tjwnsdhfz/datumguard/actions/runs/29192389643)은
+  preview web과 기존 hosted API의 호환 계약을 통과했다. `/openbim`은 공개 web route가 있는 research
+  preview이고 API source도 배포 image에 포함되지만 production capability가 비활성이라 OpenBIM
+  production·cold-start·부하 검증으로 주장하지 않는다.
 
 ## 완화 조치
 

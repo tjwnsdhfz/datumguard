@@ -85,6 +85,24 @@ def test_representative_bcf_structure_check_is_independent_and_fail_closed(
     assert not any(tmp_path.glob(".representative.backup-*"))
 
 
+def test_external_validation_snapshot_does_not_claim_unsupported_viewer() -> None:
+    evidence = ROOT / "docs" / "awards-2026" / "evidence"
+    audit = json.loads((evidence / "external_validation_audit.json").read_text(encoding="utf-8"))
+    viewer = audit["third_party_viewer"]
+
+    assert viewer["artifact_bcf_version"] == "3.0"
+    assert viewer["product_supported_bcf_versions"] == ["1.0", "2.0", "2.1"]
+    assert viewer["offline_import_completed"] is False
+    assert viewer["graphical_interoperability_claimed"] is False
+    assert viewer["status"] == "ATTEMPTED_NOT_APPLICABLE_UNSUPPORTED_BCF_VERSION"
+
+    panel = json.loads((evidence / "panel_facts.json").read_text(encoding="utf-8"))
+    gates = panel["external_gates"]
+    assert gates["bcf_viewer_import"] == "not_completed_no_qualified_bcf3_viewer"
+    assert gates["buildingSMART_ifc_validation_service"] == ("not_completed_login_unavailable")
+    assert gates["docker_linux_ci"] == "completed_pr20_run_29192363975"
+
+
 def test_representative_generation_is_byte_deterministic(tmp_path: Path) -> None:
     first = generated_representative(tmp_path / "first")
     second = generated_representative(tmp_path / "second")

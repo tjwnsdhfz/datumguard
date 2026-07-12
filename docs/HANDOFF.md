@@ -143,20 +143,24 @@ OpenBIM source와 `/openbim` 웹 경로는 v0.3.0 `main`에 포함됐지만, 공
 - 30 held-out cases, 120 candidate records, 1,200 measured runs, engine error 0
 - corrected Full TP/FP/FN `330/0/0`; clean·authorized FP 0; corrected 신규 issue 0
 - v0.3.0 통합 CI: pytest 376 passed, Chromium Playwright 35 passed, web typecheck·lint·build와 OpenBIM interoperability job pass
+- 후속 외부 검증 audit local gate: pytest 377 passed / 6 optional-runtime skipped, Chromium Playwright 35 passed,
+  Ruff·mypy·web typecheck·lint·15-page build pass
 - 최초 raw hash `sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9`
 - detector 재실행 없이 clean analysis tag에서 evaluator field만 재계산
 - 전체 issue source/rule coverage `360/360`, entity coverage `330/360`; primary issue는 모두 `330/330`
-- buildingSMART IFC Validation Service 외부 확인은 아직 미완료
+- buildingSMART IFC Validation Service는 로그인 불가로 업로드하지 않았고 hosted 결과를 주장하지 않음
+- BIMcollab Zoom 9.8.14 최초 실행은 시도했지만 공식 지원이 BCF 2.1까지라 BCF 3.0 viewer 판정에서 제외
+- PR #20의 Docker/Linux, BCF interoperability, container/SBOM/security와 preview deployment smoke 통과
 
-공식 연구 진입점은 [`awards-2026/README.md`](awards-2026/README.md)다. BCF 독립 graphical viewer,
+공식 연구 진입점은 [`awards-2026/README.md`](awards-2026/README.md)다. BCF 3.0 지원 독립 viewer와
 `bcf-client` license 검토, buildingSMART hosted IFC 결과와 OpenBIM-enabled production
-cold-start·CORS·부하 smoke는 아직 완료되지 않았다. 이 gate 전에는 OpenBIM 실행을 production 완료
-기능으로 표시하지 않는다.
+cold-start·CORS·부하 smoke는 아직 열려 있다. Docker/Linux CI와 preview smoke는 통과했지만 이
+외부 gate 전에는 OpenBIM 실행을 production 완료 기능으로 표시하지 않는다.
 
 ## 다음 release로 넘기는 항목
 
 1. 계획 상태인 100개 golden contract + 자연어 50개 benchmark를 실행하고 결과를 공개한다.
 2. Render Free가 아닌 후보 환경에서 동시성·최대 upload 부하 검증과 rollback drill을 수행한다.
 3. 외부 uptime/error tracking과 장기 metric retention은 비용 승인 뒤 연결한다.
-4. OpenBIM 외부 BCF viewer·buildingSMART hosted validation·license·OpenBIM-enabled production
-   smoke gate를 별도 evidence로 완료한다.
+4. BCF 3.0 지원 외부 viewer·buildingSMART hosted validation·license와 OpenBIM production gate를
+   별도 evidence로 완료한다. BIMcollab은 BCF 2.1까지만 지원하므로 BCF 3.0 판정 도구로 쓰지 않는다.

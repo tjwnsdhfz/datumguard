@@ -271,7 +271,7 @@ def main() -> int:
                 "sha256": sha256_bytes(bcf_artifacts["bcf"]),
             },
             "bcf_generic_structure_check": bcf_check,
-            "external_bcf_viewer_gate": "not_completed",
+            "external_bcf_viewer_gate": "not_completed_no_qualified_bcf3_viewer",
         }
         (staging_dir / "representative-verification.json").write_bytes(
             canonical_json_bytes(verification)

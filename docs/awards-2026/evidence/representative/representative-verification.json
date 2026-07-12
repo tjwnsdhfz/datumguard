@@ -61,7 +61,7 @@
     "platform": "Windows-11-10.0.26200-SP0",
     "python": "3.12.11"
   },
-  "external_bcf_viewer_gate": "not_completed",
+  "external_bcf_viewer_gate": "not_completed_no_qualified_bcf3_viewer",
   "git_dirty_before_export": false,
   "independently_computed_input_hashes": {
     "baseline": "sha256:ca699ccd8089890504c895612feb80e3210a48867a1da0779bc8699a449c3b1c",
