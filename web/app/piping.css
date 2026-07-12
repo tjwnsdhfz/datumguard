@@ -1167,6 +1167,10 @@
     grid-template-columns: 1fr auto;
   }
 
+  .piping-tools {
+    display: none;
+  }
+
   .piping-snap-setting {
     display: none;
   }
@@ -1369,8 +1373,9 @@
 .piping-brand small,.piping-title small{color:#a7a7af;letter-spacing:.04em}
 .piping-live-dot{background:#fff;box-shadow:none}
 .piping-topbar nav{gap:4px}
-.piping-topbar nav a{padding:0 12px;border:1px solid transparent;border-radius:32px;color:#b8b8c0;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.piping-topbar nav a{padding:0 12px;border:1px solid transparent;border-radius:32px;color:#b8b8c0;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;transition:border-color 180ms ease,background 180ms ease,color 180ms ease}
 .piping-topbar nav a:hover{border-color:#3a3a3f;background:#0a0a0a;color:#fff}
+.piping-topbar nav a[aria-current="page"]{border-color:#62626a;background:#1b1b1e;color:#fff}
 .piping-topbar :where(a,button):focus-visible{outline-color:#fff}
 .piping-commandbar{border-color:#d7d7dc;background:#f8f8f9;box-shadow:none}
 .piping-tools,.piping-history{gap:6px}
@@ -1413,7 +1418,7 @@
 .piping-verified.failed{border-color:#d8a29b;background:#fae8e5;color:#9b3025}
 .piping-evidence-grid>div{border-color:#e0e0e8}
 .piping-app :where(button,a,input,[tabindex]):focus-visible{outline:2px solid #000;outline-offset:3px}
-@media(prefers-reduced-motion:reduce){.piping-live-dot,.piping-spinner{animation:none!important}}
+@media(prefers-reduced-motion:reduce){.piping-live-dot,.piping-spinner{animation:none!important}.piping-topbar nav a{transition:none}}
 
 .piping-page-title{
   position:absolute;
@@ -1448,6 +1453,7 @@
     justify-content:center;
     padding:0 4px;
     text-align:center;
+    font-size:10px;
     white-space:normal
   }
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import LocalDraftNotice from "@/app/components/local-draft-notice";
+import { WorkspaceNavigation, WorkspaceSkipLink } from "@/app/components/workspace-navigation";
 import { apiErrorMessage, apiPostJson } from "@/lib/api-client";
 import { loadDraft, saveDraft } from "@/lib/draft-db";
 import { useBackendReadiness } from "@/lib/use-backend-readiness";
@@ -685,14 +685,15 @@ export default function ArchitectureWorkspace() {
 
   return (
     <main className="architecture-app" data-testid="architecture-demo" data-verification-status={verification} data-health-status={health} data-history-depth={history.length} data-future-depth={future.length}>
+      <WorkspaceSkipLink targetId="architecture-workspace-content" />
       <h1 className="arch-page-title">Architecture accuracy workspace</h1>
       <header className="arch-topbar">
         <div className="arch-brand"><span>DG</span><div><strong>DatumGuard</strong><small>Architecture accuracy workspace</small></div></div>
         <div className="arch-title"><span className="arch-live-dot" /> <b>{draft.projectName}</b><small>REV {draft.revision} · WCS XY · mm</small></div>
-        <nav aria-label="Engineering workspaces"><Link href="/" aria-current="page">Architecture</Link><Link href="/piping">Piping</Link><Link href="/plate">Plate</Link><Link href="/solid">3D Solid</Link><Link href="/intake">Artifact Lab</Link><Link href="/case-study">Case Study</Link><a href="#verification">Evidence</a></nav>
+        <WorkspaceNavigation active="architecture" evidenceHref="#verification" />
       </header>
 
-      <section className="arch-commandbar" aria-label="Architecture CAD tools">
+      <section className="arch-commandbar" id="architecture-workspace-content" tabIndex={-1} aria-label="Architecture CAD tools">
         <div className="arch-tools" role="group" aria-label="Canvas tool">{(["select", "pan", "wall", "column", "door", "window"] as Tool[]).map((item) => <button key={item} type="button" className={tool === item ? "active" : ""} aria-pressed={tool === item} onClick={() => setTool(item)}><ArchitectureIcon name={item} /><span>{item}</span></button>)}</div>
         <div className="arch-history" role="group" aria-label="History and view"><button data-testid="architecture-undo" type="button" onClick={undo} disabled={!history.length} aria-label="Undo"><ArchitectureIcon name="undo" /><span>Undo</span></button><button data-testid="architecture-redo" type="button" onClick={redo} disabled={!future.length} aria-label="Redo"><ArchitectureIcon name="redo" /><span>Redo</span></button><button data-testid="architecture-zoom-in" type="button" onClick={() => zoom(0.82)} aria-label="Zoom in"><ArchitectureIcon name="zoom-in" /></button><button data-testid="architecture-zoom-out" type="button" onClick={() => zoom(1.22)} aria-label="Zoom out"><ArchitectureIcon name="zoom-out" /></button><button data-testid="architecture-fit" type="button" onClick={() => setViewBox(FIT_VIEW)}><ArchitectureIcon name="fit" /><span>Fit</span></button></div>
         <label className="arch-snap">Snap <select value={draft.snap} onChange={(event) => commit({ ...draft, snap: Number(event.target.value) })}><option value={100}>100 mm</option><option value={50}>50 mm</option><option value={10}>10 mm</option></select><small>Shift = 10mm</small></label>

@@ -5,6 +5,7 @@ import styles from "./case-study.module.css";
 
 const repositoryUrl =
   process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/tjwnsdhfz/datumguard";
+const releaseUrl = `${repositoryUrl.replace(/\/$/, "")}/releases/tag/v0.2.1`;
 
 const pipeline = [
   ["01", "LOCK", "datum·단위·치수·공차를 versioned contract로 고정"],
@@ -25,6 +26,9 @@ const domains = [
 export default function CaseStudyPage() {
   return (
     <main className={styles.page} data-testid="case-study">
+      <a className={styles.skipLink} href="#case-study-content">
+        Skip to case study content
+      </a>
       <header className={styles.header}>
         <Link className={styles.brand} href="/case-study" aria-label="DatumGuard case study home">
           <span aria-hidden="true">DG</span>
@@ -34,13 +38,18 @@ export default function CaseStudyPage() {
           <a href="#method">Method</a>
           <a href="#evidence">Evidence</a>
           <a href="#scope">Scope</a>
-          <Link href="/">Open CAD</Link>
+          <Link className={styles.navCta} href="/">Open CAD</Link>
         </nav>
       </header>
 
-      <section className={styles.hero} aria-labelledby="case-study-title">
+      <section
+        className={styles.hero}
+        id="case-study-content"
+        aria-labelledby="case-study-title"
+        tabIndex={-1}
+      >
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>PUBLIC ENGINEERING CASE STUDY · V0.2.1</p>
+          <p className={styles.eyebrow}>PUBLIC ENGINEERING CASE STUDY · V0.2.1 · 0.001 MM GRID · 256 TESTS</p>
           <h1 id="case-study-title">
             CAD COMMAND SUCCESS
             <br />
@@ -124,7 +133,7 @@ export default function CaseStudyPage() {
               alt="Architecture contract editor with a four-room DXF plan and passed verification timeline"
               width={1440}
               height={960}
-              priority
+              sizes="(max-width: 1000px) calc(100vw - 44px), 68vw"
             />
           </div>
           <div className={styles.evidenceCopy}>
@@ -162,7 +171,7 @@ export default function CaseStudyPage() {
               alt="Plant piping workspace with routed utility line, supports, clearance zones, and passed DXF verification"
               width={1440}
               height={960}
-              loading="eager"
+              sizes="(max-width: 1000px) calc(100vw - 44px), 68vw"
             />
           </div>
           <div className={styles.evidenceCopy}>
@@ -205,7 +214,7 @@ export default function CaseStudyPage() {
             alt="OpenCascade STEP mounting plate verification with mesh preview and all dimensions passing"
             width={1440}
             height={960}
-            loading="eager"
+            sizes="(max-width: 1000px) calc(100vw - 44px), 62vw"
           />
         </div>
       </section>
@@ -223,12 +232,12 @@ export default function CaseStudyPage() {
             <span role="columnheader">RUNTIME</span>
           </div>
           {domains.map(([name, href, artifact, checks, runtime]) => (
-            <Link href={href} className={styles.tableRow} role="row" key={name}>
-              <strong role="cell">{name}</strong>
-              <span role="cell">{artifact}</span>
-              <span role="cell">{checks}</span>
-              <b role="cell">{runtime}</b>
-            </Link>
+            <div className={styles.tableRow} role="row" key={name}>
+              <div role="cell" data-label="Workspace"><Link href={href}>{name}</Link></div>
+              <div role="cell" data-label="Artifact">{artifact}</div>
+              <div role="cell" data-label="Evidence">{checks}</div>
+              <div role="cell" data-label="Runtime"><b>{runtime}</b></div>
+            </div>
           ))}
         </div>
       </section>
@@ -266,7 +275,9 @@ export default function CaseStudyPage() {
           <h2 id="release-title">설명보다 재현 경로를 남깁니다.</h2>
         </div>
         <div className={styles.releaseGrid}>
-          <article><span>TEST</span><strong>256 pytest + 24 Playwright</strong><p>v0.2.1 release baseline</p></article>
+          <a className={styles.releaseCard} href={releaseUrl} target="_blank" rel="noreferrer">
+            <span>TEST</span><strong>256 pytest + 24 Playwright</strong><p>Open the v0.2.1 release evidence ↗</p>
+          </a>
           <article><span>CI</span><strong>Type · lint · build · containers</strong><p>SBOM, CodeQL, audit, Trivy 포함</p></article>
           <article><span>DEPLOY</span><strong>Vercel + Render</strong><p>DOM, API capability, canary, CORS smoke</p></article>
           <article><span>ROLLBACK</span><strong>Known-good SHA + deployment IDs</strong><p>Wrong PASS를 SEV1으로 처리</p></article>

@@ -169,6 +169,25 @@ body :where(button, a, input, select, textarea, [tabindex]):focus-visible {
   outline-offset: 3px;
 }
 
+.workspace-skip-link {
+  position: fixed;
+  z-index: 200;
+  top: 10px;
+  left: 10px;
+  min-height: 44px;
+  padding: 12px 16px;
+  border: 1px solid var(--mission-white);
+  background: var(--mission-black);
+  color: var(--mission-white);
+  font: 700 10px "DM Mono", monospace;
+  letter-spacing: 0.08em;
+  transform: translateY(calc(-100% - 14px));
+  transition: transform 180ms ease;
+}
+
+.workspace-skip-link:focus { transform: translateY(0); }
+:where(#architecture-workspace-content, #piping-workspace-content, #artifact-workspace-content, #solid-workspace-content, #designer):focus { outline: none; }
+
 .site-header {
   height: 72px;
   border-bottom: 1px solid var(--mission-line-dark);
@@ -212,10 +231,17 @@ body :where(button, a, input, select, textarea, [tabindex]):focus-visible {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease;
 }
 
 .site-header nav a:hover {
   border-color: var(--mission-line-dark);
+  color: var(--mission-white);
+}
+
+.site-header nav a[aria-current="page"] {
+  border-color: #62626a;
+  background: #1b1b1e;
   color: var(--mission-white);
 }
 
@@ -545,9 +571,15 @@ footer {
     min-height: 44px;
     justify-content: center;
     padding: 0 4px;
-    font-size: 9px;
+    font-size: 10px;
     line-height: 1.2;
     text-align: center;
     white-space: normal;
   }
+}
+
+@media (min-width: 681px) and (max-width: 960px) {
+  .site-header { padding-inline: 16px; }
+  .site-header nav { gap: 2px; }
+  .site-header nav a { padding-inline: 8px; font-size: 9px; }
 }

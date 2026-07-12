@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import BackendReadinessNotice from "@/app/components/backend-readiness";
 import LocalDraftNotice from "@/app/components/local-draft-notice";
+import { WorkspaceNavigation, WorkspaceSkipLink } from "@/app/components/workspace-navigation";
 import { apiErrorMessage, apiPostJson } from "@/lib/api-client";
 import { loadDraft, saveDraft } from "@/lib/draft-db";
 import { useBackendReadiness } from "@/lib/use-backend-readiness";
@@ -657,6 +657,7 @@ export default function PipingWorkspace() {
       data-verification-status={verification}
       data-preset-id={draft.presetId}
     >
+      <WorkspaceSkipLink targetId="piping-workspace-content" />
       <h1 className="piping-page-title">Plant piping accuracy workspace</h1>
       <header className="piping-topbar">
         <div className="piping-brand">
@@ -668,18 +669,10 @@ export default function PipingWorkspace() {
           <b>{draft.projectName}</b>
           <small>REV {draft.revision} · WCS XY · EXACT mm</small>
         </div>
-        <nav aria-label="Engineering workspaces">
-          <Link href="/">Architecture</Link>
-          <Link href="/piping" aria-current="page">Piping</Link>
-          <Link href="/plate">Plate</Link>
-          <Link href="/solid">3D Solid</Link>
-          <Link href="/intake">Artifact Lab</Link>
-          <Link href="/case-study">Case Study</Link>
-          <a href="#piping-verification">Evidence</a>
-        </nav>
+        <WorkspaceNavigation active="piping" evidenceHref="#piping-verification" />
       </header>
 
-      <section className="piping-commandbar" aria-label="Piping CAD controls">
+      <section className="piping-commandbar" id="piping-workspace-content" tabIndex={-1} aria-label="Piping CAD controls">
         <div className="piping-tools" role="group" aria-label="Canvas tool">
           <button type="button" className={tool === "select" ? "active" : ""} aria-pressed={tool === "select"} onClick={() => setTool("select")}><Icon name="cursor" /><span>Select</span></button>
           <button type="button" className={tool === "pan" ? "active" : ""} aria-pressed={tool === "pan"} onClick={() => setTool("pan")}><Icon name="hand" /><span>Pan</span></button>
