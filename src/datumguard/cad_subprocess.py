@@ -179,9 +179,30 @@ def run_parser_worker(
     return _run_worker(payload, command=command, timeout_seconds=timeout)
 
 
+def run_openbim_worker(
+    payload: dict[str, Any],
+    *,
+    timeout_seconds: int | None = None,
+) -> dict[str, Any]:
+    timeout = timeout_seconds or _env_int(
+        "DATUMGUARD_OPENBIM_WORKER_TIMEOUT_SECONDS", 90, minimum=5, maximum=300
+    )
+    command = [
+        sys.executable,
+        "-c",
+        (
+            "from datumguard.cad_subprocess import apply_worker_limits;"
+            "apply_worker_limits();"
+            "from datumguard.openbim_worker import main;main()"
+        ),
+    ]
+    return _run_worker(payload, command=command, timeout_seconds=timeout)
+
+
 __all__ = [
     "CadWorkerFailure",
     "apply_worker_limits",
     "run_cad_worker",
+    "run_openbim_worker",
     "run_parser_worker",
 ]

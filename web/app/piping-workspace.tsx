@@ -674,6 +674,7 @@ export default function PipingWorkspace() {
           <Link href="/plate">Plate</Link>
           <Link href="/solid">3D Solid</Link>
           <Link href="/intake">Artifact Lab</Link>
+          <Link href="/openbim">OpenBIM</Link>
           <Link href="/case-study">Case Study</Link>
           <a href="#piping-verification">Evidence</a>
         </nav>

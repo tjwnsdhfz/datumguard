@@ -196,7 +196,7 @@ export default function SolidWorkspace() {
     <main className="solid-shell" data-testid="solid-workspace" data-run-status={loading ? "running" : result?.status || "idle"}>
       <header className="lab-topbar">
         <Link href="/" className="lab-brand"><span>DG</span><div><strong>DatumGuard</strong><small>OpenCascade solid assurance</small></div></Link>
-        <nav aria-label="Engineering workspaces"><Link href="/">Architecture</Link><Link href="/piping">Piping</Link><Link href="/plate">Plate</Link><Link href="/solid" aria-current="page">3D Solid</Link><Link href="/intake">Artifact Lab</Link><Link href="/case-study">Case Study</Link></nav>
+        <nav aria-label="Engineering workspaces"><Link href="/">Architecture</Link><Link href="/piping">Piping</Link><Link href="/plate">Plate</Link><Link href="/solid" aria-current="page">3D Solid</Link><Link href="/intake">Artifact Lab</Link><Link href="/openbim">OpenBIM</Link><Link href="/case-study">Case Study</Link></nav>
       </header>
 
       <LocalDraftNotice error={storageError} onDismiss={() => setStorageError(null)} />

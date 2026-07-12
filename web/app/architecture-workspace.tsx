@@ -689,7 +689,7 @@ export default function ArchitectureWorkspace() {
       <header className="arch-topbar">
         <div className="arch-brand"><span>DG</span><div><strong>DatumGuard</strong><small>Architecture accuracy workspace</small></div></div>
         <div className="arch-title"><span className="arch-live-dot" /> <b>{draft.projectName}</b><small>REV {draft.revision} · WCS XY · mm</small></div>
-        <nav aria-label="Engineering workspaces"><Link href="/" aria-current="page">Architecture</Link><Link href="/piping">Piping</Link><Link href="/plate">Plate</Link><Link href="/solid">3D Solid</Link><Link href="/intake">Artifact Lab</Link><Link href="/case-study">Case Study</Link><a href="#verification">Evidence</a></nav>
+        <nav aria-label="Engineering workspaces"><Link href="/" aria-current="page">Architecture</Link><Link href="/piping">Piping</Link><Link href="/plate">Plate</Link><Link href="/solid">3D Solid</Link><Link href="/intake">Artifact Lab</Link><Link href="/openbim">OpenBIM</Link><Link href="/case-study">Case Study</Link><a href="#verification">Evidence</a></nav>
       </header>
 
       <section className="arch-commandbar" aria-label="Architecture CAD tools">

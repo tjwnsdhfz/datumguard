@@ -1,0 +1,196 @@
+{
+  "admissible_secondary_alert_count": 6,
+  "artifact_hashes": {
+    "v0_clean.ifc": "sha256:29d6eb662bc8ef3d295f179e884724ccc8cf15663d84d35c0cc3b10b25cbeec6",
+    "v1_authorized.ifc": "sha256:7099ae9ba1e682da12e2a922c02bbdbbb8def3f79af51ffdf154bd708b715742",
+    "v1_faulty.ifc": "sha256:58e2816d2889194de759c26e7d25217367e6b513ba469afcf945d1c826aa63ce",
+    "v2_corrected.ifc": "sha256:fbaaf678f729f98bc0dc06c4f5f23a07570a09b0419a69acac016c9e91d56413"
+  },
+  "candidates": {
+    "v0_clean": {
+      "expected_issues": []
+    },
+    "v1_authorized": {
+      "expected_issues": []
+    },
+    "v1_faulty": {
+      "admissible_secondary_issues": [
+        {
+          "asset_key": "L2-PS-010",
+          "family": "Information",
+          "fault_id": "I01",
+          "field": "DG_Identity.AssetTag",
+          "rule_id": "REV-03"
+        },
+        {
+          "asset_key": "L2-PS-020",
+          "family": "Information",
+          "fault_id": "I02",
+          "field": "DG_Identity.AssetTag",
+          "rule_id": "REV-03"
+        },
+        {
+          "asset_key": "L2-PS-006",
+          "family": "Information",
+          "fault_id": "I03",
+          "field": "DG_VFabUtility.UtilityType",
+          "rule_id": "REV-03"
+        },
+        {
+          "asset_key": "L2-PS-004",
+          "family": "Information",
+          "fault_id": "I04",
+          "field": "DG_VFabUtility.SystemCode",
+          "rule_id": "REV-03"
+        },
+        {
+          "asset_key": "L2-SP-002",
+          "family": "Integrity",
+          "fault_id": "I06",
+          "field": "container",
+          "rule_id": "REV-03"
+        },
+        {
+          "asset_key": "L2-SP-001",
+          "asset_keys": [
+            "L2-PS-015",
+            "L2-SP-001"
+          ],
+          "family": "IFC Identity",
+          "fault_id": "R01",
+          "field": "GlobalId",
+          "global_id": "0ie8d0KcfK2vnh4GwQdhrA",
+          "rule_id": "REV-02",
+          "step_entity_ids": [
+            533,
+            813
+          ]
+        }
+      ],
+      "expected_issues": [
+        {
+          "asset_key": "L2-PS-010",
+          "family": "Information",
+          "fault_id": "I01",
+          "field": "DG_Identity.AssetTag",
+          "rule_id": "IDS-01"
+        },
+        {
+          "asset_key": "L2-PS-020",
+          "family": "Information",
+          "fault_id": "I02",
+          "field": "DG_Identity.AssetTag",
+          "rule_id": "IDS-01"
+        },
+        {
+          "asset_key": "L2-PS-006",
+          "family": "Information",
+          "fault_id": "I03",
+          "field": "DG_VFabUtility.UtilityType",
+          "rule_id": "IDS-02"
+        },
+        {
+          "asset_key": "L2-PS-004",
+          "family": "Information",
+          "fault_id": "I04",
+          "field": "DG_VFabUtility.SystemCode",
+          "rule_id": "IDS-03"
+        },
+        {
+          "asset_key": "L2-SP-004",
+          "family": "Information",
+          "fault_id": "I05",
+          "field": "classification",
+          "rule_id": "IDS-04"
+        },
+        {
+          "asset_key": "L2-SP-002",
+          "family": "Integrity",
+          "fault_id": "I06",
+          "field": "container",
+          "rule_id": "IFC-03"
+        },
+        {
+          "asset_key": "L2-PS-002",
+          "entity_pair": [
+            "L2-PS-002",
+            "L2-TL-001"
+          ],
+          "family": "Geometry",
+          "fault_id": "G01",
+          "field": "placement",
+          "global_id_pair": [
+            "1Tc2WnZGrILP7wYtUPh5tE",
+            "2QSwfJ0DDHve5G3L8M0W_E"
+          ],
+          "rule_id": "GEO-01"
+        },
+        {
+          "asset_key": "L2-VL-004",
+          "entity_pair": [
+            "L2-TL-002",
+            "L2-VL-004"
+          ],
+          "family": "Geometry",
+          "fault_id": "G02",
+          "field": "placement",
+          "global_id_pair": [
+            "0Ia5cxASHUUvp4KgsNLh5O",
+            "1lwQLACr9Ndx1NKtWCNXEc"
+          ],
+          "rule_id": "GEO-01"
+        },
+        {
+          "asset_key": "L2-SP-001",
+          "asset_keys": [
+            "L2-PS-015",
+            "L2-SP-001"
+          ],
+          "family": "IFC Identity",
+          "fault_id": "R01",
+          "field": "GlobalId",
+          "global_id": "0ie8d0KcfK2vnh4GwQdhrA",
+          "rule_id": "IFC-02",
+          "step_entity_ids": [
+            533,
+            813
+          ]
+        },
+        {
+          "asset_key": "L2-PS-017",
+          "family": "Revision",
+          "fault_id": "R02",
+          "field": "GlobalId",
+          "rule_id": "REV-02"
+        },
+        {
+          "asset_key": "L2-PS-023",
+          "family": "Revision",
+          "fault_id": "R03",
+          "field": "DG_VFabUtility.UtilityType",
+          "rule_id": "REV-03"
+        }
+      ]
+    },
+    "v2_corrected": {
+      "expected_issues": []
+    }
+  },
+  "case_id": "EVAL-L2-S2201",
+  "expected_family_counts": {
+    "Geometry": 2,
+    "IFC Identity": 1,
+    "Information": 5,
+    "Integrity": 1,
+    "Revision": 2
+  },
+  "expected_fault_count": 11,
+  "expected_primary_alert_count": 11,
+  "generator_version": "1.0.0",
+  "ground_truth_source": "mutation_manifest.json (detector independent)",
+  "layout": "L2",
+  "mutation_manifest_hash": "sha256:fc61f9cfcfd0512a51649be3c8ad4168c6f0e2b9d6e009620844d231a608cf1e",
+  "schema_version": "openbim-ground-truth-v1",
+  "seed": 2201,
+  "split": "evaluation"
+}

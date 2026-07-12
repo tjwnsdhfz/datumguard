@@ -1,0 +1,397 @@
+{
+  "artifact_hashes": {
+    "v0_clean.ifc": "sha256:4fb84a09914b1c57c7a99ece0e1728a07764b0d95496a36abbbbbe7ec19e5d19",
+    "v1_authorized.ifc": "sha256:d696efbc44a84cfd2b7046ff75831bc5bd3332764f9c4a4b756dca66d588aff1",
+    "v1_faulty.ifc": "sha256:c3ad2f67d92f72860d035147d3a5bb903fb4717831e7c4982b79daf1acb37c35",
+    "v2_corrected.ifc": "sha256:a80b5c1c70f8e663fc9531a3788c40a0f5edaf11499fc3b9d51e28fff07c999b",
+    "virtual_fab_profile.canonical_json": "sha256:2f4028459e99135b508c0db803e8d81df48c32cb55d8b10a271058467d938e37",
+    "virtual_fab_profile.json": "sha256:43479fae77d77fa381609c262f2c1d0c2f6b92d74d2fa2a5e73f6a74cc06be4d",
+    "virtual_fab_v1.ids": "sha256:aaa35fdc26da695476240aee4ae862c1ab121917009fa2e950b789281effcd0e"
+  },
+  "authorized_changes": [
+    {
+      "after": "SYS-PCW-B",
+      "asset_key": "L3-PS-001",
+      "before": "SYS-PCW-A",
+      "field": "DG_VFabUtility.SystemCode",
+      "reason": "Synthetic approved utility routing revision for research control."
+    }
+  ],
+  "case_id": "EVAL-L3-S2302",
+  "corrections": [
+    "I01",
+    "I02",
+    "I03",
+    "I04",
+    "I05",
+    "I06",
+    "G01",
+    "G02",
+    "R01",
+    "R02",
+    "R03"
+  ],
+  "detector_independent": true,
+  "generator_version": "1.0.0",
+  "integrity_oracle": {
+    "duplicate_groups_by_variant": {
+      "v0_clean": {},
+      "v1_authorized": {},
+      "v1_faulty": {
+        "1_ePhLc1XHlf92Np0dqVgT": [
+          953,
+          976
+        ]
+      },
+      "v2_corrected": {}
+    },
+    "expected_faulty_duplicate_global_id": "1_ePhLc1XHlf92Np0dqVgT"
+  },
+  "layout": "L3",
+  "mutations": [
+    {
+      "admissible_secondary_rule_ids": [
+        "REV-03"
+      ],
+      "after": null,
+      "before": "VF-PS-028",
+      "expected_detection_key": {
+        "asset_key": "L3-PS-028",
+        "family": "Information",
+        "fault_id": "I01",
+        "field": "DG_Identity.AssetTag",
+        "rule_id": "IDS-01"
+      },
+      "expected_rule_ids": [
+        "IDS-01"
+      ],
+      "family": "Information",
+      "fault_id": "I01",
+      "field": "DG_Identity.AssetTag",
+      "rule_id": "IDS-01",
+      "target": {
+        "asset_key": "L3-PS-028",
+        "faulty_global_id": "3YO3AAXprVOxJi6rWm7agI",
+        "faulty_step_id": 926,
+        "ifc_class": "IfcPipeSegment"
+      }
+    },
+    {
+      "admissible_secondary_rule_ids": [
+        "REV-03"
+      ],
+      "after": "INVALID TAG",
+      "before": "VF-VL-002",
+      "expected_detection_key": {
+        "asset_key": "L3-VL-002",
+        "family": "Information",
+        "fault_id": "I02",
+        "field": "DG_Identity.AssetTag",
+        "rule_id": "IDS-01"
+      },
+      "expected_rule_ids": [
+        "IDS-01"
+      ],
+      "family": "Information",
+      "fault_id": "I02",
+      "field": "DG_Identity.AssetTag",
+      "rule_id": "IDS-01",
+      "target": {
+        "asset_key": "L3-VL-002",
+        "faulty_global_id": "341q$Y8arNIBvpCtAFhBii",
+        "faulty_step_id": 1257,
+        "ifc_class": "IfcValve"
+      }
+    },
+    {
+      "admissible_secondary_rule_ids": [
+        "REV-03"
+      ],
+      "after": "STEAM",
+      "before": "VAC",
+      "expected_detection_key": {
+        "asset_key": "L3-PS-003",
+        "family": "Information",
+        "fault_id": "I03",
+        "field": "DG_VFabUtility.UtilityType",
+        "rule_id": "IDS-02"
+      },
+      "expected_rule_ids": [
+        "IDS-02"
+      ],
+      "family": "Information",
+      "fault_id": "I03",
+      "field": "DG_VFabUtility.UtilityType",
+      "rule_id": "IDS-02",
+      "target": {
+        "asset_key": "L3-PS-003",
+        "faulty_global_id": "0CPuzt5YzQBg0B7HNX7_S0",
+        "faulty_step_id": 227,
+        "ifc_class": "IfcPipeSegment"
+      }
+    },
+    {
+      "admissible_secondary_rule_ids": [
+        "REV-03"
+      ],
+      "after": null,
+      "before": "SYS-PCW-A",
+      "expected_detection_key": {
+        "asset_key": "L3-PS-025",
+        "family": "Information",
+        "fault_id": "I04",
+        "field": "DG_VFabUtility.SystemCode",
+        "rule_id": "IDS-03"
+      },
+      "expected_rule_ids": [
+        "IDS-03"
+      ],
+      "family": "Information",
+      "fault_id": "I04",
+      "field": "DG_VFabUtility.SystemCode",
+      "rule_id": "IDS-03",
+      "target": {
+        "asset_key": "L3-PS-025",
+        "faulty_global_id": "3gTnW9HWDHGQmSoAYGQAKK",
+        "faulty_step_id": 843,
+        "ifc_class": "IfcPipeSegment"
+      }
+    },
+    {
+      "admissible_secondary_rule_ids": [],
+      "after": null,
+      "before": "DG-VFAB-2026",
+      "expected_detection_key": {
+        "asset_key": "L3-SP-004",
+        "family": "Information",
+        "fault_id": "I05",
+        "field": "classification",
+        "rule_id": "IDS-04"
+      },
+      "expected_rule_ids": [
+        "IDS-04"
+      ],
+      "family": "Information",
+      "fault_id": "I05",
+      "field": "classification",
+      "rule_id": "IDS-04",
+      "target": {
+        "asset_key": "L3-SP-004",
+        "faulty_global_id": "1WuzQKvnDLyQLFZvy6VxXp",
+        "faulty_step_id": 1022,
+        "ifc_class": "IfcBuildingElementProxy"
+      }
+    },
+    {
+      "admissible_secondary_rule_ids": [
+        "REV-03"
+      ],
+      "after": null,
+      "before": "IfcSpace",
+      "expected_detection_key": {
+        "asset_key": "L3-SP-005",
+        "family": "Integrity",
+        "fault_id": "I06",
+        "field": "container",
+        "rule_id": "IFC-03"
+      },
+      "expected_rule_ids": [
+        "IFC-03"
+      ],
+      "family": "Integrity",
+      "fault_id": "I06",
+      "field": "container",
+      "rule_id": "IFC-03",
+      "target": {
+        "asset_key": "L3-SP-005",
+        "faulty_global_id": "05ON4hk5zU9R_qv1uV1PHO",
+        "faulty_step_id": 1044,
+        "ifc_class": "IfcBuildingElementProxy"
+      }
+    },
+    {
+      "admissible_secondary_rule_ids": [],
+      "after": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.5
+      },
+      "before": {
+        "x": 11.573143,
+        "y": 5.5,
+        "z": 2.05
+      },
+      "entity_pair": [
+        "L3-TL-001",
+        "L3-PS-018"
+      ],
+      "expected_detection_key": {
+        "asset_key": "L3-PS-018",
+        "entity_pair": [
+          "L3-PS-018",
+          "L3-TL-001"
+        ],
+        "family": "Geometry",
+        "fault_id": "G01",
+        "field": "placement",
+        "global_id_pair": [
+          "2eDMiNcFDO_hVp5MMEt1wQ",
+          "3Y4tK6FvHL4fNxNKBrl5Xw"
+        ],
+        "rule_id": "GEO-01"
+      },
+      "expected_rule_ids": [
+        "GEO-01"
+      ],
+      "family": "Geometry",
+      "fault_id": "G01",
+      "field": "placement",
+      "rule_id": "GEO-01",
+      "target": {
+        "asset_key": "L3-PS-018",
+        "faulty_global_id": "2eDMiNcFDO_hVp5MMEt1wQ",
+        "faulty_step_id": 647,
+        "ifc_class": "IfcPipeSegment"
+      }
+    },
+    {
+      "admissible_secondary_rule_ids": [],
+      "after": {
+        "x": 6.0,
+        "y": 0.0,
+        "z": 0.5
+      },
+      "before": {
+        "x": 2.7,
+        "y": 7.5,
+        "z": 1.8
+      },
+      "entity_pair": [
+        "L3-TL-002",
+        "L3-VL-001"
+      ],
+      "expected_detection_key": {
+        "asset_key": "L3-VL-001",
+        "entity_pair": [
+          "L3-TL-002",
+          "L3-VL-001"
+        ],
+        "family": "Geometry",
+        "fault_id": "G02",
+        "field": "placement",
+        "global_id_pair": [
+          "1Qo92lBhvN0gR0rPmIctEJ",
+          "24PyLhQNTV$uKVQ1JeIZD1"
+        ],
+        "rule_id": "GEO-01"
+      },
+      "expected_rule_ids": [
+        "GEO-01"
+      ],
+      "family": "Geometry",
+      "fault_id": "G02",
+      "field": "placement",
+      "rule_id": "GEO-01",
+      "target": {
+        "asset_key": "L3-VL-001",
+        "faulty_global_id": "24PyLhQNTV$uKVQ1JeIZD1",
+        "faulty_step_id": 1229,
+        "ifc_class": "IfcValve"
+      }
+    },
+    {
+      "admissible_secondary_rule_ids": [
+        "REV-02"
+      ],
+      "after": "1_ePhLc1XHlf92Np0dqVgT",
+      "before": "0ucWO49PvK_AHhv3guXX6$",
+      "duplicate_global_id": "1_ePhLc1XHlf92Np0dqVgT",
+      "expected_detection_key": {
+        "asset_key": "L3-SP-002",
+        "asset_keys": [
+          "L3-SP-001",
+          "L3-SP-002"
+        ],
+        "family": "IFC Identity",
+        "fault_id": "R01",
+        "field": "GlobalId",
+        "global_id": "1_ePhLc1XHlf92Np0dqVgT",
+        "rule_id": "IFC-02",
+        "step_entity_ids": [
+          953,
+          976
+        ]
+      },
+      "expected_rule_ids": [
+        "IFC-02"
+      ],
+      "family": "IFC Identity",
+      "fault_id": "R01",
+      "field": "GlobalId",
+      "rule_id": "IFC-02",
+      "target": {
+        "asset_key": "L3-SP-002",
+        "asset_keys": [
+          "L3-SP-001",
+          "L3-SP-002"
+        ],
+        "faulty_global_id": "1_ePhLc1XHlf92Np0dqVgT",
+        "faulty_step_id": 976,
+        "ifc_class": "IfcBuildingElementProxy"
+      }
+    },
+    {
+      "admissible_secondary_rule_ids": [],
+      "after": "0H8pNHYmXHVf3JkfOT5rO4",
+      "before": "3rekJzt5jVaPY52Hjb9F4Q",
+      "expected_detection_key": {
+        "asset_key": "L3-PS-012",
+        "family": "Revision",
+        "fault_id": "R02",
+        "field": "GlobalId",
+        "rule_id": "REV-02"
+      },
+      "expected_rule_ids": [
+        "REV-02"
+      ],
+      "family": "Revision",
+      "fault_id": "R02",
+      "field": "GlobalId",
+      "rule_id": "REV-02",
+      "target": {
+        "asset_key": "L3-PS-012",
+        "faulty_global_id": "0H8pNHYmXHVf3JkfOT5rO4",
+        "faulty_step_id": 479,
+        "ifc_class": "IfcPipeSegment"
+      }
+    },
+    {
+      "admissible_secondary_rule_ids": [],
+      "after": "PCW",
+      "before": "CDA",
+      "expected_detection_key": {
+        "asset_key": "L3-PS-022",
+        "family": "Revision",
+        "fault_id": "R03",
+        "field": "DG_VFabUtility.UtilityType",
+        "rule_id": "REV-03"
+      },
+      "expected_rule_ids": [
+        "REV-03"
+      ],
+      "family": "Revision",
+      "fault_id": "R03",
+      "field": "DG_VFabUtility.UtilityType",
+      "rule_id": "REV-03",
+      "target": {
+        "asset_key": "L3-PS-022",
+        "faulty_global_id": "3BB9vInX9PtO2Vq08wDT8_",
+        "faulty_step_id": 759,
+        "ifc_class": "IfcPipeSegment"
+      }
+    }
+  ],
+  "schema_version": "openbim-mutation-manifest-v1",
+  "seed": 2302,
+  "target_selection": "seeded selection without mutation-target overlap"
+}

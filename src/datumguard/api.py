@@ -6,7 +6,7 @@ import re
 from typing import Annotated, Any
 
 import uvicorn
-from fastapi import FastAPI, File, Query, Request, UploadFile
+from fastapi import FastAPI, File, Form, Query, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -19,6 +19,13 @@ from .architecture_models import ArchitecturalPlanContract
 from .architecture_service import run_architecture_design, validate_architecture_contract
 from .artifact_service import MAX_ARTIFACT_BYTES, audit_artifact, compare_artifacts
 from .models import DesignContract, RepairProposal, StrictModel, Violation
+from .openbim_service import (
+    MAX_IDS_BYTES,
+    MAX_IFC_BYTES,
+    MAX_OPENBIM_TOTAL_BYTES,
+    OpenBimServiceFailure,
+    run_openbim_evidence,
+)
 from .operations import (
     DEFAULT_MAX_BODY_BYTES,
     OPERATIONS,
@@ -275,11 +282,19 @@ def engineering_domains() -> list[dict[str, str]]:
             "web_route": "/intake",
             "run_endpoint": "/api/v1/artifacts/audit",
         },
+        {
+            "id": "openbim_evidence",
+            "design_kind": "openbim_evidence",
+            "web_route": "/openbim",
+            "run_endpoint": "/api/v1/openbim/evidence/run",
+        },
     ]
     if not OPERATIONS.solid_enabled:
         domains = [item for item in domains if item["id"] != "solid_part"]
     if not OPERATIONS.artifact_lab_enabled:
         domains = [item for item in domains if item["id"] != "artifact_lab"]
+    if not OPERATIONS.openbim_enabled:
+        domains = [item for item in domains if item["id"] != "openbim_evidence"]
     return domains
 
 
@@ -508,6 +523,96 @@ async def artifact_compare(
         candidate.filename or "candidate",
         candidate_data,
     )
+    return result.model_dump(mode="json")
+
+
+@app.post("/api/v1/openbim/evidence/run", response_model=None)
+async def openbim_evidence_run(
+    request: Request,
+    baseline: Annotated[UploadFile, File()],
+    candidate: Annotated[UploadFile, File()],
+    requirements: Annotated[UploadFile, File()],
+    profile_id: Annotated[str, Form()],
+    include_html: Annotated[bool, Form()] = True,
+    include_bcf: Annotated[bool, Form()] = False,
+) -> dict[str, Any] | JSONResponse:
+    if not OPERATIONS.openbim_enabled:
+        return _error_response(
+            request,
+            status_code=503,
+            code="DG_CAPABILITY_DISABLED",
+            message="요청한 CAD 기능이 이 배포에서 비활성화되어 있습니다.",
+            details={"capability": "openbim"},
+            retry_after=60,
+        )
+    filenames = {
+        "baseline": baseline.filename or "",
+        "candidate": candidate.filename or "",
+        "requirements": requirements.filename or "",
+    }
+    invalid_fields = [
+        field
+        for field, filename in filenames.items()
+        if not filename.lower().endswith(".ifc" if field != "requirements" else ".ids")
+    ]
+    if invalid_fields:
+        return _error_response(
+            request,
+            status_code=422,
+            code="DG_OPENBIM_INPUT_INVALID",
+            message="IFC baseline/candidate와 IDS requirements 파일이 필요합니다.",
+            details={"invalid_fields": invalid_fields},
+        )
+    baseline_data = await _read_upload_limited(baseline, max_bytes=MAX_IFC_BYTES)
+    candidate_data = await _read_upload_limited(candidate, max_bytes=MAX_IFC_BYTES)
+    requirements_data = await _read_upload_limited(requirements, max_bytes=MAX_IDS_BYTES)
+    sizes = {
+        "baseline": len(baseline_data),
+        "candidate": len(candidate_data),
+        "requirements": len(requirements_data),
+    }
+    limit_by_field = {
+        "baseline": MAX_IFC_BYTES,
+        "candidate": MAX_IFC_BYTES,
+        "requirements": MAX_IDS_BYTES,
+    }
+    oversized = [field for field, size in sizes.items() if size > limit_by_field[field]]
+    total_bytes = sum(sizes.values())
+    # OpenBIM has its own 20 + 20 + 1 MiB semantic input budget. The existing
+    # artifact comparison aggregate remains unchanged and does not govern this endpoint.
+    max_total_bytes = MAX_OPENBIM_TOTAL_BYTES
+    if oversized or total_bytes > max_total_bytes:
+        return _error_response(
+            request,
+            status_code=413,
+            code="DG_OPENBIM_TOO_LARGE",
+            message="OpenBIM 입력 파일 크기가 서버 제한을 초과했습니다.",
+            details={
+                "oversized_fields": oversized,
+                "max_ifc_bytes": MAX_IFC_BYTES,
+                "max_ids_bytes": MAX_IDS_BYTES,
+                "max_total_bytes": max_total_bytes,
+            },
+        )
+    try:
+        result = await run_in_threadpool(
+            run_openbim_evidence,
+            baseline_bytes=baseline_data,
+            candidate_bytes=candidate_data,
+            requirements_bytes=requirements_data,
+            profile=profile_id,
+            include_html=include_html,
+            include_bcf=include_bcf,
+        )
+    except OpenBimServiceFailure as exc:
+        return _error_response(
+            request,
+            status_code=exc.status_code,
+            code=exc.code,
+            message=exc.message,
+            details=exc.details,
+            retry_after=60 if exc.status_code == 503 else None,
+        )
     return result.model_dump(mode="json")
 
 

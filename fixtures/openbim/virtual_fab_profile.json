@@ -1,0 +1,62 @@
+{
+  "allowed_service_sides": [
+    "+X",
+    "-X",
+    "+Y",
+    "-Y"
+  ],
+  "applicable_entities": [
+    "IfcBuildingElementProxy",
+    "IfcPipeSegment",
+    "IfcPipeFitting",
+    "IfcValve"
+  ],
+  "asset_key_path": "DG_Identity.AssetKey",
+  "authorized_changes": [
+    {
+      "after": "SYS-PCW-B",
+      "asset_key": "L1-PS-001",
+      "before": "SYS-PCW-A",
+      "field": "DG_VFabUtility.SystemCode",
+      "reason": "Synthetic approved utility routing revision for research control."
+    },
+    {
+      "after": "SYS-PCW-B",
+      "asset_key": "L2-PS-001",
+      "before": "SYS-PCW-A",
+      "field": "DG_VFabUtility.SystemCode",
+      "reason": "Synthetic approved utility routing revision for research control."
+    },
+    {
+      "after": "SYS-PCW-B",
+      "asset_key": "L3-PS-001",
+      "before": "SYS-PCW-A",
+      "field": "DG_VFabUtility.SystemCode",
+      "reason": "Synthetic approved utility routing revision for research control."
+    }
+  ],
+  "clearance_epsilon_m": 1e-09,
+  "default_service_depth_m": 0.6,
+  "ifc_schema": "IFC4",
+  "locked_fields": [
+    "DG_Identity.AssetTag",
+    "DG_VFabUtility.UtilityType",
+    "DG_VFabUtility.SystemCode",
+    "container"
+  ],
+  "max_bcf_topics": 1000,
+  "max_geometry_vertices": 2000000,
+  "max_products": 500,
+  "obstacle_entities": [
+    "IfcPipeSegment",
+    "IfcPipeFitting",
+    "IfcValve"
+  ],
+  "profile_id": "virtual-fab-v1",
+  "required_container_types": [
+    "IfcBuildingStorey",
+    "IfcSpace"
+  ],
+  "tool_object_type": "FAB_TOOL",
+  "version": "1.0.0"
+}

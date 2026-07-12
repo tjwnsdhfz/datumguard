@@ -38,6 +38,7 @@ HEAVY_PATHS = frozenset(
         "/api/v1/solid/designs/run",
         "/api/v1/artifacts/audit",
         "/api/v1/artifacts/compare",
+        "/api/v1/openbim/evidence/run",
         "/api/v1/drawings/generate",
         "/api/v1/drawings/verify",
         "/api/v1/exports",
@@ -470,6 +471,7 @@ class OperationalControls:
         )
         self.solid_enabled = env_flag("DATUMGUARD_ENABLE_SOLID", True)
         self.artifact_lab_enabled = env_flag("DATUMGUARD_ENABLE_ARTIFACT_LAB", True)
+        self.openbim_enabled = env_flag("DATUMGUARD_ENABLE_OPENBIM", True)
         if reset_metrics:
             self.metrics = BoundedMetrics()
 
@@ -520,6 +522,8 @@ class OperationalControls:
             return "solid"
         if path in {"/api/v1/artifacts/audit", "/api/v1/artifacts/compare"}:
             return None if self.artifact_lab_enabled else "artifact_lab"
+        if path == "/api/v1/openbim/evidence/run" and not self.openbim_enabled:
+            return "openbim"
         return None
 
     def metrics_snapshot(self) -> dict[str, Any]:
