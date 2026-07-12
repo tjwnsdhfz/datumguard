@@ -152,6 +152,15 @@ test.describe("real CAD artifact and solid workspaces", () => {
 
   test("publishes the upload and browser-draft privacy controls", async ({ page }) => {
     await page.goto("/privacy");
+    await expect(page).toHaveTitle("Privacy and Local Data | DatumGuard");
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      "https://datumguard-tjwnsdhfz.vercel.app/privacy",
+    );
+    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute(
+      "content",
+      "https://datumguard-tjwnsdhfz.vercel.app/privacy",
+    );
     await expect(page.getByRole("heading", { name: /비기밀 CAD만/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Oregon에서 일시 처리" })).toBeVisible();
     await expect(page.getByRole("button", { name: /로컬 draft 삭제/i })).toBeVisible();

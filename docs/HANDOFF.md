@@ -1,20 +1,19 @@
-# DatumGuard v0.2 Production Handoff
+# DatumGuard v0.2.1 Production Handoff
 
 ## Production 기준점
 
 - Repository: `https://github.com/tjwnsdhfz/datumguard`
-- Release source: `v0.2.0` at `40dd132ae8ca3267a79283f65058d6c8bbcee44b`
+- Release source and immutable evidence: [DatumGuard v0.2.1](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.1)
 - Production web: `https://datumguard-tjwnsdhfz.vercel.app`
 - Production API: `https://datumguard-api.onrender.com`
-- API runtime version: `0.2.0`
-- Vercel deployment: GitHub deployment `5410073153`
-- Render deployment: GitHub deployment `5410097749`
-- Verified smoke: [run 29181279413](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181279413)
-- Release: [DatumGuard v0.2.0](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.0)
+- API runtime version: `0.2.1`
+- Runtime provenance: `/api/v1/health.release_sha`; Render-success smoke가 release commit과 exact-match
+- Previous rollback baseline: [`v0.2.0`](operations/rollback-baseline.md)
 
-CAD Artifact Assurance, 제한형 STEP, Product Case Study와 social preview는 v0.2.0으로
-`main`에 병합·배포되었다. CI·Security·Vercel·Render·여섯-route smoke와 release SBOM을 같은
-release SHA에 고정했다.
+CAD Artifact Assurance, 제한형 STEP, Product Case Study와 social preview는 `main`에 병합·배포되었다.
+v0.2.1은 공개 test 수치, route별 canonical/Open Graph metadata와 privacy title을 정정하고, Render
+완료 뒤 runtime `release_sha`까지 대조하는 2단계 deployment smoke를 추가한다. 정확한 CI·Security·
+deployment·smoke ID와 release SBOM은 GitHub release notes에 고정한다.
 
 ## 공개 route와 실제 가용 범위
 
@@ -63,8 +62,7 @@ Rhino evidence는 STEP 공식 verifier를 대체하지 않으며 hosted API는 a
 
 ## 검증 결과
 
-v0.2.0 `40dd132`의
-[CI run 29181254550](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181254550):
+v0.2.1 release gate:
 
 - Ruff format/check: pass
 - mypy: pass
@@ -73,17 +71,19 @@ v0.2.0 `40dd132`의
 - Playwright real API E2E: **Chromium 24 passed**
 - backend/web container build, SBOM 생성, fixed-critical scan: pass
 
-[Security run 29181254569](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181254569): dependency review,
-pip audit, Python·JavaScript/TypeScript CodeQL pass.
+- PR dependency review: pass
+- push security: pip audit, Python·JavaScript/TypeScript CodeQL pass
 
-[Production smoke run 29181279413](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181279413):
+Production smoke:
 
-- API version `0.2.0`, `solid=false`, `artifact=true`: pass
+- API version `0.2.1`, exact `release_sha`, `solid=false`, `artifact=true`: pass
 - `/case-study`와 다섯 engineering workspace DOM sentinel: pass
 - Architecture serialized-DXF approval canary: pass
 - Artifact Lab DXF audit canary: pass
 - Solid hosted endpoint `503` fail-closed: pass
 - CORS contract: pass
+
+이 목록의 immutable run·deployment ID는 [v0.2.1 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.1)에 기록한다.
 
 ## 다음 release로 넘기는 항목
 

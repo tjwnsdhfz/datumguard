@@ -7,15 +7,19 @@
 | Known-good source | `v0.2.0` → `40dd132ae8ca3267a79283f65058d6c8bbcee44b` | annotated public release tag |
 | Vercel deployment | GitHub deployment `5410073153` | 위 SHA의 Production web |
 | Render deployment | GitHub deployment `5410097749` | 위 SHA의 Production API |
-| Deployment smoke | [run `29181279413`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181279413) | API v0.2.0, 6 public route, Architecture/Artifact canary, Solid fail-closed, CORS pass |
+| Deployment smoke | [run `29181279413`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181279413) | Vercel 완료 뒤 API v0.2.0/capability, 6 public route, Architecture/Artifact canary, Solid fail-closed, CORS pass |
 | CI | [run `29181254550`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181254550) | 256 pytest, 24 Playwright, web/container/SBOM pass |
-| Security | [run `29181254569`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181254569) | dependency review, pip audit와 두 CodeQL language pass |
+| Push security | [run `29181254569`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181254569) | pip audit와 두 CodeQL language pass; push의 dependency-review job은 조건상 skipped |
+| PR dependency review | [run `29178068150`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29178068150) | PR #13 dependency-review pass |
 | Previous v0.2 fallback | `b2dd6e5ebd7f21780295f2f37331dadce14eaf68` | Case Study 이전 fallback; Vercel `5406289230`, Render `5406318427` |
 | Historical backup tag | `ops-backup-20260712` → `eefad164c952d6c859327592eaedc1e2508d5e64` | pre-operations-hardening snapshot; 현재 rollback 대상으로 직접 사용하지 않음 |
 | Legacy v0.1 fallback | `2d1f08e6cfabe0a653500302cac1045ccb3b7a2f` | v0.2 자체 결함 시에만 web/API를 함께 내리는 비상 호환 기준 |
 
-Release tag, 두 deployment와 검증 run은 같은 `40dd132` 기준이다. `main`의 후속 문서·dependency
-commit과 무관하게 이 tag를 known-good rollback target으로 유지한다.
+Release tag와 GitHub의 Vercel·Render deployment record는 `40dd132`를 가리킨다. 다만 위 smoke는
+Render deployment 완료 전에 실행되어 API version/capability 호환성을 검증했으며, 해당 Render
+deployment 자체의 runtime SHA를 사후 증명한 것은 아니다. v0.2.1부터 Render 완료 이벤트가 health의
+`release_sha`를 checkout commit과 대조한다. 이 문서는 `main` 후속 변경과 무관한 v0.2.0 fallback을
+보존한다.
 
 ## v0.2.0 fallback 절차
 

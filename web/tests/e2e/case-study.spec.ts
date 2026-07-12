@@ -12,7 +12,8 @@ test.describe("public product case study", () => {
       page.getByRole("heading", { level: 1, name: /cad command success is not accuracy evidence/i }),
     ).toBeVisible();
     await expect(page.getByText("256", { exact: true })).toBeVisible();
-    await expect(page.getByText("19", { exact: true })).toBeVisible();
+    await expect(page.getByText("24", { exact: true })).toBeVisible();
+    await expect(page.getByText("256 pytest + 24 Playwright", { exact: true })).toBeVisible();
     await expect(page.getByText(/DG_ARCH_EXTERIOR_OPEN/)).toBeVisible();
     await expect(page.getByText(/계획 중인 100 golden \+ 50 language benchmark/)).toBeVisible();
     await expect(page.getByRole("link", { name: "OPEN LIVE ARCHITECTURE" })).toHaveAttribute(

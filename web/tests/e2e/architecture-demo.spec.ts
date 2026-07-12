@@ -160,8 +160,8 @@ test.describe("interactive architecture demo", () => {
         status: readinessCalls < 3 ? 503 : 200,
         contentType: "application/json",
         body: readinessCalls < 3
-          ? '{"status":"not_ready","version":"0.2.0"}'
-          : '{"status":"ready","version":"0.2.0"}',
+          ? '{"status":"not_ready","version":"0.2.1"}'
+          : '{"status":"ready","version":"0.2.1"}',
       });
     });
     await page.goto("/");

@@ -15,7 +15,7 @@ DatumGuard는 생성기가 “성공”했다고 보고한 CAD가 아니라, 저
 |---|---|
 | **문제** | 자연어·폼에서 CAD가 생성되어도 저장 파일의 실제 치수, datum, 공차가 요구조건과 같다는 보장은 없습니다. |
 | **방법** | 요구를 versioned contract로 고정하고, writer와 분리된 reader가 serialized DXF 또는 STEP을 다시 열어 측정합니다. 모든 필수 검사가 통과할 때만 bundle을 활성화합니다. |
-| **증거** | [v0.2.0 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.0) `40dd132`에서 [256 pytest + 24 Playwright + container CI가 통과](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181254550)했고, [Production smoke](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181279413)는 여섯 route, Architecture·Artifact canary, API capability, CORS와 Solid fail-closed를 확인했습니다. |
+| **증거** | [v0.2.1 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.1)는 256 pytest, 24 Playwright, web/container/SBOM gate를 통과합니다. Render 완료 후 smoke는 공개 route와 canary뿐 아니라 API health의 `release_sha`가 배포 commit과 같은지도 확인하며, 정확한 run·deployment ID는 release notes에 고정합니다. |
 | **한계** | 구조·안전·법규·산업표준 적합성이나 범용 3D를 판정하지 않습니다. 3D는 세 가지 제한형 solid family의 STEP 기하 검증만 local/CI에서 지원하며, 공개 Render Free API에서는 비활성입니다. 100개 golden contract + 자연어 50개 benchmark도 계획 단계로 아직 완료되지 않았습니다. |
 
 | 결과 | 재현 fixture | 승인 게이트 |
@@ -134,7 +134,7 @@ docker compose up --build
 - CAD Artifact Lab: [/intake](https://datumguard-tjwnsdhfz.vercel.app/intake)
 - API: [health](https://datumguard-api.onrender.com/api/v1/health) · [domains](https://datumguard-api.onrender.com/api/v1/domains) · [OpenAPI](https://datumguard-api.onrender.com/docs)
 
-현재 공개 기준은 [v0.2.0 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.0) `40dd132`입니다. [실환경 deployment smoke](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181279413)는 `/case-study`와 다섯 engineering workspace, Architecture 생성→serialized DXF 재측정→approval bundle, Artifact Lab DXF audit, CORS를 통과했고, Solid capability가 domain registry에서 숨겨지며 실행 요청을 `503`으로 거부하는 것도 확인했습니다. Vercel Production deployment `5410073153`과 Render API deployment `5410097749`가 같은 release SHA를 가리킵니다. 도메인 evidence에서 Architecture는 96m²와 4개 room seed, Piping은 12.0m route와 1,975mm minimum clearance, Plate는 전체 치수 편차 0.000000mm를 보고했습니다.
+현재 공개 기준은 [v0.2.1 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.1)입니다. Vercel 선행 smoke는 새 web과 기존 API의 하위 호환성을 확인하고, Render 완료 이벤트가 실행하는 최종 smoke는 API `version`, `release_sha`, capability, Architecture approval canary, Artifact Lab audit, Solid `503` fail-closed와 CORS를 같은 배포 revision에서 검사합니다. 도메인 evidence에서 Architecture는 96m²와 4개 room seed, Piping은 12.0m route와 1,975mm minimum clearance, Plate는 전체 치수 편차 0.000000mm를 보고합니다. 이전 `v0.2.0`의 고정 fallback은 [rollback baseline](docs/operations/rollback-baseline.md)에 보존합니다.
 
 직접 복제해 배포하려면 공개 저장소 [tjwnsdhfz/datumguard](https://github.com/tjwnsdhfz/datumguard)를 사용합니다. 먼저 Render 버튼으로 backend를 만들고 발급된 API origin을 Vercel 배포 화면의 `NEXT_PUBLIC_DATUMGUARD_API_URL`에 입력합니다.
 
@@ -204,7 +204,7 @@ Set-Location web
 npm run test:e2e
 ```
 
-[v0.2.0 CI run 29181254550](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181254550)은 backend **256 passed**, Chromium Playwright **24 passed**, web build와 두 container build·CycloneDX SBOM·fixed-critical scan을 통과했습니다. [Security run 29181254569](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181254569)와 [Production smoke run 29181279413](https://github.com/tjwnsdhfz/datumguard/actions/runs/29181279413)도 통과했으며, SBOM 두 개는 [GitHub Release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.0)에 첨부했습니다.
+[v0.2.1 release evidence](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.1)는 backend **256 passed**, Chromium Playwright **24 passed**, web build, 두 container build, CycloneDX SBOM, fixed-critical scan, dependency review, pip audit와 두 CodeQL language 결과를 각각의 실제 run에 연결합니다. Render 배포 완료 뒤의 Production smoke는 health `release_sha`까지 대조합니다.
 
 합성 예제 계약은 Architecture의 [통과 4-room studio](fixtures/examples/architecture_four_room.json)·[300mm open-loop 실패](fixtures/examples/architecture_open_300mm.json), Piping의 [통과 CDA route](fixtures/examples/piping_utility.json)·[clearance 실패](fixtures/examples/piping_clearance_failure.json)로 제공합니다. 기존 Architecture fixture도 하위 호환 회귀용으로 유지합니다. 모든 예제는 실사업장 도면이 아닌 공개 합성 데이터입니다.
 

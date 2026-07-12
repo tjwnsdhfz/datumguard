@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ko_KR",
-    url: "/case-study",
+    url: "/",
     siteName: "DatumGuard",
     title: "DatumGuard | Independent CAD Assurance",
     description:
