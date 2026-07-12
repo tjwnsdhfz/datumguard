@@ -5,7 +5,7 @@ import styles from "./case-study.module.css";
 
 const repositoryUrl =
   process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/tjwnsdhfz/datumguard";
-const releaseUrl = `${repositoryUrl.replace(/\/$/, "")}/releases/tag/v0.2.1`;
+const releaseUrl = `${repositoryUrl.replace(/\/$/, "")}/releases/tag/v0.3.0`;
 
 const pipeline = [
   ["01", "LOCK", "datum·단위·치수·공차를 versioned contract로 고정"],
@@ -18,10 +18,11 @@ const pipeline = [
 const domains = [
   ["Architecture", "/", "R2013 DXF", "wall loop · opening · grid · room", "HOSTED"],
   ["Plant Piping", "/piping", "R2013 DXF", "route · support · component · clearance", "HOSTED"],
+  ["Structural Frame", "/frame", "R2013 DXF", "exact solver · datum · XDATA · uncertainty", "HOSTED SCREENING"],
   ["Engineering Plate", "/plate", "R2013 DXF", "hole · slot · cutout · ligament", "HOSTED"],
   ["Limited Solid", "/solid", "STEP", "B-rep · bbox · bore axis · topology", "LOCAL / CI"],
   ["Artifact Lab", "/intake", "DXF · STEP · IFC", "immutable audit · revision compare", "HOSTED"],
-  ["OpenBIM Evidence", "/openbim", "IFC4 · IDS", "information · integrity · clearance · revision", "RESEARCH / LOCAL"],
+  ["OpenBIM Evidence", "/openbim", "IFC4 · IDS", "information · integrity · clearance · revision", "PUBLIC UI / LOCAL RUN"],
 ] as const;
 
 export default function CaseStudyPage() {
@@ -50,7 +51,7 @@ export default function CaseStudyPage() {
         tabIndex={-1}
       >
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>PUBLIC ENGINEERING CASE STUDY · V0.2.1 BASELINE · UNRELEASED OPENBIM RESEARCH PREVIEW</p>
+          <p className={styles.eyebrow}>PUBLIC ENGINEERING CASE STUDY · V0.3.0 PRODUCTION · FRAMEGUARD + OPENBIM RESEARCH</p>
           <h1 id="case-study-title">
             CAD COMMAND SUCCESS
             <br />
@@ -79,9 +80,9 @@ export default function CaseStudyPage() {
 
       <section className={styles.proofStrip} aria-label="Verified project evidence">
         <div><strong>0.001 mm</strong><span>comparison grid</span></div>
-        <div><strong>256</strong><span>pytest baseline</span></div>
-        <div><strong>24</strong><span>Playwright baseline</span></div>
-        <div><strong>5</strong><span>v0.2.1 production workspaces</span></div>
+        <div><strong>376</strong><span>pytest release gate</span></div>
+        <div><strong>35</strong><span>Playwright release gate</span></div>
+        <div><strong>7</strong><span>v0.3.0 public workspaces</span></div>
         <div><strong>0</strong><span>unverified official CAD bundles</span></div>
       </section>
 
@@ -304,9 +305,9 @@ export default function CaseStudyPage() {
         </div>
         <div className={styles.releaseGrid}>
           <a className={styles.releaseCard} href={releaseUrl} target="_blank" rel="noreferrer">
-            <span>TEST</span><strong>256 pytest + 24 Playwright</strong><p>Open the v0.2.1 release evidence ↗</p>
+            <span>TEST</span><strong>376 pytest + 35 Playwright</strong><p>Open the v0.3.0 release evidence ↗</p>
           </a>
-          <article><span>OPENBIM LOCAL</span><strong>295 pytest + 27 Playwright</strong><p>unreleased research branch gate</p></article>
+          <article><span>RESEARCH</span><strong>OpenSees 6/6 + PyG 90 cases</strong><p>screening and research evidence, never certification</p></article>
           <article><span>CI</span><strong>Type · lint · build · containers</strong><p>SBOM, CodeQL, audit, Trivy 포함</p></article>
           <article><span>DEPLOY</span><strong>Vercel + Render</strong><p>DOM, API capability, canary, CORS smoke</p></article>
           <article><span>ROLLBACK</span><strong>Known-good SHA + deployment IDs</strong><p>Wrong PASS를 SEV1으로 처리</p></article>

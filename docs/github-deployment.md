@@ -150,10 +150,11 @@ curl --fail https://datumguard-tjwnsdhfz.vercel.app/solid
 curl --fail https://datumguard-tjwnsdhfz.vercel.app/intake
 ```
 
-`/frame` 명령은 FrameGuard branch가 merge되고 Vercel/Render가 같은 release SHA를 배포한 뒤의
-검사다. 현재 v0.2.1 production에서 성공했다고 기록하거나 hosted capability로 인용하지 않는다.
-완료 evidence에는 `/frame` DOM sentinel, API `structural_frame` domain, deterministic solver canary,
-health `release_sha`와 CORS를 함께 남긴다.
+`/frame` 명령은 v0.3.0 Vercel/Render production에서 실행된다. 완료 evidence는 `/frame` DOM
+sentinel, API `structural_frame` domain, deterministic solver canary, health `release_sha`와 CORS를
+함께 검사한 [run 29195107475](https://github.com/tjwnsdhfz/datumguard/actions/runs/29195107475)에
+고정한다. 해당 run의 checkout과 API release SHA는
+`472df5fe431277244fc0fcda1ee9aa3b6284ddff`로 일치한다.
 
 OpenSeesPy/PyG는 production dependency가 아니다. 필요할 때 GitHub Actions의 선택형
 `frame-research` workflow를 수동 실행하며 base Docker image에는 Torch/OpenSeesPy를 넣지 않는다.
