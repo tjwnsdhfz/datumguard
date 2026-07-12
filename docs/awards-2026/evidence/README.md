@@ -13,4 +13,10 @@
 - `panel_facts.json`
 - `reproduction.log`
 
+post-freeze evaluator correction을 수행한 경우 다음 audit 파일도 생성한다.
+
+- `raw_results_pre_analysis_fix.jsonl`: 최초 집계가 포함된 원본 byte 보존본
+- `raw_engine_results.jsonl`: detector report와 runtime/determinism만 보존한 분석 입력
+- `analysis_correction.json`, `ANALYSIS_CORRECTION.md`: 수정 이유·commit·hash·metric 영향
+
 아직 생성되지 않은 metric은 공모전 성과로 사용하지 않는다.

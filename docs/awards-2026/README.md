@@ -38,3 +38,20 @@ uv run python tools/run_openbim_experiment.py --regenerate-dataset `
 ```
 
 결과는 `docs/awards-2026/evidence/`와 `RESULTS.md`에 machine-generated 파일로 기록된다.
+
+### 동결 후 evaluator correction 재현
+
+detector를 다시 실행하지 않고 보존한 engine report만 재집계할 때는 clean analysis tag에서 다음을
+실행한다. source SHA-256, tag-to-HEAD, protocol, dataset manifest, truth, IFC input hash와 10/10
+결정성이 모두 일치하지 않으면 시작 전에 실패한다.
+
+```powershell
+uv run python tools/run_openbim_experiment.py --reanalyze-existing `
+  --reanalyze-source C:\external-evidence\raw_results.jsonl `
+  --expected-source-sha256 sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9 `
+  --analysis-tag analysis-v1.0.1 --split evaluation --repeats 10 `
+  --bootstrap-iterations 10000
+```
+
+이 경로는 원본 byte를 `raw_results_pre_analysis_fix.jsonl`로 보존하고 detector field만 남긴
+`raw_engine_results.jsonl`, 수정된 집계, `analysis_correction.json`, `ANALYSIS_CORRECTION.md`를 만든다.

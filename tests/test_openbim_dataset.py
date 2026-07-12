@@ -146,6 +146,77 @@ def test_matching_excludes_admissible_secondary_from_primary_counts() -> None:
     assert "IFC-00" not in experiment.PRIMARY_RULE_IDS
 
 
+def test_geometry_matching_uses_preregistered_raw_global_id_pair() -> None:
+    expected = {
+        "fault_id": "G01",
+        "rule_id": "GEO-01",
+        "family": "Geometry",
+        "asset_keys": ["L1-PS-001"],
+        "entity_pair": ["L1-PS-001", "L1-TL-001"],
+        "global_id_pair": ["duplicate-guid", "obstacle-guid"],
+        "step_ids": [],
+        "field": "placement",
+    }
+    predicted = {
+        "rule_id": "GEO-01",
+        "asset_keys": ["L1-PS-001", "L1-TL-001"],
+        "entity_pair": ["duplicate-guid", "L1-PS-001"],
+        "global_id_pair": ["duplicate-guid", "obstacle-guid"],
+        "step_ids": [100, 200],
+        "field": "",
+        "issue_key": "geometry",
+    }
+
+    match = experiment.match_alerts([expected], [], [predicted])
+
+    assert (match["tp"], match["fp"], match["fn"]) == (1, 0, 0)
+
+    with pytest.raises(ValueError, match="two distinct non-empty GlobalIds"):
+        experiment.alert_key({"rule_id": "GEO-01", "global_id_pair": []})
+    with pytest.raises(ValueError, match="two distinct non-empty GlobalIds"):
+        experiment.alert_key({"rule_id": "GEO-01", "global_id_pair": ["same-guid", "same-guid"]})
+
+
+def test_ablation_recall_keeps_fixed_primary_fault_denominator() -> None:
+    expected = [
+        {
+            "rule_id": rule_id,
+            "asset_keys": [f"asset-{index}"],
+            "field": experiment.canonical_field(rule_id, None),
+        }
+        for index, rule_id in enumerate(("IDS-01", "IFC-03", "GEO-01", "REV-02"), 1)
+    ]
+    for item in expected:
+        item.setdefault(
+            "global_id_pair",
+            ["geometry-a", "geometry-b"] if item["rule_id"] == "GEO-01" else [],
+        )
+        item.setdefault("entity_pair", [])
+        item.setdefault("step_ids", [])
+    predictions = [{**expected[0], "issue_key": "ids-only"}]
+
+    matches = experiment.ablation_matches(expected, [], predictions)
+
+    assert matches["A"]["tp"] == 1
+    assert matches["A"]["fn"] == 3
+    assert matches["A"]["recall"] == 0.25
+
+
+def test_preregistered_macro_targets_use_supported_rule_macro() -> None:
+    statuses = experiment.preregistered_target_status(
+        {
+            "families": {"Information": {"f1": 1.0}, "Geometry": {"f1": 0.96}},
+            "family_macro_f1_by_family": {"Information": 0.94, "Revision": 0.95},
+            "controls": {"clean_false_positives": 0, "authorized_false_positives": 0},
+            "runtime": {"engine_p95_ms": 4999.0},
+        }
+    )
+
+    assert statuses["Information supported-rule macro-F1 >= 0.95"]["status"] == "FAIL"
+    assert statuses["Revision supported-rule macro-F1 >= 0.95"]["status"] == "PASS"
+    assert statuses["Geometry F1 >= 0.95"]["status"] == "PASS"
+
+
 def test_engine_runtime_prefers_backend_engine_total() -> None:
     timings = {"ifc_open": 10.0, "rules": 20.0, "engine_total": 31.0}
     assert experiment.engine_runtime_ms(timings) == 31.0
@@ -196,7 +267,7 @@ def test_bootstrap_is_deterministic_and_includes_preregistered_intervals() -> No
                 "case_id": case_id,
                 "layout": layout,
                 "candidate": "v1_faulty",
-                "matches": {"A": _match(5, 0, 0), "D": _match(11, 0, 0)},
+                "matches": {"A": _match(5, 0, 6), "D": _match(11, 0, 0)},
             }
         )
         records.append(
@@ -213,5 +284,135 @@ def test_bootstrap_is_deterministic_and_includes_preregistered_intervals() -> No
 
     assert first == second
     assert first["full_recall"]["ci95"] == [1.0, 1.0]
+    assert first["full_minus_ids_recall"]["estimate"] > 0
     assert first["corrected_closure_rate"]["ci95"] == [1.0, 1.0]
     assert "Information" in first["family_f1"]
+
+
+def test_reanalysis_requires_external_hash_and_current_fixture_match(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = generated_representative(tmp_path / "dataset")
+    manifest = json.loads((output / "dataset_manifest.json").read_text(encoding="utf-8"))
+    case = manifest["cases"][0]
+    case_dir = output / case["path"]
+    records: list[dict[str, Any]] = []
+    for candidate in ("v0_clean", "v1_authorized", "v1_faulty", "v2_corrected"):
+        empty_matches = {ablation: _match(0, 0, 0) for ablation in experiment.ABLATION_SCOPES}
+        records.append(
+            {
+                "case_id": case["case_id"],
+                "layout": case["layout"],
+                "split": case["split"],
+                "candidate": candidate,
+                "baseline_hash": experiment.sha256_file(case_dir / "v0_clean.ifc"),
+                "candidate_hash": experiment.sha256_file(case_dir / f"{candidate}.ifc"),
+                "runs": [
+                    {
+                        "repeat": 1,
+                        "wall_ms": 1.0,
+                        "engine_ms": 0.5,
+                        "canonical_hash": "sha256:" + ("0" * 64),
+                        "report": {"status": "passed", "issues": []},
+                    }
+                ],
+                "runtime": {"wall_median_ms": 1.0, "wall_p95_ms": 1.0},
+                "determinism": {
+                    "identical_runs": True,
+                    "total_runs": 1,
+                    "identical_count": 1,
+                    "canonical_hashes": ["sha256:" + ("0" * 64)],
+                },
+                "normalized_predictions": [],
+                "matches": empty_matches,
+            }
+        )
+    source = tmp_path / "external-raw.jsonl"
+    experiment.write_jsonl(source, records)
+    source_hash = experiment.sha256_file(source)
+    environment = {"git": {"commit": "analysis-commit", "dirty": False}}
+    manifest_hash = experiment.sha256_file(output / "dataset_manifest.json")
+
+    def fake_git_value(*args: str) -> str | None:
+        if args == ("rev-list", "-n", "1", "analysis-test"):
+            return "analysis-commit"
+        if args == ("rev-parse", "protocol-v1^{commit}"):
+            return experiment.FROZEN_ENGINE_COMMIT
+        return None
+
+    monkeypatch.setattr(experiment, "git_value", fake_git_value)
+
+    analyzed, audit = experiment.reanalyze_engine_records(
+        evidence_dir=tmp_path / "evidence",
+        dataset_root=output,
+        cases=[case],
+        source_path=source,
+        expected_source_hash=source_hash,
+        analysis_environment=environment,
+        expected_repeats=1,
+        analysis_tag="analysis-test",
+        expected_dataset_manifest_hash=manifest_hash,
+    )
+
+    assert len(analyzed) == 4
+    assert audit["analysis_git"] == {
+        "commit": "analysis-commit",
+        "dirty": False,
+        "tag": "analysis-test",
+    }
+    assert audit["detector_rerun"] is False
+    assert audit["raw_engine_results"]["readback_verified"] is True
+    assert (
+        tmp_path / "evidence" / "raw_results_pre_analysis_fix.jsonl"
+    ).read_bytes() == source.read_bytes()
+
+    with pytest.raises(RuntimeError, match="source hash mismatch"):
+        experiment.reanalyze_engine_records(
+            evidence_dir=tmp_path / "bad-hash-evidence",
+            dataset_root=output,
+            cases=[case],
+            source_path=source,
+            expected_source_hash="sha256:" + ("f" * 64),
+            analysis_environment=environment,
+            expected_repeats=1,
+            analysis_tag="analysis-test",
+            expected_dataset_manifest_hash=manifest_hash,
+        )
+
+    tampered = [dict(record) for record in records]
+    tampered[0]["candidate_hash"] = "sha256:" + ("f" * 64)
+    tampered_source = tmp_path / "tampered-raw.jsonl"
+    experiment.write_jsonl(tampered_source, tampered)
+    with pytest.raises(RuntimeError, match="Candidate hash mismatch"):
+        experiment.reanalyze_engine_records(
+            evidence_dir=tmp_path / "tampered-evidence",
+            dataset_root=output,
+            cases=[case],
+            source_path=tampered_source,
+            expected_source_hash=experiment.sha256_file(tampered_source),
+            analysis_environment=environment,
+            expected_repeats=1,
+            analysis_tag="analysis-test",
+            expected_dataset_manifest_hash=manifest_hash,
+        )
+
+    nondeterministic = [dict(record) for record in records]
+    nondeterministic[0]["determinism"] = {
+        "identical_runs": False,
+        "total_runs": 1,
+        "identical_count": 0,
+    }
+    nondeterministic_source = tmp_path / "nondeterministic-raw.jsonl"
+    experiment.write_jsonl(nondeterministic_source, nondeterministic)
+    with pytest.raises(RuntimeError, match="not deterministic"):
+        experiment.reanalyze_engine_records(
+            evidence_dir=tmp_path / "nondeterministic-evidence",
+            dataset_root=output,
+            cases=[case],
+            source_path=nondeterministic_source,
+            expected_source_hash=experiment.sha256_file(nondeterministic_source),
+            analysis_environment=environment,
+            expected_repeats=1,
+            analysis_tag="analysis-test",
+            expected_dataset_manifest_hash=manifest_hash,
+        )
