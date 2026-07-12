@@ -1,0 +1,109 @@
+name: Benchmark request
+description: 재현·재배포 가능한 engineering fixture와 PASS/FAIL benchmark를 제안합니다.
+title: "[Benchmark]: "
+labels: []
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        DatumGuard benchmark는 단순 gallery가 아니라 writer와 independent verifier의 failure behavior를 검증합니다.
+        **회사·고객 소유 CAD/BIM 또는 출처와 license가 불명확한 파일은 제출하지 마세요.**
+
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Engineering domain
+      options:
+        - Architecture
+        - Plant or semiconductor piping
+        - Structural frame screening
+        - Mechanical or ship plate
+        - Solid part STEP
+        - CAD artifact intake
+        - OpenBIM IFC or IDS
+        - Cross-domain
+    validations:
+      required: true
+
+  - type: textarea
+    id: engineering_failure
+    attributes:
+      label: Engineering failure to reproduce
+      description: 어떤 실제 workflow failure를 발견하거나 방지하기 위한 benchmark인지 설명해 주세요.
+      placeholder: 저장된 DXF의 opening width가 contract tolerance 밖이지만 기존 검사에서는 PASS하는 경우
+    validations:
+      required: true
+
+  - type: textarea
+    id: source_license
+    attributes:
+      label: Source, license, and redistribution rights
+      description: source URL, author, license, 재배포 가능 여부, 원본 hash를 적어 주세요.
+      placeholder: |
+        Source URL:
+        Author/organization:
+        License:
+        Redistribution allowed: yes/no
+        Original SHA-256:
+    validations:
+      required: true
+
+  - type: textarea
+    id: fixture_pair
+    attributes:
+      label: PASS and FAIL fixture pair
+      description: 정상 fixture와 한 조건을 의도적으로 위반한 failure counterpart를 설명합니다.
+      placeholder: |
+        PASS:
+        FAIL mutation:
+        Expected error/constraint ID:
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_measurements
+    attributes:
+      label: Expected measurements and tolerances
+      description: 단위, datum, target, lower/upper tolerance와 독립 측정 방법을 적어 주세요.
+      placeholder: |
+        Units: mm
+        Datum:
+        Measurement target:
+        Tolerance:
+        Independent reference method/tool:
+    validations:
+      required: true
+
+  - type: textarea
+    id: provenance
+    attributes:
+      label: Provenance and tool versions
+      description: 생성·변환에 사용한 application/version, export 설정, 예상 artifact hash를 적습니다.
+      placeholder: |
+        Authoring tool/version:
+        Export format/version:
+        Transform steps:
+        Expected artifact SHA-256:
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducibility
+    attributes:
+      label: Reproduction command or procedure
+      description: 새 환경에서 같은 결과를 만드는 명령 또는 5분 이내 절차를 적어 주세요.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: benchmark_safety
+    attributes:
+      label: Rights and safety confirmation
+      options:
+        - label: fixture와 파생 artifact를 이 repository에서 재배포하고 CI에서 실행할 권한이 있습니다.
+          required: true
+        - label: fixture에 기밀 시설 정보, 고객 정보, 개인정보 또는 secret이 없습니다.
+          required: true
+        - label: 구조 benchmark는 preliminary screening용이며 certification evidence로 사용하지 않습니다.
+          required: true

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and design discussions
+    url: https://github.com/tjwnsdhfz/datumguard/discussions
+    about: 사용법 질문, 아이디어 탐색, engineering workflow 논의는 Discussions를 사용해 주세요.
+  - name: Private security report
+    url: https://github.com/tjwnsdhfz/datumguard/security/advisories/new
+    about: 취약점, credential 노출 또는 민감한 재현 정보는 공개 issue 대신 비공개로 보고해 주세요.
+  - name: Live demo
+    url: https://datumguard-tjwnsdhfz.vercel.app
+    about: issue를 만들기 전에 현재 public workspaces와 failure preset을 확인할 수 있습니다.
