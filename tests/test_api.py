@@ -104,6 +104,7 @@ def test_engineering_domain_registry_lists_all_public_workspaces() -> None:
     assert {item["design_kind"] for item in payload} == {
         "architectural_plan",
         "artifact_audit",
+        "openbim_evidence",
         "piping_plan",
         "plate_panel",
         "solid_part",
@@ -111,6 +112,7 @@ def test_engineering_domain_registry_lists_all_public_workspaces() -> None:
     assert {item["web_route"] for item in payload} == {
         "/",
         "/intake",
+        "/openbim",
         "/piping",
         "/plate",
         "/solid",
@@ -267,17 +269,22 @@ def test_capability_kill_switches_hide_domains_and_return_stable_503(
     configure_operations(
         DATUMGUARD_ENABLE_SOLID="false",
         DATUMGUARD_ENABLE_ARTIFACT_LAB="false",
+        DATUMGUARD_ENABLE_OPENBIM="false",
     )
     domain_ids = {item["id"] for item in client.get("/api/v1/domains").json()}
     assert "solid_part" not in domain_ids
     assert "artifact_lab" not in domain_ids
+    assert "openbim_evidence" not in domain_ids
 
     solid = client.post("/api/v1/solid/designs/run", json={})
     artifact = client.post("/api/v1/artifacts/audit")
+    openbim = client.post("/api/v1/openbim/evidence/run")
     assert solid.status_code == 503
     assert artifact.status_code == 503
+    assert openbim.status_code == 503
     assert solid.json()["error"]["code"] == "DG_CAPABILITY_DISABLED"
     assert artifact.json()["error"]["code"] == "DG_CAPABILITY_DISABLED"
+    assert openbim.json()["error"]["code"] == "DG_CAPABILITY_DISABLED"
 
 
 def test_artifact_upload_part_limit_returns_413(

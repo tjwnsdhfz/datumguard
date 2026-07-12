@@ -21,6 +21,7 @@ const domains = [
   ["Engineering Plate", "/plate", "R2013 DXF", "hole · slot · cutout · ligament", "HOSTED"],
   ["Limited Solid", "/solid", "STEP", "B-rep · bbox · bore axis · topology", "LOCAL / CI"],
   ["Artifact Lab", "/intake", "DXF · STEP · IFC", "immutable audit · revision compare", "HOSTED"],
+  ["OpenBIM Evidence", "/openbim", "IFC4 · IDS", "information · integrity · clearance · revision", "RESEARCH / LOCAL"],
 ] as const;
 
 export default function CaseStudyPage() {
@@ -49,7 +50,7 @@ export default function CaseStudyPage() {
         tabIndex={-1}
       >
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>PUBLIC ENGINEERING CASE STUDY · V0.2.1 · 0.001 MM GRID · 256 TESTS</p>
+          <p className={styles.eyebrow}>PUBLIC ENGINEERING CASE STUDY · V0.2.1 BASELINE · UNRELEASED OPENBIM RESEARCH PREVIEW</p>
           <h1 id="case-study-title">
             CAD COMMAND SUCCESS
             <br />
@@ -80,8 +81,8 @@ export default function CaseStudyPage() {
         <div><strong>0.001 mm</strong><span>comparison grid</span></div>
         <div><strong>256</strong><span>pytest baseline</span></div>
         <div><strong>24</strong><span>Playwright baseline</span></div>
-        <div><strong>5</strong><span>engineering workspaces</span></div>
-        <div><strong>0</strong><span>unverified exports allowed</span></div>
+        <div><strong>5</strong><span>v0.2.1 production workspaces</span></div>
+        <div><strong>0</strong><span>unverified official CAD bundles</span></div>
       </section>
 
       <section className={styles.problemBand}>
@@ -188,9 +189,36 @@ export default function CaseStudyPage() {
         </article>
       </section>
 
+      <section className={styles.method} aria-labelledby="openbim-preview-title">
+        <div className={styles.sectionIntro}>
+          <p className={styles.bandIndex}>04 / OPENBIM RESEARCH PREVIEW</p>
+          <h2 id="openbim-preview-title">IFC 변경을 보는 대신, 동결 protocol로 검증 evidence를 남깁니다.</h2>
+          <p>
+            baseline/candidate IFC4와 IDS 1.0을 별도 worker에서 다시 열어 정보요구조건, IFC integrity,
+            project AABB clearance와 protected revision을 검사합니다. 이 결과는 합성 연구 검증이며
+            제작·시공 승인 자격을 만들지 않습니다.
+          </p>
+        </div>
+        <div className={styles.passFailGrid}>
+          <article className={styles.passCard}>
+            <span>CORRECTED HELD-OUT RESULT</span>
+            <strong>30 cases · 330 TP · 0 FP · 0 FN</strong>
+            <p>120 candidate records, 1,200 measured engine runs, clean/authorized false positive 0.</p>
+            <code>research_validation_only: true · approval_eligible: false</code>
+          </article>
+          <article className={styles.failCard}>
+            <span>OPEN GATES</span>
+            <strong>Perfect synthetic score is not industrial approval</strong>
+            <p>독립 BCF viewer, buildingSMART 외부 validation, license 검토, Docker/Linux CI와 production smoke는 미완료입니다.</p>
+            <code>protocol-v1 → analysis-v1.0.2 · detector rerun: false</code>
+          </article>
+        </div>
+        <Link className={styles.secondaryAction} href="/openbim">OPEN LOCAL RESEARCH WORKSPACE</Link>
+      </section>
+
       <section className={styles.solidBand} aria-labelledby="solid-title">
         <div className={styles.solidCopy}>
-          <p className={styles.bandIndex}>04 / STEP CROSS-CHECK</p>
+          <p className={styles.bandIndex}>05 / STEP CROSS-CHECK</p>
           <h2 id="solid-title">3D는 공개 실행보다 검증 가능한 범위를 먼저 제한했습니다.</h2>
           <p>
             Mounting plate, angle bracket, flange만 지원합니다. OpenCascade writer subprocess가 만든 STEP을
@@ -221,8 +249,8 @@ export default function CaseStudyPage() {
 
       <section className={styles.scope} id="scope" aria-labelledby="scope-title">
         <div className={styles.sectionIntro}>
-          <p className={styles.bandIndex}>05 / IMPLEMENTED SURFACE</p>
-          <h2 id="scope-title">하나의 assurance 원칙을 다섯 공학 workflow에 적용했습니다.</h2>
+          <p className={styles.bandIndex}>06 / IMPLEMENTED SURFACE</p>
+          <h2 id="scope-title">다섯 production workflow와 하나의 연구 검증 workspace를 분리했습니다.</h2>
         </div>
         <div className={styles.domainTable} role="table" aria-label="Implemented engineering workspaces">
           <div className={styles.tableHeader} role="row">
@@ -243,7 +271,7 @@ export default function CaseStudyPage() {
       </section>
 
       <section className={styles.boundaries} aria-labelledby="boundaries-title">
-        <p className={styles.bandIndex}>06 / EXPLICIT LIMITS</p>
+        <p className={styles.bandIndex}>07 / EXPLICIT LIMITS</p>
         <div>
           <h2 id="boundaries-title">이 도구가 증명하는 것과 증명하지 않는 것을 분리합니다.</h2>
           <div className={styles.boundaryColumns}>
@@ -253,7 +281,7 @@ export default function CaseStudyPage() {
                 <li>계약한 좌표·치수·공차와 저장 artifact의 일치</li>
                 <li>지원 geometry의 topology·clearance·연결 constraint</li>
                 <li>artifact/contract hash와 재현 가능한 PASS/FAIL evidence</li>
-                <li>미검증 export 차단</li>
+                <li>official CAD 경로의 미검증 bundle 차단</li>
               </ul>
             </article>
             <article>
@@ -271,13 +299,14 @@ export default function CaseStudyPage() {
 
       <section className={styles.releaseEvidence} aria-labelledby="release-title">
         <div>
-          <p className={styles.bandIndex}>07 / REPRODUCIBLE RELEASE</p>
+          <p className={styles.bandIndex}>08 / REPRODUCIBLE RELEASE</p>
           <h2 id="release-title">설명보다 재현 경로를 남깁니다.</h2>
         </div>
         <div className={styles.releaseGrid}>
           <a className={styles.releaseCard} href={releaseUrl} target="_blank" rel="noreferrer">
             <span>TEST</span><strong>256 pytest + 24 Playwright</strong><p>Open the v0.2.1 release evidence ↗</p>
           </a>
+          <article><span>OPENBIM LOCAL</span><strong>295 pytest + 27 Playwright</strong><p>unreleased research branch gate</p></article>
           <article><span>CI</span><strong>Type · lint · build · containers</strong><p>SBOM, CodeQL, audit, Trivy 포함</p></article>
           <article><span>DEPLOY</span><strong>Vercel + Render</strong><p>DOM, API capability, canary, CORS smoke</p></article>
           <article><span>ROLLBACK</span><strong>Known-good SHA + deployment IDs</strong><p>Wrong PASS를 SEV1으로 처리</p></article>

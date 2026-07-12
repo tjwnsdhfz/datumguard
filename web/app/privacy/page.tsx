@@ -19,7 +19,7 @@ export default function PrivacyPage() {
         <article>
           <span>01 / SERVER PROCESSING</span>
           <h2>Oregon에서 일시 처리</h2>
-          <p>업로드한 DXF·STEP·IFC는 미국 Oregon의 Render API로 전송되어 메모리 또는 임시 작업 디렉터리에서 검사됩니다. DatumGuard 애플리케이션은 요청 파일을 서버 프로젝트 저장소나 데이터베이스에 장기 보관하지 않습니다.</p>
+          <p>업로드한 DXF·STEP·IFC·IDS는 API로 전송되어 메모리 또는 임시 작업 디렉터리에서 검사됩니다. 현재 공개 v0.2.1은 미국 Oregon의 Render API를 사용하며, unreleased OpenBIM preview는 연결한 환경의 API에서 처리됩니다. DatumGuard 애플리케이션은 요청 파일을 서버 프로젝트 저장소나 데이터베이스에 장기 보관하지 않습니다.</p>
           <p>호스팅·네트워크 제공자는 보안과 운영을 위해 IP, 시간, 경로 같은 요청 메타데이터를 각 제공자 정책에 따라 기록할 수 있습니다.</p>
         </article>
         <article>
@@ -37,7 +37,7 @@ export default function PrivacyPage() {
         <article>
           <span>04 / USER CONTROL</span>
           <h2>업로드 전 확인</h2>
-          <p>Artifact Lab은 업로드 전에 비기밀 CAD 확인을 요구합니다. 파일 선택만으로는 전송되지 않으며, 사용자가 Audit 또는 Compare 버튼을 누를 때만 API 요청이 시작됩니다.</p>
+          <p>Artifact Lab과 OpenBIM workspace는 업로드 전에 비기밀 파일 확인을 요구합니다. 파일 선택만으로는 전송되지 않으며, 사용자가 Audit, Compare 또는 OpenBIM evidence 실행 버튼을 누를 때만 API 요청이 시작됩니다.</p>
         </article>
       </section>
     </main>

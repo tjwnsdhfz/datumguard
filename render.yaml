@@ -16,6 +16,12 @@ services:
         value: 'false'
       - key: DATUMGUARD_ENABLE_ARTIFACT_LAB
         value: 'true'
+      - key: DATUMGUARD_ENABLE_OPENBIM
+        value: 'false'
+      - key: DATUMGUARD_ENABLE_BCF
+        value: 'false'
+      - key: DATUMGUARD_OPENBIM_WORKER_TIMEOUT_SECONDS
+        value: '90'
       - key: DATUMGUARD_RATE_LIMIT_ENABLED
         value: 'true'
       - key: DATUMGUARD_ANON_RATE_LIMIT_PER_MINUTE

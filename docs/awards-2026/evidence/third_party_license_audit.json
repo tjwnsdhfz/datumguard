@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "recorded_on": "2026-07-12",
+  "scope": "Technical package metadata and artifact inventory; not legal advice or a compatibility conclusion.",
+  "source_snapshot": {
+    "repository": "https://github.com/IfcOpenShell/IfcOpenShell",
+    "tag": "ifcopenshell-python-0.8.5",
+    "commit": "16723d11cab9bc8a13b4e025a00d39445ccc462e",
+    "wheel_to_commit_provenance_declared_by_pypi": false
+  },
+  "packages": [
+    {
+      "distribution": "ifctester",
+      "version": "0.8.5",
+      "pypi_json": "https://pypi.org/pypi/ifctester/0.8.5/json",
+      "wheel": {
+        "filename": "ifctester-0.8.5-py3-none-any.whl",
+        "size_bytes": 25381125,
+        "sha256": "8e21f2bd7a025f249a5f185555c2ccb60bd121a5c2eb03a455fa083e558f528b",
+        "license_expression": null,
+        "license_file_entries": []
+      },
+      "source_indication": "LGPL-3.0-or-later",
+      "wheel_classifier_indication": "GNU Lesser General Public License v3 or later (LGPLv3+)",
+      "metadata_conflict": false,
+      "requires_bcf_client_unconditionally": true
+    },
+    {
+      "distribution": "bcf-client",
+      "version": "0.8.5",
+      "pypi_json": "https://pypi.org/pypi/bcf-client/0.8.5/json",
+      "wheel": {
+        "filename": "bcf_client-0.8.5-py3-none-any.whl",
+        "size_bytes": 41576,
+        "sha256": "6f7b2aee2985f06de2f6d90a56fa1db76f394010bea30810a3572cb7eece05f3",
+        "license_expression": null,
+        "license_file_entries": []
+      },
+      "source_indication": "LGPL-3.0-or-later",
+      "wheel_classifier_indication": "GNU General Public License v3 (GPLv3)",
+      "metadata_conflict": true,
+      "resolved_spdx_expression": null
+    }
+  ],
+  "dependency_observation": {
+    "base_export_contains_ifctester": false,
+    "base_export_contains_bcf_client": false,
+    "openbim_extra_contains_ifctester": true,
+    "openbim_extra_contains_bcf_client_transitively": true,
+    "runtime_feature_disable_removes_installed_package": false
+  },
+  "release_gate": {
+    "status": "OPEN",
+    "reason": "bcf-client 0.8.5 source grant and wheel classifier conflict, and the wheels omit license text files.",
+    "required_action": "Obtain upstream clarification and re-audit the exact distributed image and wheel hashes before a public OpenBIM/BCF distribution."
+  }
+}

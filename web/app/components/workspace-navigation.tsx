@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-type WorkspaceId = "architecture" | "piping" | "plate" | "solid" | "intake";
+type WorkspaceId = "architecture" | "piping" | "plate" | "solid" | "intake" | "openbim";
 
 const WORKSPACES: ReadonlyArray<{ id: WorkspaceId | "case-study"; href: string; label: string }> = [
   { id: "architecture", href: "/", label: "Architecture" },
@@ -8,6 +8,7 @@ const WORKSPACES: ReadonlyArray<{ id: WorkspaceId | "case-study"; href: string; 
   { id: "plate", href: "/plate", label: "Plate" },
   { id: "solid", href: "/solid", label: "3D Solid" },
   { id: "intake", href: "/intake", label: "Artifact Lab" },
+  { id: "openbim", href: "/openbim", label: "OpenBIM" },
   { id: "case-study", href: "/case-study", label: "Case Study" },
 ];
 

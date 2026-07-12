@@ -1,0 +1,445 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ids xmlns="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd">
+    <info>
+        <title>OpenBIM Evidence Guard - Virtual FAB v1</title>
+        <copyright>2026 DatumGuard research dataset</copyright>
+        <version>1.0.0</version>
+        <description>Synthetic educational information requirements; not an industrial FAB standard.</description>
+        <author>research@datumguard.local</author>
+        <date>2026-07-12</date>
+        <purpose>BIM Awards 2026 controlled research evaluation</purpose>
+    </info>
+    <specifications>
+        <specification name="IDS-01 AssetTag - IfcBuildingElementProxy" ifcVersion="IFC4" identifier="IDS-01">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCBUILDINGELEMENTPROXY</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_Identity</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>AssetTag</simpleValue>
+                    </baseName>
+                    <value>
+                        <xs:restriction base="xs:string">
+                            <xs:pattern value="VF-[A-Z]{2}-[0-9]{3}" />
+                        </xs:restriction>
+                    </value>
+                </property>
+            </requirements>
+        </specification>
+        <specification name="IDS-04 Classification - IfcBuildingElementProxy" ifcVersion="IFC4" identifier="IDS-04">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCBUILDINGELEMENTPROXY</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <classification cardinality="required">
+                    <value>
+                        <simpleValue>DG-VFAB-2026</simpleValue>
+                    </value>
+                    <system>
+                        <simpleValue>DG-VFAB-2026</simpleValue>
+                    </system>
+                </classification>
+            </requirements>
+        </specification>
+        <specification name="IDS-01 AssetTag - IfcPipeSegment" ifcVersion="IFC4" identifier="IDS-01">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCPIPESEGMENT</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_Identity</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>AssetTag</simpleValue>
+                    </baseName>
+                    <value>
+                        <xs:restriction base="xs:string">
+                            <xs:pattern value="VF-[A-Z]{2}-[0-9]{3}" />
+                        </xs:restriction>
+                    </value>
+                </property>
+            </requirements>
+        </specification>
+        <specification name="IDS-04 Classification - IfcPipeSegment" ifcVersion="IFC4" identifier="IDS-04">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCPIPESEGMENT</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <classification cardinality="required">
+                    <value>
+                        <simpleValue>DG-VFAB-2026</simpleValue>
+                    </value>
+                    <system>
+                        <simpleValue>DG-VFAB-2026</simpleValue>
+                    </system>
+                </classification>
+            </requirements>
+        </specification>
+        <specification name="IDS-01 AssetTag - IfcPipeFitting" ifcVersion="IFC4" identifier="IDS-01">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCPIPEFITTING</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_Identity</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>AssetTag</simpleValue>
+                    </baseName>
+                    <value>
+                        <xs:restriction base="xs:string">
+                            <xs:pattern value="VF-[A-Z]{2}-[0-9]{3}" />
+                        </xs:restriction>
+                    </value>
+                </property>
+            </requirements>
+        </specification>
+        <specification name="IDS-04 Classification - IfcPipeFitting" ifcVersion="IFC4" identifier="IDS-04">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCPIPEFITTING</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <classification cardinality="required">
+                    <value>
+                        <simpleValue>DG-VFAB-2026</simpleValue>
+                    </value>
+                    <system>
+                        <simpleValue>DG-VFAB-2026</simpleValue>
+                    </system>
+                </classification>
+            </requirements>
+        </specification>
+        <specification name="IDS-01 AssetTag - IfcValve" ifcVersion="IFC4" identifier="IDS-01">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCVALVE</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_Identity</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>AssetTag</simpleValue>
+                    </baseName>
+                    <value>
+                        <xs:restriction base="xs:string">
+                            <xs:pattern value="VF-[A-Z]{2}-[0-9]{3}" />
+                        </xs:restriction>
+                    </value>
+                </property>
+            </requirements>
+        </specification>
+        <specification name="IDS-04 Classification - IfcValve" ifcVersion="IFC4" identifier="IDS-04">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCVALVE</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <classification cardinality="required">
+                    <value>
+                        <simpleValue>DG-VFAB-2026</simpleValue>
+                    </value>
+                    <system>
+                        <simpleValue>DG-VFAB-2026</simpleValue>
+                    </system>
+                </classification>
+            </requirements>
+        </specification>
+        <specification name="IDS-02 UtilityType - IfcPipeSegment" ifcVersion="IFC4" identifier="IDS-02">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCPIPESEGMENT</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_VFabUtility</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>UtilityType</simpleValue>
+                    </baseName>
+                    <value>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="PCW" />
+                            <xs:enumeration value="CDA" />
+                            <xs:enumeration value="VAC" />
+                            <xs:enumeration value="EXH" />
+                        </xs:restriction>
+                    </value>
+                </property>
+            </requirements>
+        </specification>
+        <specification name="IDS-03 SystemCode - IfcPipeSegment" ifcVersion="IFC4" identifier="IDS-03">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCPIPESEGMENT</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_VFabUtility</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>SystemCode</simpleValue>
+                    </baseName>
+                </property>
+            </requirements>
+        </specification>
+        <specification name="IDS-05 Criticality - IfcPipeSegment" ifcVersion="IFC4" identifier="IDS-05">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCPIPESEGMENT</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_VFabUtility</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>Criticality</simpleValue>
+                    </baseName>
+                    <value>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="HIGH" />
+                            <xs:enumeration value="MEDIUM" />
+                            <xs:enumeration value="LOW" />
+                        </xs:restriction>
+                    </value>
+                </property>
+            </requirements>
+        </specification>
+        <specification name="IDS-02 UtilityType - IfcPipeFitting" ifcVersion="IFC4" identifier="IDS-02">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCPIPEFITTING</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_VFabUtility</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>UtilityType</simpleValue>
+                    </baseName>
+                    <value>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="PCW" />
+                            <xs:enumeration value="CDA" />
+                            <xs:enumeration value="VAC" />
+                            <xs:enumeration value="EXH" />
+                        </xs:restriction>
+                    </value>
+                </property>
+            </requirements>
+        </specification>
+        <specification name="IDS-03 SystemCode - IfcPipeFitting" ifcVersion="IFC4" identifier="IDS-03">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCPIPEFITTING</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_VFabUtility</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>SystemCode</simpleValue>
+                    </baseName>
+                </property>
+            </requirements>
+        </specification>
+        <specification name="IDS-05 Criticality - IfcPipeFitting" ifcVersion="IFC4" identifier="IDS-05">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCPIPEFITTING</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_VFabUtility</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>Criticality</simpleValue>
+                    </baseName>
+                    <value>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="HIGH" />
+                            <xs:enumeration value="MEDIUM" />
+                            <xs:enumeration value="LOW" />
+                        </xs:restriction>
+                    </value>
+                </property>
+            </requirements>
+        </specification>
+        <specification name="IDS-02 UtilityType - IfcValve" ifcVersion="IFC4" identifier="IDS-02">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCVALVE</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_VFabUtility</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>UtilityType</simpleValue>
+                    </baseName>
+                    <value>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="PCW" />
+                            <xs:enumeration value="CDA" />
+                            <xs:enumeration value="VAC" />
+                            <xs:enumeration value="EXH" />
+                        </xs:restriction>
+                    </value>
+                </property>
+            </requirements>
+        </specification>
+        <specification name="IDS-03 SystemCode - IfcValve" ifcVersion="IFC4" identifier="IDS-03">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCVALVE</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_VFabUtility</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>SystemCode</simpleValue>
+                    </baseName>
+                </property>
+            </requirements>
+        </specification>
+        <specification name="IDS-05 Criticality - IfcValve" ifcVersion="IFC4" identifier="IDS-05">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCVALVE</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_VFabUtility</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>Criticality</simpleValue>
+                    </baseName>
+                    <value>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="HIGH" />
+                            <xs:enumeration value="MEDIUM" />
+                            <xs:enumeration value="LOW" />
+                        </xs:restriction>
+                    </value>
+                </property>
+            </requirements>
+        </specification>
+        <specification name="IDS-06 FAB tool service clearance metadata" ifcVersion="IFC4" identifier="IDS-06">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCBUILDINGELEMENTPROXY</simpleValue>
+                    </name>
+                </entity>
+                <attribute>
+                    <name>
+                        <simpleValue>ObjectType</simpleValue>
+                    </name>
+                    <value>
+                        <simpleValue>FAB_TOOL</simpleValue>
+                    </value>
+                </attribute>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_VFabClearance</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>ServiceSide</simpleValue>
+                    </baseName>
+                    <value>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="+X" />
+                            <xs:enumeration value="-X" />
+                            <xs:enumeration value="+Y" />
+                            <xs:enumeration value="-Y" />
+                        </xs:restriction>
+                    </value>
+                </property>
+                <property dataType="IFCLENGTHMEASURE" cardinality="required">
+                    <propertySet>
+                        <simpleValue>DG_VFabClearance</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>ServiceDepth</simpleValue>
+                    </baseName>
+                </property>
+            </requirements>
+        </specification>
+    </specifications>
+</ids>

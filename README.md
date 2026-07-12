@@ -5,7 +5,10 @@
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel-000000?logo=vercel)](https://datumguard-tjwnsdhfz.vercel.app)
 [![API Endpoint](https://img.shields.io/badge/API_Endpoint-Render-46e3b7?logo=render&logoColor=000000)](https://datumguard-api.onrender.com/api/v1/health)
 
-DatumGuard는 생성기가 “성공”했다고 보고한 CAD가 아니라, 저장된 artifact를 다시 열어 측정한 evidence로 export를 승인하는 오픈소스 Engineering Design Assurance 도구입니다.
+DatumGuard는 생성기가 “성공”했다고 보고한 CAD가 아니라, 저장된 artifact를 다시 열어 측정한
+evidence로 공식 CAD bundle을 승인하는 오픈소스 Engineering Design Assurance 도구입니다.
+별도 `/openbim` 경로는 IFC·IDS 변경을 검증하는 학생 연구 preview이며 evidence를 내보내지만
+`research_validation_only=true`, `approval_eligible=false`입니다.
 
 **[60초 Case Study 열기 →](https://datumguard-tjwnsdhfz.vercel.app/case-study)** · [Live workspaces](https://datumguard-tjwnsdhfz.vercel.app) · [로컬 재현](docs/demo.md)
 
@@ -16,7 +19,7 @@ DatumGuard는 생성기가 “성공”했다고 보고한 CAD가 아니라, 저
 | **문제** | 자연어·폼에서 CAD가 생성되어도 저장 파일의 실제 치수, datum, 공차가 요구조건과 같다는 보장은 없습니다. |
 | **방법** | 요구를 versioned contract로 고정하고, writer와 분리된 reader가 serialized DXF 또는 STEP을 다시 열어 측정합니다. 모든 필수 검사가 통과할 때만 bundle을 활성화합니다. |
 | **증거** | [v0.2.1 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.1)는 256 pytest, 24 Playwright, web/container/SBOM gate를 통과합니다. Render 완료 후 smoke는 공개 route와 canary뿐 아니라 API health의 `release_sha`가 배포 commit과 같은지도 확인하며, 정확한 run·deployment ID는 release notes에 고정합니다. |
-| **한계** | 구조·안전·법규·산업표준 적합성이나 범용 3D를 판정하지 않습니다. 3D는 세 가지 제한형 solid family의 STEP 기하 검증만 local/CI에서 지원하며, 공개 Render Free API에서는 비활성입니다. 100개 golden contract + 자연어 50개 benchmark도 계획 단계로 아직 완료되지 않았습니다. |
+| **한계** | 구조·안전·법규·산업표준 적합성이나 범용 3D를 판정하지 않습니다. 3D는 세 가지 제한형 solid family의 STEP 기하 검증만 local/CI에서 지원하며, 공개 Render Free API에서는 비활성입니다. OpenBIM 결과도 합성 연구 evidence일 뿐 제작·시공 승인이 아닙니다. 100개 golden contract + 자연어 50개 benchmark는 계획 단계입니다. |
 
 | 결과 | 재현 fixture | 승인 게이트 |
 |---|---|---|
@@ -40,8 +43,23 @@ DatumGuard는 생성기가 “성공”했다고 보고한 CAD가 아니라, 저
 | Mechanical / Ship Plate | `/plate` | hole/slot/cutout, edge distance, ligament, overlap |
 | 3D Solid Part — local/CI, hosted run disabled | `/solid` | 세 family의 OpenCascade B-rep, bbox, topology, hole/bore diameter와 axis |
 | Existing CAD Artifact | `/intake` | DXF·STEP·IFC 구조 감사와 revision compare |
+| OpenBIM Evidence — unreleased research preview | `/openbim` | IFC4+IDS 정보요구조건, IFC integrity, project AABB clearance, protected revision |
 
 세부 범위와 분야별 비목표는 [Engineering Domains](docs/engineering-domains.md)에 정리되어 있습니다.
+
+### OpenBIM Evidence Guard research preview
+
+`protocol-v1`에서 동결한 합성 Virtual FAB evaluation 30 case를 실행했다. 120 candidate record와
+1,200 measured engine run에서 engine error 0, canonical payload 10/10 일치를 기록했다. 수정 후 Full
+pipeline은 TP/FP/FN `330/0/0`, clean·authorized false positive 0, engine p95 1,876.222ms였다.
+
+최초 집계에서 발견한 evaluator 구현 오류 2건은 detector를 재실행하지 않고 보존 raw
+`sha256:58dcf7dc...`에서 `analysis-v1.0.2`로 재분석했다. 사전등록하지 않은 zero-support 처리의
+supported-rule macro-F1은 별도 post-freeze sensitivity로만 남겨 두 가설을 `NOT_CONCLUSIVE`로
+표시했다. 전체 provenance, 수정 전후 수치와 한계는
+[BIM Awards 2026 연구 evidence](docs/awards-2026/README.md)에 공개한다. BCF 독립 viewer,
+배포 license와 production smoke는 아직 gate가 열려 있으므로 BCF 또는 실사업장 성능을 핵심 성과로
+주장하지 않는다.
 
 ### Plant / Semiconductor Piping demo
 
@@ -108,6 +126,7 @@ npm run dev
 - `http://localhost:3000/plate`: 샘플 플레이트 설계·검증
 - `http://localhost:3000/solid`: 3D solid STEP 생성·독립 재입력
 - `http://localhost:3000/intake`: 외부 DXF·STEP·IFC 감사·revision 비교
+- `http://localhost:3000/openbim`: IFC4·IDS 연구 검증과 JSON/HTML, 선택적 BCF evidence export
 - `http://localhost:8000/docs`: FastAPI 문서
 
 ## Docker 실행
@@ -133,6 +152,9 @@ docker compose up --build
 - 3D Solid STEP UI: [/solid](https://datumguard-tjwnsdhfz.vercel.app/solid) — UI·schema는 공개되지만 실행은 local/CI 기능이며 현재 Render Free API에서는 메모리 안전을 위해 비활성
 - CAD Artifact Lab: [/intake](https://datumguard-tjwnsdhfz.vercel.app/intake)
 - API: [health](https://datumguard-api.onrender.com/api/v1/health) · [domains](https://datumguard-api.onrender.com/api/v1/domains) · [OpenAPI](https://datumguard-api.onrender.com/docs)
+
+> `/openbim`은 현재 `codex/bim-awards-2026`의 local research preview이며 위 v0.2.1 production
+> 배포 목록에 포함되지 않는다. production URL이나 hosted capability로 인용하지 않는다.
 
 현재 공개 기준은 [v0.2.1 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.1)입니다. Vercel 선행 smoke는 새 web과 기존 API의 하위 호환성을 확인하고, Render 완료 이벤트가 실행하는 최종 smoke는 API `version`, `release_sha`, capability, Architecture approval canary, Artifact Lab audit, Solid `503` fail-closed와 CORS를 같은 배포 revision에서 검사합니다. 도메인 evidence에서 Architecture는 96m²와 4개 room seed, Piping은 12.0m route와 1,975mm minimum clearance, Plate는 전체 치수 편차 0.000000mm를 보고합니다. 이전 `v0.2.0`의 고정 fallback은 [rollback baseline](docs/operations/rollback-baseline.md)에 보존합니다.
 
@@ -166,6 +188,7 @@ OpenCascade Solid은 코드·Linux CI·Docker image에서 실제 STEP 생성과 
 - 3D solid 생성·STEP 독립 검증: `POST /api/v1/solid/designs/run`
 - CAD 파일 감사: `POST /api/v1/artifacts/audit`
 - CAD revision 비교: `POST /api/v1/artifacts/compare`
+- OpenBIM IFC·IDS evidence: `POST /api/v1/openbim/evidence/run` — research validation only, MCP 도구 없음
 - Liveness/readiness/metrics: `GET /api/v1/live`, `GET /api/v1/ready`, `GET /api/v1/metrics`
 - 단계별 endpoint는 [TRD](docs/TRD.md)에 정리되어 있습니다.
 - 로컬 MCP: `datumguard-mcp`
@@ -197,12 +220,17 @@ npm run lint
 npm run build
 ```
 
-Case Study, Architecture, Piping, Plate, Solid, Artifact Lab route의 브라우저 계약은 실제 FastAPI를 함께 시작하는 Playwright E2E로 검사합니다.
+Case Study, Architecture, Piping, Plate, Solid, Artifact Lab, OpenBIM route의 브라우저 계약은 실제
+FastAPI를 함께 시작하는 Playwright E2E로 검사합니다.
 
 ```powershell
 Set-Location web
 npm run test:e2e
 ```
+
+현재 `codex/bim-awards-2026`의 local pre-release gate는 backend **295 passed**, Chromium
+Playwright **27 passed**, web typecheck·lint·14-page build 통과다. 이 수치는 아래 v0.2.1 release
+baseline을 대체하지 않으며, 이 머신에는 Docker CLI가 없어 container/Linux gate는 실행하지 못했다.
 
 [v0.2.1 release evidence](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.1)는 backend **256 passed**, Chromium Playwright **24 passed**, web build, 두 container build, CycloneDX SBOM, fixed-critical scan, dependency review, pip audit와 두 CodeQL language 결과를 각각의 실제 run에 연결합니다. Render 배포 완료 뒤의 Production smoke는 health `release_sha`까지 대조합니다.
 
@@ -217,6 +245,7 @@ npm run test:e2e
 - [Piping Demo Guide](docs/piping-demo.md)
 - [3D Solid STEP Assurance](docs/solid-step.md)
 - [Artifact Lab Guide](docs/artifact-lab.md)
+- [BIM Awards 2026 · OpenBIM Evidence Guard](docs/awards-2026/README.md)
 - [Engineering Domains](docs/engineering-domains.md)
 - [Mission Control Design System](docs/design-system.md)
 - [Deployment Guide](docs/deployment.md)
