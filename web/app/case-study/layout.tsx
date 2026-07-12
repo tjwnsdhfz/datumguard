@@ -11,6 +11,21 @@ export const metadata: Metadata = {
     title: "DatumGuard CAD Assurance Case Study",
     description:
       "CAD command success is not accuracy evidence. Review the contract-to-artifact assurance pipeline, PASS/FAIL evidence, and explicit limits.",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "DatumGuard independent CAD assurance pipeline",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DatumGuard CAD Assurance Case Study",
+    description:
+      "Contract → serialized artifact → independent remeasurement → verified-only export.",
+    images: ["/opengraph-image"],
   },
 };
 
