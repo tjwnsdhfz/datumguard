@@ -31,7 +31,9 @@ Web과 API는 별도 origin이다. API는 stateless이며 계정, DB, 장기 art
 4. `DATUMGUARD_CORS_ORIGINS`를 실제 production web origin으로 설정한다.
 5. Preview가 필요하면 `DATUMGUARD_CORS_ORIGIN_REGEX`를 해당 Vercel project prefix로 제한한다.
 
-현재 Blueprint는 Docker 서비스에 `runtime: docker`, `plan: free`, `dockerfilePath`, `dockerContext`, `healthCheckPath`, `autoDeployTrigger: checksPass`를 명시한다. `/api/v1/live`는 process liveness만 확인하고, `/api/v1/ready`는 heavy worker saturation과 queue capacity를 포함한 admission readiness를 보고한다. 장시간 CAD 작업 중 readiness `503`은 정상적인 backpressure일 수 있으므로 Render와 Docker가 이를 process failure로 판단해서는 안 된다. 무료 instance는 유휴 상태에서 중지될 수 있으므로 공개 포트폴리오 시현용으로만 사용한다. 마지막 설정은 연결된 CI check가 통과한 commit만 자동 배포 대상으로 삼는다.
+현재 Blueprint는 Docker 서비스에 `runtime: docker`, `plan: free`, `dockerfilePath`, `dockerContext`, `healthCheckPath`, `autoDeployTrigger: commit`을 명시한다. `/api/v1/live`는 process liveness만 확인하고, `/api/v1/ready`는 heavy worker saturation과 queue capacity를 포함한 admission readiness를 보고한다. 장시간 CAD 작업 중 readiness `503`은 정상적인 backpressure일 수 있으므로 Render와 Docker가 이를 process failure로 판단해서는 안 된다. 무료 instance는 유휴 상태에서 중지될 수 있으므로 공개 포트폴리오 시현용으로만 사용한다.
+
+`commit` 배포는 보호된 `main`에 merge된 revision만 즉시 배포하기 위한 의도적인 설정이다. CI·Security·Vercel Preview·compatibility smoke는 PR branch protection에서 merge 전에 강제한다. Render 성공 후 실행되는 exact-revision smoke는 post-deploy gate이므로 `checksPass`의 pre-deploy 입력으로 다시 사용하지 않는다. 두 단계를 연결하면 backend가 배포돼야 통과하는 검사가 backend 배포를 막는 순환 의존이 생긴다.
 
 Blueprint는 48MB request·20MB artifact·40MB compare 합계 제한과 anonymous quota를 명시한다. Free instance에서는 OOM 위험을 줄이기 위해 heavy concurrency를 `1`, bounded waiter를 `4`로 제한한다. 실제 Production Solid canary가 HTTP 502를 반환했으므로 `DATUMGUARD_ENABLE_SOLID=false`, Artifact Lab은 `true`가 현재 계약이다. OOM 또는 worker restart는 직접 확인되지 않은 의심 원인이다. API key가 필요하면 dashboard secret `DATUMGUARD_API_KEYS`를 추가하며 Git이나 `NEXT_PUBLIC_*`에 값을 기록하지 않는다.
 

@@ -6,7 +6,7 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /api/v1/live
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: commit
     envVars:
       - key: DATUMGUARD_CORS_ORIGINS
         sync: false
