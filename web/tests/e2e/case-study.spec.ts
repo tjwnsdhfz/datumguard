@@ -23,6 +23,14 @@ test.describe("public product case study", () => {
       "href",
       "https://datumguard-tjwnsdhfz.vercel.app/case-study",
     );
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+      "content",
+      /\/opengraph-image/,
+    );
+    await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute(
+      "content",
+      /\/opengraph-image/,
+    );
 
     const screenshots = page.getByTestId("case-study").locator("img");
     await expect(screenshots).toHaveCount(3);
