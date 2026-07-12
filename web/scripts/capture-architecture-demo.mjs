@@ -49,7 +49,7 @@ try {
   await page.goto(baseURL, { waitUntil: "networkidle" });
   await page.locator('[data-testid="architecture-demo"][data-health-status="ready"]').waitFor({
     state: "visible",
-    timeout: 45_000,
+    timeout: 75_000,
   });
   await page.getByTestId("architecture-preset-studio").click();
   await dragCenterToCenter(
@@ -77,9 +77,11 @@ try {
   await page.getByTestId("architecture-download").waitFor({ state: "visible" });
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate(() => {
+    document.documentElement.style.scrollBehavior = "auto";
     document.documentElement.dataset.architectureCapture = "true";
     window.scrollTo(0, 0);
   });
+  await page.waitForTimeout(100);
   await page.addStyleTag({
     content:
       "*, *::before, *::after { animation: none !important; caret-color: transparent !important; transition: none !important; }",

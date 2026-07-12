@@ -13,17 +13,21 @@ DatumGuard의 시현형 MVP는 항공우주 관제 화면에서 느껴지는 절
 
 ## 2. 화면 구조
 
-Architecture와 Piping은 동일한 세 영역 구조를 공유한다.
+Architecture와 Piping은 동일한 세 영역 구조를 공유한다. Architecture 기본 route는 전문 도구보다 사용자 목표가 먼저 보이도록 commandbar 아래에 compact task rail을 둔다.
 
 1. 검은색 topbar: 제품, 현재 contract/revision, 공학 도메인 전환
 2. cool-white commandbar: 편집 도구, undo/redo, zoom, snap
-3. model tree / drawing paper / exact-property inspector
+3. task rail: 샘플 선택, 정확한 값 확인, DXF 재측정의 현재 단계와 하나의 주 행동
+4. model tree / drawing paper / exact-property inspector
+
+활성 control은 현재 실제로 수행되는 동작만 표현한다. preset 객체를 선택·이동하는 `Select`, 화면을 이동하는 `Pan`은 활성화하고, 아직 구현하지 않은 신규 Wall·Column·Door·Window 생성은 비활성 상태와 후속 범위 설명을 함께 표시한다. 검증 과정의 중복 설명은 `details` 안에 두고, 편집 중에는 주 행동과 현재 상태를 먼저 보여준다.
 
 Plate는 소개 화면과 설계 form을 함께 사용하므로, 검은색 mission hero에서 정확성 보증을 설명한 뒤 밝은 제작 console로 전환한다. 세 화면 모두 검증 결과를 `contract → writer → independent reader → approval gate` 순서로 제시한다.
 
 ## 3. 반응형·접근성
 
-- `900px` 미만에서는 CAD drag를 비활성화하고 수치 입력, 검증, 다운로드를 유지한다.
+- `900px` 미만에서는 CAD drag를 비활성화하고 객체 select, 수치 입력, 검증, 다운로드를 유지한다.
+- 작은 화면의 주 행동은 하단 sticky action으로 제공하되 결과·입력 내용을 가리지 않도록 safe-area와 page bottom padding을 함께 적용한다.
 - navigation은 작은 화면에서 핵심 도메인 전환만 남긴다.
 - keyboard focus는 2–3px 고대비 outline과 offset으로 표시한다.
 - 모든 icon-only control은 접근 가능한 이름을 갖고, 클릭 대상은 44px 이상이다.
