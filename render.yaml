@@ -5,7 +5,7 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/ready
+    healthCheckPath: /api/v1/live
     autoDeployTrigger: checksPass
     envVars:
       - key: DATUMGUARD_CORS_ORIGINS
