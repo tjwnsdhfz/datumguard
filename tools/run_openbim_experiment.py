@@ -214,6 +214,21 @@ def capture_environment(
     }
 
 
+def write_initial_evidence(
+    evidence_dir: Path,
+    *,
+    args: argparse.Namespace,
+    dataset_manifest: dict[str, Any],
+    fixture_manifest: dict[str, Any],
+) -> dict[str, Any]:
+    """Record the pre-run Git state before this run writes its own evidence files."""
+
+    environment = capture_environment(args, dataset_manifest)
+    write_json(evidence_dir / "fixture_manifest.json", fixture_manifest)
+    write_json(evidence_dir / "environment.json", environment)
+    return environment
+
+
 def load_dataset_manifest(dataset_root: Path) -> dict[str, Any]:
     path = dataset_root / "dataset_manifest.json"
     if not path.is_file():
@@ -965,8 +980,12 @@ def main() -> int:
         raise RuntimeError("Profile hash does not match dataset manifest")
     if expected_profile_hash != manifest["profile"].get("canonical_json_sha256"):
         raise RuntimeError("Canonical profile hash does not match dataset manifest")
-    write_json(evidence_dir / "fixture_manifest.json", fixture_manifest)
-    write_json(evidence_dir / "environment.json", capture_environment(args, manifest))
+    write_initial_evidence(
+        evidence_dir,
+        args=args,
+        dataset_manifest=manifest,
+        fixture_manifest=fixture_manifest,
+    )
 
     raw_records: list[dict[str, Any]] = []
     variants = ("v0_clean", "v1_authorized", "v1_faulty", "v2_corrected")

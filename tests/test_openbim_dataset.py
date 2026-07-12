@@ -8,6 +8,7 @@ from types import ModuleType
 from typing import Any
 
 import ifcopenshell
+import pytest
 from ifctester import ids, reporter
 
 from datumguard.ifc_evidence import property_value
@@ -149,6 +150,31 @@ def test_engine_runtime_prefers_backend_engine_total() -> None:
     timings = {"ifc_open": 10.0, "rules": 20.0, "engine_total": 31.0}
     assert experiment.engine_runtime_ms(timings) == 31.0
     assert experiment.engine_runtime_ms({"a": 1.0, "b": 2.0}) == 3.0
+
+
+def test_initial_evidence_captures_git_state_before_writing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    evidence_dir = tmp_path / "evidence"
+    evidence_dir.mkdir()
+    observed: list[bool] = []
+
+    def capture(_args: Any, _manifest: dict[str, Any]) -> dict[str, Any]:
+        observed.append(not (evidence_dir / "fixture_manifest.json").exists())
+        return {"git": {"dirty": False}}
+
+    monkeypatch.setattr(experiment, "capture_environment", capture)
+    environment = experiment.write_initial_evidence(
+        evidence_dir,
+        args=object(),
+        dataset_manifest={"dataset_id": "test"},
+        fixture_manifest={"schema_version": "fixture-test"},
+    )
+
+    assert observed == [True]
+    assert environment["git"]["dirty"] is False
+    saved_environment = json.loads((evidence_dir / "environment.json").read_text(encoding="utf-8"))
+    assert saved_environment == environment
 
 
 def _match(tp: int, fp: int, fn: int, family: str = "Information") -> dict[str, Any]:
