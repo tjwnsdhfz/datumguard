@@ -118,7 +118,7 @@ jobs:
       - name: Build web Docker image
         run: docker build -t datumguard-web:test ./web
       - name: Generate backend CycloneDX SBOM
-        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: image
           image-ref: datumguard-api:test
@@ -126,7 +126,7 @@ jobs:
           output: datumguard-api.cdx.json
           exit-code: "0"
       - name: Generate web CycloneDX SBOM
-        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: image
           image-ref: datumguard-web:test
@@ -144,7 +144,7 @@ jobs:
       - name: Scan backend image for fixed critical vulnerabilities
         id: trivy_backend
         continue-on-error: true
-        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: image
           image-ref: datumguard-api:test
@@ -155,7 +155,7 @@ jobs:
       - name: Scan web image for fixed critical vulnerabilities
         id: trivy_web
         continue-on-error: true
-        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: image
           image-ref: datumguard-web:test
