@@ -249,7 +249,15 @@ def test_ablation_recall_keeps_fixed_primary_fault_denominator() -> None:
     assert matches["A"]["recall"] == 0.25
 
 
-def test_postfreeze_macro_policy_does_not_claim_preregistered_pass() -> None:
+def test_postfreeze_macro_policy_does_not_claim_preregistered_pass(tmp_path: Path) -> None:
+    lf_text = tmp_path / "lf.yaml"
+    crlf_text = tmp_path / "crlf.yaml"
+    lf_text.write_bytes(b"protocol: v1\nmetric: fixed\n")
+    crlf_text.write_bytes(b"protocol: v1\r\nmetric: fixed\r\n")
+    assert experiment.sha256_lf_normalized_file(lf_text) == (
+        experiment.sha256_lf_normalized_file(crlf_text)
+    )
+
     statuses = experiment.preregistered_target_status(
         {
             "families": {"Information": {"f1": 1.0}, "Geometry": {"f1": 0.96}},

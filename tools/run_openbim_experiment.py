@@ -109,6 +109,12 @@ def sha256_file(path: Path) -> str:
     return sha256_bytes(path.read_bytes())
 
 
+def sha256_lf_normalized_file(path: Path) -> str:
+    """Hash tracked text consistently across Git CRLF/LF checkout policies."""
+
+    return sha256_bytes(path.read_bytes().replace(b"\r\n", b"\n"))
+
+
 def is_canonical_sha256(value: Any) -> bool:
     text = str(value)
     digest = text.removeprefix("sha256:")
@@ -224,7 +230,8 @@ def capture_environment(
         },
         "protocol": {
             "path": str(PROTOCOL_PATH.relative_to(ROOT)),
-            "sha256": sha256_file(PROTOCOL_PATH),
+            "sha256": sha256_lf_normalized_file(PROTOCOL_PATH),
+            "line_ending_normalization": "CRLF_to_LF",
         },
         "dataset_manifest_sha256": sha256_bytes(pretty_json(dataset_manifest)),
         "arguments": {
@@ -713,13 +720,13 @@ def reanalyze_engine_records(
             raise RuntimeError(
                 f"Analysis tag {analysis_tag!r} does not resolve to HEAD {analysis_commit}"
             )
-    actual_protocol_hash = sha256_file(PROTOCOL_PATH)
+    actual_protocol_hash = sha256_lf_normalized_file(PROTOCOL_PATH)
     if actual_protocol_hash != FROZEN_PROTOCOL_HASH:
         raise RuntimeError(
             f"Frozen protocol hash mismatch: expected {FROZEN_PROTOCOL_HASH}, "
             f"got {actual_protocol_hash}"
         )
-    actual_dataset_manifest_hash = sha256_file(dataset_root / "dataset_manifest.json")
+    actual_dataset_manifest_hash = sha256_lf_normalized_file(dataset_root / "dataset_manifest.json")
     if actual_dataset_manifest_hash != expected_dataset_manifest_hash:
         raise RuntimeError(
             f"Frozen dataset manifest hash mismatch: expected {expected_dataset_manifest_hash}, "
@@ -1961,8 +1968,8 @@ def main() -> int:
         "completed_candidate_runs": len(raw_records) - errors,
         "measured_engine_runs": metrics.get("runtime", {}).get("measured_run_count", 0),
         "engine_errors": errors,
-        "protocol_hash": sha256_file(PROTOCOL_PATH),
-        "dataset_manifest_hash": sha256_file(dataset_root / "dataset_manifest.json"),
+        "protocol_hash": sha256_lf_normalized_file(PROTOCOL_PATH),
+        "dataset_manifest_hash": sha256_lf_normalized_file(dataset_root / "dataset_manifest.json"),
         "raw_results_hash": sha256_file(raw_path),
         "metrics": metrics,
         "preregistered_targets": preregistered_target_status(metrics),

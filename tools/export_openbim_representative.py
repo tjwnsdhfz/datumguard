@@ -34,6 +34,10 @@ def sha256_bytes(value: bytes) -> str:
     return f"sha256:{hashlib.sha256(value).hexdigest()}"
 
 
+def sha256_lf_normalized_bytes(value: bytes) -> str:
+    return sha256_bytes(value.replace(b"\r\n", b"\n"))
+
+
 def git_value(*args: str) -> str:
     result = subprocess.run(
         ["git", *args],
@@ -227,8 +231,10 @@ def main() -> int:
             "analysis_tag": git_value("describe", "--tags", "--match", "analysis-*", "--abbrev=0"),
             "protocol_tag_commit": git_value("rev-parse", "protocol-v1^{commit}"),
             "git_dirty_before_export": bool(status),
-            "uv_lock_sha256": sha256_bytes((ROOT / "uv.lock").read_bytes()),
-            "protocol_sha256": sha256_bytes(
+            "uv_lock_sha256_lf_normalized": sha256_lf_normalized_bytes(
+                (ROOT / "uv.lock").read_bytes()
+            ),
+            "protocol_sha256_lf_normalized": sha256_lf_normalized_bytes(
                 (ROOT / "docs" / "awards-2026" / "protocol.yaml").read_bytes()
             ),
             "environment": {
