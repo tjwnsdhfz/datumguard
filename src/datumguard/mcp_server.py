@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from mcp.server.fastmcp import FastMCP
 
@@ -18,6 +18,16 @@ from .architecture_service import (
 )
 from .artifact_service import audit_artifact as audit_artifact_core
 from .artifact_service import compare_artifacts as compare_artifacts_core
+from .frame_cad_service import run_frame_cad_assurance
+from .frame_models import StructuralFrameContract
+from .frame_research_evidence import (
+    FrameResearchEvidenceError,
+    load_opensees_parity_report,
+)
+from .frame_rhino_adapter import adapt_rhino_frame_exchange
+from .frame_service import propose_frame_repair, run_frame_design, validate_frame_contract
+from .frame_solver import FrameSolverError, solve_frame
+from .frame_surrogate import predict_frame_surrogate
 from .models import DesignContract, RepairProposal, Violation
 from .piping_models import PipingPlanContract
 from .piping_service import (
@@ -44,16 +54,21 @@ mcp = FastMCP(
     "DatumGuard",
     instructions=(
         "Use structured DesignContract inputs. Never infer missing numbers, units, datum, or "
-        "tolerances. Only a passed independent DXF verification may produce an export bundle."
+        "tolerances. Only a passed independent DXF verification may produce an export bundle. "
+        "Structural-frame results are screening evidence, never a safety certification."
     ),
     log_level="WARNING",
 )
 
 
-PublicContract = DesignContract | ArchitecturalPlanContract | PipingPlanContract
+PublicContract = (
+    DesignContract | ArchitecturalPlanContract | PipingPlanContract | StructuralFrameContract
+)
 
 
 def _contract(value: dict[str, Any]) -> PublicContract:
+    if value.get("design_kind") == "structural_frame":
+        return StructuralFrameContract.model_validate(value)
     if value.get("design_kind") == "architectural_plan":
         return ArchitecturalPlanContract.model_validate(value)
     if value.get("design_kind") == "piping_plan":
@@ -73,12 +88,37 @@ def _base_envelope(contract_hash: str, *, status: str = "ready") -> dict[str, An
     }
 
 
+def _frame_tool_unsupported(
+    contract: StructuralFrameContract,
+    *,
+    tool_name: str,
+) -> dict[str, Any]:
+    validation = validate_frame_contract(contract)
+    result = _base_envelope(validation.contract_hash, status="infeasible")
+    result["violations"] = [item.model_dump(mode="json") for item in validation.violations]
+    result["error"] = {
+        "code": "DG_FRAME_TOOL_UNSUPPORTED",
+        "message": f"{tool_name} is not part of the structural-frame screening path.",
+        "details": {
+            "tool": tool_name,
+            "use_instead": "frame_analyze",
+            "safety_certification": False,
+        },
+        "correlation_id": validation.contract_hash.removeprefix("sha256:")[:12],
+    }
+    return result
+
+
 @mcp.tool(description="Draft a contract without inferring ambiguous numbers or units.")
 def design_contract_draft(
     contract: dict[str, Any],
     intent_text: str | None = None,
 ) -> dict[str, Any]:
     source = _contract(contract)
+    if isinstance(source, StructuralFrameContract):
+        if intent_text is not None:
+            source = source.model_copy(update={"intent_text": intent_text})
+        return validate_frame_contract(source).model_dump(mode="json")
     if isinstance(source, ArchitecturalPlanContract):
         if intent_text is not None:
             source = source.model_copy(update={"intent_text": intent_text})
@@ -93,6 +133,8 @@ def design_contract_draft(
 @mcp.tool(description="Normalize and validate a DesignContract for deterministic generation.")
 def design_contract_validate(contract: dict[str, Any]) -> dict[str, Any]:
     source = _contract(contract)
+    if isinstance(source, StructuralFrameContract):
+        return validate_frame_contract(source).model_dump(mode="json")
     if isinstance(source, ArchitecturalPlanContract):
         return validate_architecture_contract(source).model_dump(mode="json")
     if isinstance(source, PipingPlanContract):
@@ -103,6 +145,8 @@ def design_contract_validate(contract: dict[str, Any]) -> dict[str, Any]:
 @mcp.tool(description="Generate an unverified R2013 DXF and SVG preview.")
 def drawing_generate(contract: dict[str, Any]) -> dict[str, Any]:
     source = _contract(contract)
+    if isinstance(source, StructuralFrameContract):
+        return _frame_tool_unsupported(source, tool_name="drawing_generate")
     if isinstance(source, ArchitecturalPlanContract):
         return generate_architecture_only(source).model_dump(mode="json")
     if isinstance(source, PipingPlanContract):
@@ -114,6 +158,8 @@ def drawing_generate(contract: dict[str, Any]) -> dict[str, Any]:
 def drawing_verify(contract: dict[str, Any], dxf_base64: str) -> dict[str, Any]:
     dxf_bytes = base64.b64decode(dxf_base64, validate=True)
     source = _contract(contract)
+    if isinstance(source, StructuralFrameContract):
+        return _frame_tool_unsupported(source, tool_name="drawing_verify")
     if isinstance(source, ArchitecturalPlanContract):
         return verify_architecture_only(source, dxf_bytes).as_dict()
     if isinstance(source, PipingPlanContract):
@@ -195,6 +241,8 @@ def repair_propose(
 ) -> dict[str, Any]:
     parsed = [Violation.model_validate(item) for item in violations]
     source = _contract(contract)
+    if isinstance(source, StructuralFrameContract):
+        return cast(dict[str, Any], frame_repair_propose(contract))
     if isinstance(source, ArchitecturalPlanContract):
         proposal = propose_architecture_repair(source, parsed, iteration=iteration)
         result = _base_envelope(proposal.contract_hash, status=proposal.status)
@@ -239,6 +287,11 @@ def repair_apply(
 ) -> dict[str, Any]:
     source = _contract(contract)
     parsed = RepairProposal.model_validate(proposal)
+    if isinstance(source, StructuralFrameContract):
+        result = _frame_tool_unsupported(source, tool_name="repair_apply")
+        result["error"]["details"]["proposal_id"] = parsed.proposal_id
+        result["error"]["details"]["manual_contract_revision_required"] = True
+        return result
     if isinstance(source, ArchitecturalPlanContract):
         try:
             repaired_architecture = apply_architecture_repair(source, parsed)
@@ -293,6 +346,8 @@ def repair_apply(
 
 
 def _contract_kind(contract: PublicContract) -> str:
+    if isinstance(contract, StructuralFrameContract):
+        return "structural_frame"
     if isinstance(contract, ArchitecturalPlanContract):
         return "architectural_plan"
     if isinstance(contract, PipingPlanContract):
@@ -344,7 +399,22 @@ def drawing_compare(
         return result
 
     comparison: dict[str, Any]
-    if isinstance(baseline_contract, ArchitecturalPlanContract) and isinstance(
+    if isinstance(baseline_contract, StructuralFrameContract) and isinstance(
+        candidate_contract, StructuralFrameContract
+    ):
+        frame_baseline_validation = validate_frame_contract(baseline_contract)
+        frame_candidate_validation = validate_frame_contract(candidate_contract)
+        comparison = {
+            "design_kind": "structural_frame",
+            "baseline_hash": frame_baseline_validation.contract_hash,
+            "candidate_hash": frame_candidate_validation.contract_hash,
+            "collections": _collection_diff(
+                baseline_contract,
+                candidate_contract,
+                ("nodes", "members", "loads", "supports"),
+            ),
+        }
+    elif isinstance(baseline_contract, ArchitecturalPlanContract) and isinstance(
         candidate_contract, ArchitecturalPlanContract
     ):
         architecture_baseline_validation = validate_architecture_contract(baseline_contract)
@@ -388,6 +458,128 @@ def drawing_compare(
     return result
 
 
+@mcp.tool(
+    description=(
+        "Run deterministic 2D structural-frame screening and return solver evidence. "
+        "The result is engineering triage, not a structural-safety certification."
+    )
+)
+def frame_analyze(
+    contract: dict[str, Any],
+    auto_repair: bool = False,
+) -> dict[str, Any]:
+    source = StructuralFrameContract.model_validate(contract)
+    return run_frame_design(source, auto_repair=auto_repair).model_dump(mode="json")
+
+
+@mcp.tool(
+    description=(
+        "Normalize a strict Rhino/Grasshopper frame exchange into millimetres without "
+        "inferring units, datum, or topology."
+    )
+)
+def frame_rhino_adapt(exchange: dict[str, Any]) -> dict[str, Any]:
+    return adapt_rhino_frame_exchange(exchange).model_dump(mode="json")
+
+
+@mcp.tool(
+    description=(
+        "Generate a structural-frame DXF, reopen it independently, remeasure all entities, "
+        "and combine that evidence with deterministic frame screening."
+    )
+)
+def frame_dxf_generate_verify(contract: dict[str, Any]) -> dict[str, Any]:
+    source = StructuralFrameContract.model_validate(contract)
+    return run_frame_cad_assurance(source).model_dump(mode="json")
+
+
+@mcp.tool(
+    description=(
+        "Run the advisory GraphSAGE ensemble. OOD or uncertainty returns REVIEW_REQUIRED; "
+        "this tool never grants engineering approval."
+    )
+)
+def frame_surrogate_predict(contract: dict[str, Any]) -> dict[str, Any]:
+    source = StructuralFrameContract.model_validate(contract)
+    return predict_frame_surrogate(source).model_dump(mode="json")
+
+
+@mcp.tool(
+    description=(
+        "Return immutable NumPy-versus-OpenSeesPy parity evidence packaged with DatumGuard."
+    )
+)
+def frame_opensees_parity_evidence() -> dict[str, Any]:
+    try:
+        return load_opensees_parity_report()
+    except FrameResearchEvidenceError as exc:
+        return {
+            "status": "UNAVAILABLE",
+            "authoritative": False,
+            "safety_certification": False,
+            "error": {"code": exc.code, "message": exc.message},
+        }
+
+
+@mcp.tool(
+    description=(
+        "Recompute a structural frame and propose bounded changes to declared free section "
+        "properties. The proposal is not applied and is not safety approval."
+    )
+)
+def frame_repair_propose(contract: dict[str, Any]) -> dict[str, Any]:
+    source = StructuralFrameContract.model_validate(contract)
+    validation = validate_frame_contract(source)
+    if validation.status.value != "ready":
+        result = validation.model_dump(mode="json")
+        result["proposal"] = None
+        return result
+    normalized_contract = validation.normalized_contract
+    if normalized_contract is None:
+        raise AssertionError("ready frame validation must include a normalized contract")
+
+    try:
+        analysis = solve_frame(normalized_contract)
+    except FrameSolverError as exc:
+        result = _base_envelope(validation.contract_hash, status="infeasible")
+        result["violations"] = [
+            {
+                "code": exc.code,
+                "message": exc.message,
+                "entity_ids": exc.entity_ids,
+                "constraint_id": None,
+                "repairable": False,
+                "details": exc.details,
+            }
+        ]
+        result["error"] = {
+            "code": exc.code,
+            "message": exc.message,
+            "details": exc.details,
+            "correlation_id": validation.contract_hash.removeprefix("sha256:")[:12],
+        }
+        result["proposal"] = None
+        return result
+
+    proposal = propose_frame_repair(normalized_contract, analysis)
+    result = _base_envelope(proposal.contract_hash, status=proposal.status)
+    result["violations"] = [item.model_dump(mode="json") for item in proposal.violations]
+    result["evidence"] = [
+        {
+            "type": "frame_repair_screening",
+            "source": analysis.solver,
+            "details": {
+                "critical_member_id": analysis.critical_member_id,
+                "max_displacement_node_id": analysis.max_displacement_node_id,
+                "proposal_applied": False,
+                "safety_certification": False,
+            },
+        }
+    ]
+    result["proposal"] = proposal.model_dump(mode="json")
+    return result
+
+
 @mcp.tool(description="Regenerate, independently verify, and write an approved bundle locally.")
 def export_bundle(
     contract: dict[str, Any],
@@ -395,6 +587,19 @@ def export_bundle(
     auto_repair: bool = True,
 ) -> dict[str, Any]:
     source = _contract(contract)
+    if isinstance(source, StructuralFrameContract):
+        frame_response = run_frame_design(source, auto_repair=False)
+        result = _frame_tool_unsupported(source, tool_name="export_bundle")
+        result["artifact_hash"] = frame_response.artifact_hash
+        result["measurements"] = [
+            item.model_dump(mode="json") for item in frame_response.measurements
+        ]
+        result["violations"] = [item.model_dump(mode="json") for item in frame_response.violations]
+        result["evidence"] = [item.model_dump(mode="json") for item in frame_response.evidence]
+        result["summary"] = frame_response.summary
+        result["preview_svg"] = frame_response.preview_svg
+        result["bundle_path"] = None
+        return result
     if isinstance(source, ArchitecturalPlanContract):
         architecture_response = run_architecture_design(source, auto_repair=auto_repair)
         result = architecture_response.model_dump(mode="json")
@@ -436,6 +641,8 @@ def rhino_preview(
             resolved_contract_hash = validate_architecture_contract(source).contract_hash
         elif isinstance(source, PipingPlanContract):
             resolved_contract_hash = validate_piping_contract(source).contract_hash
+        elif isinstance(source, StructuralFrameContract):
+            resolved_contract_hash = validate_frame_contract(source).contract_hash
         else:
             resolved_contract_hash = validate_contract(source).contract_hash
 

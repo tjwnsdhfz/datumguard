@@ -108,6 +108,7 @@ def test_engineering_domain_registry_lists_all_public_workspaces() -> None:
         "piping_plan",
         "plate_panel",
         "solid_part",
+        "structural_frame",
     }
     assert {item["web_route"] for item in payload} == {
         "/",
@@ -116,6 +117,7 @@ def test_engineering_domain_registry_lists_all_public_workspaces() -> None:
         "/piping",
         "/plate",
         "/solid",
+        "/frame",
     }
 
 

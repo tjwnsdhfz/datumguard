@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import os
 import re
+from collections.abc import Callable
 from typing import Annotated, Any
 
 import uvicorn
@@ -18,6 +19,16 @@ from . import __version__
 from .architecture_models import ArchitecturalPlanContract
 from .architecture_service import run_architecture_design, validate_architecture_contract
 from .artifact_service import MAX_ARTIFACT_BYTES, audit_artifact, compare_artifacts
+from .frame_cad_service import run_frame_cad_assurance
+from .frame_models import StructuralFrameContract
+from .frame_research_evidence import (
+    FrameResearchEvidenceError,
+    load_gnn_benchmark,
+    load_opensees_parity_report,
+)
+from .frame_rhino_adapter import RhinoFrameExchange, adapt_rhino_frame_exchange
+from .frame_service import run_frame_design, validate_frame_contract
+from .frame_surrogate import predict_frame_surrogate
 from .models import DesignContract, RepairProposal, StrictModel, Violation
 from .openbim_service import (
     MAX_IDS_BYTES,
@@ -105,9 +116,11 @@ app = FastAPI(
     title="DatumGuard API",
     version=__version__,
     description=(
-        "Contract-first architecture, plant piping, plate, and 3D solid generation with "
-        "independent serialized-DXF/STEP remeasurement and DXF/STEP/IFC artifact audit. "
-        "This MVP does not certify structural safety, codes, or industrial standards."
+        "Contract-first architecture, plant piping, plate, 3D solid generation, and "
+        "deterministic structural-frame screening with independent serialized-DXF/STEP "
+        "remeasurement and DXF/STEP/IFC artifact audit. Frame results support engineering "
+        "triage only; this MVP does not certify structural safety, codes, or industrial "
+        "standards."
     ),
     openapi_url="/api/v1/openapi.json",
     docs_url="/docs",
@@ -277,6 +290,12 @@ def engineering_domains() -> list[dict[str, str]]:
             "run_endpoint": "/api/v1/solid/designs/run",
         },
         {
+            "id": "structural_frame",
+            "design_kind": "structural_frame",
+            "web_route": "/frame",
+            "run_endpoint": "/api/v1/frame/designs/run",
+        },
+        {
             "id": "artifact_lab",
             "design_kind": "artifact_audit",
             "web_route": "/intake",
@@ -328,6 +347,18 @@ def solid_part_contract_schema() -> dict[str, Any]:
     return SolidPartContract.model_json_schema()
 
 
+@app.get("/api/v1/schema/frame-contract")
+def frame_contract_schema() -> dict[str, Any]:
+    """Return the public contract for deterministic structural-frame screening."""
+    return StructuralFrameContract.model_json_schema()
+
+
+@app.get("/api/v1/schema/rhino-frame-exchange")
+def rhino_frame_exchange_schema() -> dict[str, Any]:
+    """Return the neutral Rhino/Grasshopper exchange contract."""
+    return RhinoFrameExchange.model_json_schema()
+
+
 @app.post("/api/v1/contracts/draft")
 def contract_draft(request: DraftRequest) -> dict[str, Any]:
     return draft_contract(request.contract, request.intent_text).model_dump(mode="json")
@@ -346,6 +377,17 @@ def architecture_contract_validate(contract: ArchitecturalPlanContract) -> dict[
 @app.post("/api/v1/piping/contracts/validate")
 def piping_contract_validate(contract: PipingPlanContract) -> dict[str, Any]:
     return validate_piping_contract(contract).model_dump(mode="json")
+
+
+@app.post("/api/v1/frame/contracts/validate")
+def frame_contract_validate(contract: StructuralFrameContract) -> dict[str, Any]:
+    return validate_frame_contract(contract).model_dump(mode="json")
+
+
+@app.post("/api/v1/frame/rhino/adapt")
+def frame_rhino_adapt(exchange: RhinoFrameExchange) -> dict[str, Any]:
+    """Normalize explicit Rhino units and datum into a structural frame contract."""
+    return adapt_rhino_frame_exchange(exchange).model_dump(mode="json")
 
 
 @app.post("/api/v1/drawings/generate")
@@ -425,6 +467,65 @@ def architecture_design_run(
 @app.post("/api/v1/piping/designs/run")
 def piping_design_run(contract: PipingPlanContract) -> dict[str, Any]:
     return run_piping_design(contract).model_dump(mode="json")
+
+
+@app.post("/api/v1/frame/designs/run")
+def frame_design_run(
+    contract: StructuralFrameContract,
+    auto_repair: bool = Query(default=False),
+) -> dict[str, Any]:
+    """Screen a frame; the response is not a structural-safety certification."""
+    return run_frame_design(contract, auto_repair=auto_repair).model_dump(mode="json")
+
+
+@app.post("/api/v1/frame/cad/run")
+def frame_cad_run(contract: StructuralFrameContract) -> dict[str, Any]:
+    """Write, reopen, and remeasure a screening DXF before allowing download."""
+    return run_frame_cad_assurance(contract).model_dump(mode="json")
+
+
+@app.post("/api/v1/frame/surrogate/predict")
+def frame_surrogate_predict(contract: StructuralFrameContract) -> dict[str, Any]:
+    """Return a non-authoritative GNN estimate with an uncertainty review gate."""
+    return predict_frame_surrogate(contract).model_dump(mode="json")
+
+
+def _packaged_frame_evidence(
+    loader: Callable[[], dict[str, Any]],
+    *,
+    evidence_kind: str,
+) -> dict[str, Any]:
+    try:
+        report = loader()
+        if "status" not in report:
+            report["status"] = "COMPLETED"
+        return report
+    except FrameResearchEvidenceError as exc:
+        return {
+            "status": "UNAVAILABLE",
+            "evidence_kind": evidence_kind,
+            "authoritative": False,
+            "safety_certification": False,
+            "error": {"code": exc.code, "message": exc.message},
+        }
+
+
+@app.get("/api/v1/frame/benchmarks/opensees")
+def frame_opensees_benchmark() -> dict[str, Any]:
+    """Serve immutable parity evidence without loading OpenSees in production."""
+    return _packaged_frame_evidence(
+        load_opensees_parity_report,
+        evidence_kind="frame_opensees_parity_v1",
+    )
+
+
+@app.get("/api/v1/frame/benchmarks/gnn")
+def frame_gnn_benchmark() -> dict[str, Any]:
+    """Serve the topology-holdout GraphSAGE/GAT comparison artifact."""
+    return _packaged_frame_evidence(
+        load_gnn_benchmark,
+        evidence_kind="frame_gnn_benchmark_v1",
+    )
 
 
 @app.post("/api/v1/solid/designs/run", response_model=None)

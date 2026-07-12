@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0.0",
+  "design_kind": "structural_frame",
+  "units": "mm",
+  "nodes": [
+    {"id": "N1", "point": [0, 0], "locked": true},
+    {"id": "N2", "point": [4000, 0], "locked": true},
+    {"id": "N3", "point": [8000, 0], "locked": true},
+    {"id": "N4", "point": [0, 3000], "locked": true},
+    {"id": "N5", "point": [4000, 3000], "locked": true},
+    {"id": "N6", "point": [8000, 3000], "locked": true}
+  ],
+  "members": [
+    {"id": "C-L", "start_node_id": "N1", "end_node_id": "N4", "area_mm2": 2200, "inertia_mm4": 18000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 250, "locked": true},
+    {"id": "C-M", "start_node_id": "N2", "end_node_id": "N5", "area_mm2": 2200, "inertia_mm4": 18000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 250, "locked": true},
+    {"id": "C-R", "start_node_id": "N3", "end_node_id": "N6", "area_mm2": 2200, "inertia_mm4": 18000000, "elastic_modulus_mpa": 200000, "section_depth_mm": 250, "locked": true},
+    {"id": "B-L", "start_node_id": "N4", "end_node_id": "N5", "area_mm2": 800, "inertia_mm4": 1200000, "elastic_modulus_mpa": 200000, "section_depth_mm": 160, "locked": false},
+    {"id": "B-R", "start_node_id": "N5", "end_node_id": "N6", "area_mm2": 800, "inertia_mm4": 1200000, "elastic_modulus_mpa": 200000, "section_depth_mm": 160, "locked": false}
+  ],
+  "loads": [
+    {"id": "L-N4", "node_id": "N4", "fx_n": 10000, "fy_n": -30000, "mz_nmm": 0},
+    {"id": "L-N5", "node_id": "N5", "fx_n": 16000, "fy_n": -50000, "mz_nmm": 0},
+    {"id": "L-N6", "node_id": "N6", "fx_n": 10000, "fy_n": -30000, "mz_nmm": 0}
+  ],
+  "supports": [
+    {"id": "S-N1", "node_id": "N1", "ux": true, "uy": true, "rz": true},
+    {"id": "S-N2", "node_id": "N2", "ux": true, "uy": true, "rz": true},
+    {"id": "S-N3", "node_id": "N3", "ux": true, "uy": true, "rz": true}
+  ],
+  "limits": {"max_displacement_mm": 2, "allowable_stress_mpa": 90},
+  "free_parameters": [
+    {"id": "FP-BL-A", "path": "members.B-L.area_mm2", "minimum": 800, "maximum": 6000, "step": 400, "unit": "mm2"},
+    {"id": "FP-BL-I", "path": "members.B-L.inertia_mm4", "minimum": 1200000, "maximum": 120000000, "step": 10000000, "unit": "mm4"},
+    {"id": "FP-BR-A", "path": "members.B-R.area_mm2", "minimum": 800, "maximum": 6000, "step": 400, "unit": "mm2"},
+    {"id": "FP-BR-I", "path": "members.B-R.inertia_mm4", "minimum": 1200000, "maximum": 120000000, "step": 10000000, "unit": "mm4"}
+  ],
+  "metadata": {
+    "project_name": "Pipe Rack Section Failure Preset",
+    "revision": "FAIL-A",
+    "notes": "Intentionally undersized unlocked beams for repair demonstration."
+  }
+}
