@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: >-
+  DatumGuard를 연구, 교육 또는 engineering workflow에서 사용했다면 이 software를
+  인용해 주세요.
+title: DatumGuard
+type: software
+authors:
+  - alias: tjwnsdhfz
+repository-code: "https://github.com/tjwnsdhfz/datumguard"
+url: "https://datumguard-tjwnsdhfz.vercel.app"
+version: 0.3.0
+date-released: 2026-07-12
+license: MIT
+abstract: >-
+  Contract-first CAD generation and independent DXF, STEP, and IFC artifact
+  assurance with fail-closed export. Structural results are preliminary screening
+  evidence and are not structural certification.
+keywords:
+  - CAD
+  - DXF
+  - IFC
+  - STEP
+  - engineering assurance
+  - computational design
+  - structural screening
+  - Rhino
+  - Grasshopper
