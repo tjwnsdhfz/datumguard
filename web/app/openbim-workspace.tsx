@@ -254,6 +254,7 @@ export default function OpenBimWorkspace() {
   const [fileErrors, setFileErrors] = useState<Record<UploadKey, string | null>>({ baseline: null, candidate: null, requirements: null });
   const [profileId] = useState("virtual-fab-v1");
   const [consented, setConsented] = useState(false);
+  const [includeBcf, setIncludeBcf] = useState(false);
   const [loading, setLoading] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [result, setResult] = useState<OpenBimEvidenceReport | null>(null);
@@ -311,7 +312,7 @@ export default function OpenBimWorkspace() {
     body.append("requirements", files.requirements);
     body.append("profile_id", profileId);
     body.append("include_html", "true");
-    body.append("include_bcf", "true");
+    body.append("include_bcf", String(includeBcf));
     const controller = new AbortController();
     controllerRef.current = controller;
     setLoading(true);
@@ -390,7 +391,7 @@ export default function OpenBimWorkspace() {
         <div className="ob-hero-copy">
           <p className="ob-kicker">OPENBIM / IFC4 / IDS 1.0 / DETERMINISTIC EVIDENCE</p>
           <h1 id="openbim-title">모델을 보는 대신,<br /><em>변경을 증명합니다.</em></h1>
-          <p className="ob-lede">기준 IFC와 후보 IFC를 독립적으로 다시 읽어 요구사항, 모델 무결성, 보호된 변경을 검사합니다. 결과는 해시로 연결된 JSON·HTML·BCF 증거로 남습니다.</p>
+          <p className="ob-lede">기준 IFC와 후보 IFC를 독립적으로 다시 읽어 요구사항, 모델 무결성, 보호된 변경을 검사합니다. 결과는 해시로 연결된 JSON·HTML과, 선택 시 BCF 증거로 남습니다.</p>
         </div>
         <div className="ob-hero-proof" aria-label="검증 범위 요약">
           <div><span>01</span><strong>IDS</strong><small>정보 요구사항</small></div>
@@ -421,6 +422,10 @@ export default function OpenBimWorkspace() {
               </select>
               <p id="openbim-profile-help">FAB_TOOL 서비스 여유 공간과 설비 자산 변경 규칙을 포함하는 고정 연구 프로파일입니다.</p>
             </div>
+            <label className="ob-package-option">
+              <input data-testid="openbim-include-bcf" type="checkbox" checked={includeBcf} disabled={loading} onChange={(event) => setIncludeBcf(event.target.checked)} />
+              <span><strong>BCFZIP 추가</strong>선택 기능입니다. 현재 배포 license와 독립 viewer gate가 완료되지 않아 기본값은 꺼져 있습니다.</span>
+            </label>
           </div>
 
           <aside className="ob-boundary-panel" aria-labelledby="openbim-boundary-heading">

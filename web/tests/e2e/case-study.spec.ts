@@ -14,6 +14,11 @@ test.describe("public product case study", () => {
     await expect(page.getByText("256", { exact: true })).toBeVisible();
     await expect(page.getByText("24", { exact: true })).toBeVisible();
     await expect(page.getByText("256 pytest + 24 Playwright", { exact: true })).toBeVisible();
+    await expect(page.getByText("294 pytest + 27 Playwright", { exact: true })).toBeVisible();
+    await expect(page.getByText("30 cases · 330 TP · 0 FP · 0 FN", { exact: true })).toBeVisible();
+    await expect(page.getByText(/research_validation_only: true/)).toBeVisible();
+    const openBimRow = page.locator('[role="row"][href="/openbim"]');
+    await expect(openBimRow).toContainText("OpenBIM Evidence");
     await expect(page.getByText(/DG_ARCH_EXTERIOR_OPEN/)).toBeVisible();
     await expect(page.getByText(/계획 중인 100 golden \+ 50 language benchmark/)).toBeVisible();
     await expect(page.getByRole("link", { name: "OPEN LIVE ARCHITECTURE" })).toHaveAttribute(

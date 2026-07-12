@@ -1,57 +1,96 @@
-# BIM Awards 2026 준비 문서
+# BIM Awards 2026 · OpenBIM Evidence Guard
 
-이 폴더는 DatumGuard를 학생부 Research 출품작 `OpenBIM Evidence Guard`로 확장하기 위한 개발·연구
-작업의 단일 진입점이다. 패널 디자인과 편집은 사용자가 담당하며 이 폴더의 작업 범위에서 제외한다.
+이 폴더는 학생부 Research 출품 후보 `OpenBIM Evidence Guard`의 구현, protocol, 데이터셋,
+최종 실험 evidence를 연결하는 단일 진입점이다. 패널 디자인과 편집은 사용자가 담당한다.
 
-## 문서
+## 현재 상태
+
+- 별도 `/openbim` 연구용 workspace와 `POST /api/v1/openbim/evidence/run`을 구현했다.
+- IFC4 baseline/candidate와 IDS 1.0을 독립 worker에서 다시 열어 정보요구조건, IFC integrity,
+  project AABB clearance와 protected revision을 검사한다.
+- 37개 결정론적 합성 case를 생성했고, pilot 6개를 제외한 held-out evaluation 30개를 실행했다.
+- Full pipeline 결과는 TP/FP/FN `330/0/0`, clean·authorized false positive `0`, corrected 신규 issue
+  `0`이다. 이는 합성 연구 결과이며 승인 자격을 만들지 않는다.
+- GEO-01 경계 회귀에서 AABB 접촉과 +1mm 이격은 PASS, -1mm 양의 중첩은 FAIL이며,
+  geometry 누락은 PASS가 아니라 `NOT_EVALUABLE`로 처리했다.
+- 120 candidate record의 measured engine run 1,200회에서 engine error 0, canonical payload
+  10/10 일치, engine p95 1,876.222ms를 기록했다.
+- 최초 evaluator의 세 구현 오류는 raw detector report를 byte 보존한 뒤 `analysis-v1.0.1`에서
+  재집계했다. detector, 입력, truth, 규칙과 threshold는 바꾸지 않았다.
+
+## 문서와 증거
 
 - [개발 계획](DEVELOPMENT_PLAN.md)
 - [연구 계획](RESEARCH_PLAN.md)
+- [동결 protocol](protocol.yaml)
+- [규칙 카탈로그](RULE_CATALOG.md)
+- [데이터셋 카드](DATASET_CARD.md)
+- [최종 결과](RESULTS.md)
+- [한계·타당성 위협](LIMITATIONS.md)
+- [제3자 라이브러리·AI 사용 고지](THIRD_PARTY_AND_AI_USE.md)
+- [machine-generated evidence](evidence/README.md)
+- [post-freeze correction audit](evidence/ANALYSIS_CORRECTION.md)
+- [최초 engine run 보존 index](evidence/PRESERVED_ENGINE_RUN.md)
+- [대표 JSON·HTML·BCF bundle](evidence/representative/README.md)
 
-## 현재 결정
+## 고정 경계
 
-- 기존 `/intake`는 유지하고 별도 `/openbim` 수직 기능을 만든다.
-- core 연구는 IDS 정보요구조건, IFC integrity, protected revision, 재현 가능한 오류주입 평가다.
-- clearance와 BCF는 2026-07-19 hard gate를 통과한 경우에만 제목·연구 주장에 포함한다.
-- AI/LLM은 판정 실험에서 제외한다.
+- 기존 `/intake`는 외부 artifact의 informational audit로 유지하고 `/openbim`과 섞지 않는다.
+- IDS 정보 검사와 DatumGuard의 project geometry/revision 규칙을 구분한다.
+- AI/LLM은 IFC 판정, ground truth 생성과 metric 계산 경로에서 제외한다.
 - 실제 FAB·기업 자료 없이 IFC4 합성 데이터만 사용한다.
-- 2026-08-16 protocol freeze, 2026-08-20 final experiment, 2026-08-23 code freeze를 지킨다.
+- `research_validation_only=true`, `approval_eligible=false`를 고정한다.
+- BCF는 same-library round-trip까지만 통과했다. 독립 viewer와 license gate가 끝나기 전 제목이나
+  핵심 성과로 주장하지 않는다.
+- API의 BCF packaging은 별도 `DATUMGUARD_ENABLE_BCF=false` gate로 기본 차단한다.
+- `/openbim`은 unreleased local preview이며 현재 v0.2.1 production 배포에 포함되지 않는다.
+- Render blueprint도 외부 gate 완료 전 `DATUMGUARD_ENABLE_OPENBIM=false`로 고정한다.
 
-## 다음 착수 순서
+## 동결 provenance
 
-1. 현재 `main` HEAD에서 전체 baseline 검증을 실행하고 결과를 기록한다.
-2. 공모전 전용 브랜치를 만든다.
-3. IDS, geometry, BCF dependency·container·license spike를 수행한다.
-4. 대표 clean IFC와 IDS 한 규칙으로 PASS/FAIL vertical slice를 만든다.
-5. 대표 fixture와 ground truth가 결정론적으로 생성된 뒤 detector 구현을 시작한다.
+| 역할 | Git tag | Commit |
+|---|---|---|
+| protocol·fixture·detector engine run | `protocol-v1` | `40f1f7a991e592511033a480c6799516578a45f8` |
+| evaluator correction·analysis replay | `analysis-v1.0.1` | `0ed7ff7716e9f625998a1a17342de9f9fa9cd9b9` |
 
-완료되지 않은 목표 수치나 기능을 현재 성과로 표현하지 않는다.
+최초 raw SHA-256은
+`sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9`,
+수정 후 raw SHA-256은
+`sha256:9b663d7604c710a0edac3e4580a66fe1b1d9b9a7c00984f021c81289b42be037`이다.
 
-## 한 명령 재현
+## 전체 detector 실험 재현
 
-다음 명령은 37개 case를 다시 생성하고 전체 byte hash 결정성을 확인한 뒤, pilot/representative를
-제외한 evaluation 30개에 warm-up 1회와 측정 10회를 실행한다.
+다음 명령은 37개 case를 다시 생성해 byte 결정성을 확인하고 evaluation 30개에 warm-up 1회,
+측정 10회를 수행한다. 기존 공식 raw를 덮어쓰지 않도록 별도 evidence directory에서 먼저 실행한다.
 
 ```powershell
-uv run python tools/run_openbim_experiment.py --regenerate-dataset `
-  --split evaluation --warmup-runs 1 --repeats 10 --bootstrap-iterations 10000
+uv run --frozen python tools/run_openbim_experiment.py --regenerate-dataset `
+  --split evaluation --warmup-runs 1 --repeats 10 --bootstrap-iterations 10000 `
+  --evidence-dir C:\external-evidence\full-reproduction `
+  --results-path C:\external-evidence\full-reproduction\RESULTS.md
 ```
 
-결과는 `docs/awards-2026/evidence/`와 `RESULTS.md`에 machine-generated 파일로 기록된다.
+## 동결 후 evaluator correction 재현
 
-### 동결 후 evaluator correction 재현
-
-detector를 다시 실행하지 않고 보존한 engine report만 재집계할 때는 clean analysis tag에서 다음을
-실행한다. source SHA-256, tag-to-HEAD, protocol, dataset manifest, truth, IFC input hash와 10/10
-결정성이 모두 일치하지 않으면 시작 전에 실패한다.
+detector를 다시 실행하지 않고 보존 raw의 engine report만 재집계하려면 preserved raw를 repo 밖에
+복사한 뒤 `analysis-v1.0.1`을 checkout한 별도 clean worktree에서 실행한다. source SHA-256,
+tag-to-HEAD, protocol, dataset manifest, truth, IFC input hash와 10/10 결정성 중 하나라도 다르면
+시작 전에 실패한다.
 
 ```powershell
-uv run python tools/run_openbim_experiment.py --reanalyze-existing `
-  --reanalyze-source C:\external-evidence\raw_results.jsonl `
+uv run --frozen python tools/run_openbim_experiment.py --reanalyze-existing `
+  --reanalyze-source C:\external-evidence\raw_results_pre_analysis_fix.jsonl `
   --expected-source-sha256 sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9 `
   --analysis-tag analysis-v1.0.1 --split evaluation --repeats 10 `
   --bootstrap-iterations 10000
 ```
 
-이 경로는 원본 byte를 `raw_results_pre_analysis_fix.jsonl`로 보존하고 detector field만 남긴
-`raw_engine_results.jsonl`, 수정된 집계, `analysis_correction.json`, `ANALYSIS_CORRECTION.md`를 만든다.
+## 제출 전 남은 외부 gate
+
+1. 독립 BCF viewer에 대표 BCFZIP을 import하고 component/status를 화면 증거로 남긴다.
+2. buildingSMART IFC Validation Service에서 clean 대표 IFC의 외부 결과를 보존한다.
+3. `bcf-client==0.8.5` source/wheel license 표기 차이를 최종 배포 방식 기준으로 검토한다.
+4. Docker/Linux CI, production cold-start·CORS·부하 smoke를 실행한다.
+5. 공모전 원고에서 실제 산업 일반화, 안전·법규·제작 승인 표현을 제거한다.
+
+이 외부 gate는 구현·합성 실험의 완료 여부와 분리해 공개하며, 미완료 상태를 성과로 바꾸어 쓰지 않는다.

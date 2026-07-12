@@ -1,0 +1,105 @@
+{
+  "ablation_denominators": {
+    "A": 330,
+    "B": 330,
+    "C": 330,
+    "D": 330
+  },
+  "affected_case_ids": [
+    "EVAL-L1-S2102",
+    "EVAL-L2-S2202",
+    "EVAL-L2-S2206",
+    "EVAL-L3-S2308"
+  ],
+  "analysis_git": {
+    "commit": "0ed7ff7716e9f625998a1a17342de9f9fa9cd9b9",
+    "dirty": false,
+    "tag": "analysis-v1.0.1"
+  },
+  "analysis_revision": "post-freeze-evaluator-fix-1",
+  "analyzed_record_count": 120,
+  "corrected_metrics": {
+    "full_pipeline": {
+      "admissible_secondary": 0,
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 330
+    },
+    "geometry": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 60
+    }
+  },
+  "corrected_raw_results_sha256": "sha256:9b663d7604c710a0edac3e4580a66fe1b1d9b9a7c00984f021c81289b42be037",
+  "detector_inputs_changed": false,
+  "detector_outputs_changed": false,
+  "detector_rerun": false,
+  "engine_record_count": 120,
+  "fixes": [
+    {
+      "description": "Use the preregistered sorted raw GlobalId pair for GEO-01 matching; retain STEP IDs for audit when a GlobalId is duplicated by R01.",
+      "id": "EVAL-GEO-PAIR-01"
+    },
+    {
+      "description": "Keep every primary fault in every ablation recall denominator while filtering predictions by enabled scope.",
+      "id": "EVAL-ABLATION-DENOM-01"
+    },
+    {
+      "description": "Report preregistered information and revision macro-F1 as the mean of supported rule-level F1 values within each fault family.",
+      "id": "EVAL-METRIC-MACRO-01"
+    }
+  ],
+  "frozen_engine_run": {
+    "commit": "40f1f7a991e592511033a480c6799516578a45f8",
+    "protocol_hash": "sha256:d18cf856bde7879d6887091fb4851502d3979ab998ef6f96d6eb22c86c275b36",
+    "tag": "protocol-v1",
+    "tag_commit": "40f1f7a991e592511033a480c6799516578a45f8"
+  },
+  "measured_run_count": 1200,
+  "pre_fix_raw_results": {
+    "path": "raw_results_pre_analysis_fix.jsonl",
+    "sha256": "sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9"
+  },
+  "preliminary_metrics": {
+    "full_pipeline": {
+      "admissible_secondary": 0,
+      "f1": 0.987878788,
+      "fn": 4,
+      "fp": 4,
+      "precision": 0.987878788,
+      "recall": 0.987878788,
+      "tp": 326
+    },
+    "geometry": {
+      "f1": 0.933333333,
+      "fn": 4,
+      "fp": 4,
+      "precision": 0.933333333,
+      "recall": 0.933333333,
+      "tp": 56
+    }
+  },
+  "primary_fault_denominator": 330,
+  "raw_engine_results": {
+    "path": "raw_engine_results.jsonl",
+    "readback_verified": true,
+    "records_canonical_sha256": "sha256:5e6f1e1a78889943c1a24e793e673b4f22db5f44ee94eb81b665c01071ab4b1f",
+    "sha256": "sha256:87b7d2edfda50dbe1c6d09bfd63f0cc9995df623911c62340115c3fe9d98b32e"
+  },
+  "reanalyzed_at_utc": "2026-07-12T09:49:31.279193+00:00",
+  "run_fingerprint_groups_verified": 120,
+  "schema_version": "openbim-analysis-audit-v1",
+  "source_raw_results": {
+    "external_path": "C:\\Users\\thats\\AppData\\Local\\Temp\\datumguard-protocol-v1-raw_results.jsonl",
+    "sha256": "sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9"
+  },
+  "thresholds_changed": false,
+  "truth_changed": false
+}

@@ -95,6 +95,31 @@ This report is not structural, safety, code, fabrication, or construction approv
     return document.encode("utf-8")
 
 
+def _camera_semantics(viewpoint: Any) -> tuple[float, ...] | None:
+    camera = viewpoint.visualization_info.perspective_camera
+    if camera is None:
+        return None
+    point = camera.camera_view_point
+    direction = camera.camera_direction
+    up = camera.camera_up_vector
+    return tuple(
+        round(float(value), 9)
+        for value in (
+            point.x,
+            point.y,
+            point.z,
+            direction.x,
+            direction.y,
+            direction.z,
+            up.x,
+            up.y,
+            up.z,
+            camera.aspect_ratio,
+            camera.field_of_view,
+        )
+    )
+
+
 def render_bcfzip(report: OpenBimEvidenceReport, *, max_topics: int) -> bytes:
     if len(report.issues) > max_topics:
         raise ValueError("issue count exceeds the registered BCF topic limit")
@@ -105,51 +130,92 @@ def render_bcfzip(report: OpenBimEvidenceReport, *, max_topics: int) -> bytes:
         raise RuntimeError("BCF export dependency is unavailable") from exc
 
     bcfxml = BcfXml.create_new("OpenBIM Evidence Guard")
-    for issue in report.issues:
-        description = json.dumps(
-            {
-                "issue_key": issue.issue_key,
-                "scope": issue.scope.value,
-                "severity": issue.severity.value,
-                "message": issue.message,
-                "expected": issue.expected,
-                "actual": issue.actual,
-                "source_hashes": issue.source_hashes.model_dump(mode="json"),
-                "step_ids": issue.step_ids,
-            },
-            ensure_ascii=False,
-            sort_keys=True,
-        )
-        topic = bcfxml.add_topic(
-            f"[{issue.rule_id}] {issue.message}"[:250],
-            description,
-            "OpenBIM Evidence Guard",
-            topic_type=issue.scope.value,
-            topic_status="Open",
-        )
-        guids = sorted(
-            {
-                entity_id
-                for entity_id in (issue.entity_pair or issue.entity_ids)
-                if _IFC_GUID_PATTERN.fullmatch(entity_id)
-            }
-        )
-        if guids:
-            position = np.array(issue.location or (0.0, 0.0, 0.0), dtype=float)
-            topic.add_viewpoint_from_point_and_guids(position, *guids)
+    try:
+        expected_topic_semantics: list[tuple[Any, ...]] = []
+        for issue in report.issues:
+            description = json.dumps(
+                {
+                    "issue_key": issue.issue_key,
+                    "scope": issue.scope.value,
+                    "severity": issue.severity.value,
+                    "message": issue.message,
+                    "expected": issue.expected,
+                    "actual": issue.actual,
+                    "source_hashes": issue.source_hashes.model_dump(mode="json"),
+                    "step_ids": issue.step_ids,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+            title = f"[{issue.rule_id}] {issue.message}"[:250]
+            topic = bcfxml.add_topic(
+                title,
+                description,
+                "OpenBIM Evidence Guard",
+                topic_type=issue.scope.value,
+                topic_status="Open",
+            )
+            guids = sorted(
+                {
+                    entity_id
+                    for entity_id in (issue.entity_pair or issue.entity_ids)
+                    if _IFC_GUID_PATTERN.fullmatch(entity_id)
+                }
+            )
+            camera_semantics: tuple[tuple[float, ...], ...] = ()
+            if guids:
+                position = np.array(issue.location or (0.0, 0.0, 0.0), dtype=float)
+                viewpoint = topic.add_viewpoint_from_point_and_guids(position, *guids)
+                camera = _camera_semantics(viewpoint)
+                camera_semantics = (camera,) if camera is not None else ()
+            expected_topic_semantics.append(
+                (title, description, issue.scope.value, "Open", tuple(guids), camera_semantics)
+            )
 
-    with tempfile.TemporaryDirectory(prefix="datumguard-bcf-") as directory:
-        filepath = Path(directory) / "openbim-evidence.bcfzip"
-        bcfxml.save(filepath)
-        loaded = BcfXml.load(filepath)
-        try:
-            if loaded is None or len(loaded.topics) != len(report.issues):
-                raise RuntimeError("BCF semantic round-trip failed")
-        finally:
-            if loaded is not None:
-                loaded.close()
+        with tempfile.TemporaryDirectory(prefix="datumguard-bcf-") as directory:
+            filepath = Path(directory) / "openbim-evidence.bcfzip"
+            bcfxml.save(filepath)
+            loaded = BcfXml.load(filepath)
+            try:
+                if loaded is None or len(loaded.topics) != len(report.issues):
+                    raise RuntimeError("BCF semantic round-trip failed")
+                loaded_topic_semantics: list[tuple[Any, ...]] = []
+                for topic_handler in loaded.topics.values():
+                    topic = topic_handler.topic
+                    selected_guids = sorted(
+                        {
+                            guid
+                            for viewpoint in topic_handler.viewpoints.values()
+                            for guid in (viewpoint.get_selected_guids() or [])
+                        }
+                    )
+                    cameras = tuple(
+                        sorted(
+                            camera
+                            for viewpoint in topic_handler.viewpoints.values()
+                            if (camera := _camera_semantics(viewpoint)) is not None
+                        )
+                    )
+                    loaded_topic_semantics.append(
+                        (
+                            str(topic.title or ""),
+                            str(topic.description or ""),
+                            str(topic.topic_type or ""),
+                            str(topic.topic_status or ""),
+                            tuple(selected_guids),
+                            cameras,
+                        )
+                    )
+                if sorted(loaded_topic_semantics) != sorted(expected_topic_semantics):
+                    raise RuntimeError(
+                        "BCF topic fields, component references, or cameras changed on round-trip"
+                    )
+                return filepath.read_bytes()
+            finally:
+                if loaded is not None:
+                    loaded.close()
+    finally:
         bcfxml.close()
-        return filepath.read_bytes()
 
 
 def _artifact(

@@ -545,6 +545,15 @@ async def openbim_evidence_run(
             details={"capability": "openbim"},
             retry_after=60,
         )
+    if include_bcf and not OPERATIONS.bcf_enabled:
+        return _error_response(
+            request,
+            status_code=503,
+            code="DG_CAPABILITY_DISABLED",
+            message="BCF packaging is disabled in this deployment.",
+            details={"capability": "openbim_bcf"},
+            retry_after=60,
+        )
     filenames = {
         "baseline": baseline.filename or "",
         "candidate": candidate.filename or "",

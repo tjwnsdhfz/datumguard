@@ -1,0 +1,59 @@
+{
+  "arguments": {
+    "allow_engine_errors": false,
+    "bootstrap_iterations": 10000,
+    "case_limit": null,
+    "dataset_root": "C:\\Users\\thats\\OneDrive\\Desktop\\codex project\\datumguard\\fixtures\\openbim",
+    "evidence_dir": "C:\\Users\\thats\\OneDrive\\Desktop\\codex project\\datumguard\\docs\\awards-2026\\evidence",
+    "regenerate_dataset": false,
+    "registered_profile": false,
+    "repeats": 10,
+    "results_path": "C:\\Users\\thats\\OneDrive\\Desktop\\codex project\\datumguard\\docs\\awards-2026\\RESULTS.md",
+    "split": "evaluation",
+    "warmup_runs": 1
+  },
+  "captured_at_utc": "2026-07-12T07:43:15.864917+00:00",
+  "command": [
+    "C:\\Users\\thats\\OneDrive\\Desktop\\codex project\\datumguard\\.venv\\Scripts\\python.exe",
+    "tools/run_openbim_experiment.py",
+    "--split",
+    "evaluation",
+    "--warmup-runs",
+    "1",
+    "--repeats",
+    "10",
+    "--bootstrap-iterations",
+    "10000"
+  ],
+  "cwd": "C:\\Users\\thats\\OneDrive\\Desktop\\codex project\\datumguard",
+  "dataset_manifest_sha256": "sha256:317a68807ddefd0ca3854261fed28b4e5fd166056a68e0925f255435f8e7c7c8",
+  "git": {
+    "branch": "codex/bim-awards-2026",
+    "commit": "40f1f7a991e592511033a480c6799516578a45f8",
+    "dirty": false,
+    "status_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "logical_cpu_count": 12,
+  "machine": "AMD64",
+  "os": {
+    "name": "nt",
+    "release": "11",
+    "version": "10.0.26200"
+  },
+  "packages": {
+    "bcf-client": "0.8.5",
+    "datumguard": "0.2.1",
+    "ifcopenshell": "0.8.5",
+    "ifctester": "0.8.5",
+    "pydantic": "2.13.4"
+  },
+  "platform": "Windows-11-10.0.26200-SP0",
+  "processor": "AMD64 Family 25 Model 97 Stepping 2, AuthenticAMD",
+  "protocol": {
+    "path": "docs\\awards-2026\\protocol.yaml",
+    "sha256": "sha256:d18cf856bde7879d6887091fb4851502d3979ab998ef6f96d6eb22c86c275b36"
+  },
+  "python": "3.12.11 (main, Sep 18 2025, 19:45:51) [MSC v.1944 64 bit (AMD64)]",
+  "python_executable": "C:\\Users\\thats\\OneDrive\\Desktop\\codex project\\datumguard\\.venv\\Scripts\\python.exe",
+  "schema_version": "openbim-experiment-environment-v1"
+}

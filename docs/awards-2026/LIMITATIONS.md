@@ -1,29 +1,75 @@
 # 연구 한계와 타당성 위협
 
-## 현재 고정한 한계
+## 데이터·모델 범위
 
-- 실제 FAB가 아닌 코드 생성 합성 IFC만 사용한다.
+- 실제 FAB가 아닌 코드 생성 합성 IFC4만 사용했다.
 - 세 layout, box geometry, 0/90/180/270도 회전, 최대 48개 검사 자산으로 제한된다.
 - AABB service envelope는 곡선·오목 형상·정밀 solid clash를 표현하지 못한다.
 - custom property와 clearance 값은 교육용 project contract다.
 - GlobalId revision persistence는 IFC schema 자체의 보편 규칙이 아니다.
 - generator와 detector 개발 주체가 같아 oracle leakage 가능성이 있다.
-- IfcTester 결과가 모든 IDS checker와 같다고 일반화할 수 없다.
-- synthetic fault 분포를 실제 산업 오류 모집단으로 일반화할 수 없다.
+- IfcTester 결과를 모든 IDS checker의 결과로 일반화할 수 없다.
 - 사람 대상 사용성 실험이 없어 실무 시간 절감이나 사용성을 입증하지 않는다.
+
+## 실제 최종 결과의 해석
+
+- held-out evaluation은 30 case, 120 candidate record, 1,200 measured engine run이다.
+- 수정 후 합성 fault 330건에서 Full pipeline TP/FP/FN은 330/0/0이었다.
+- clean·authorized candidate의 false positive와 corrected candidate의 신규 issue는 모두 0건이었다.
+- 최종 false negative와 실패 layout은 없지만, 이는 정해진 generator와 fault catalog 안의 결과다.
+- engine median은 1,272.713ms, p95는 1,876.222ms였다. 최대 engine 4,902.467ms와 최대 wall
+  6,938.4894ms는 `EVAL-L3-S2309/v0_clean/repeat 4`에서 관찰됐다.
+- 완벽한 합성 corpus 성능을 실제 산업 IFC, 제작 가능성, 안전, 법규 또는 시공 승인 성능으로
+  일반화하지 않는다.
+
+## 외부·배포 gate
+
+- IDS는 고정 XSD와 IfcTester에서 검증했지만 별도 상용 checker 교차검증은 하지 않았다.
+- buildingSMART IFC Validation Service의 clean 대표 IFC 외부 결과는 아직 보존하지 못했다.
+- BCF는 `bcf-client` semantic round-trip과 ZIP/XML 구조 테스트만 통과했다. 독립 BCF viewer import,
+  component 시각 확인, full-corpus BCF 평가를 완료하지 않았으므로 조건부 BCF 연구 gate는 미통과다.
+- `bcf-client==0.8.5` wheel의 GPLv3 classifier와 현재 IfcOpenShell source 표의
+  LGPL-3.0-or-later 표기가 일치하지 않는다. `ifctester`가 이를 전이 설치하므로 최종 배포 license
+  검토 전 `ifctester`도 `openbim`/`dev` extra로 분리하고, BCF 직접 pin은 `bcf`/`dev` extra에만 둬
+  base Docker distribution과 기본 Web 요청에서 제외한다.
+- 이 Windows 환경에는 Docker CLI가 없어 Linux container gate를 실행하지 못했다. 해당 gate는 CI 또는
+  Docker가 있는 별도 환경에서 수행해야 한다.
+- `/openbim`과 API는 unreleased local research preview다. production 배포·cold-start·CORS·부하 smoke는
+  완료되지 않았다.
 
 ## 완화 조치
 
-- generator와 detector 코드 및 truth source를 분리한다.
-- pilot 6개와 held-out evaluation 30개 seed를 분리한다.
-- protocol, rule, matching key, 목표를 결과 전에 동결한다.
-- serialize 후 새 process에서 IFC를 다시 열고 input/output hash를 보존한다.
-- primary와 admissible cross-scope alert를 분리해 cascade를 숨기지 않는다.
-- ablation, raw result, parse failure, negative result를 모두 공개한다.
-- clean IFC/IDS와 조건부 BCF를 독립 도구에서 spot-check한다.
+- generator, detector, truth source와 evaluator를 파일 수준에서 분리했다.
+- pilot 6개와 held-out evaluation 30개 seed를 분리했다.
+- protocol, rule, matching key와 목표를 결과 전에 `protocol-v1`로 동결했다.
+- serialize 후 새 process에서 IFC를 다시 열고 input/output hash를 보존했다.
+- primary와 admissible cross-scope alert를 분리해 cascade를 숨기지 않았다.
+- ablation, raw result, parse failure, evaluator correction과 negative finding을 공개했다.
+- 최초 engine 환경·summary·raw bytes를 보존하고 별도 clean analysis tag에서 재집계했다.
 
-## 결과 후 추가할 항목
+## 일정 deviation
 
-최종 실험 뒤 실제 false positive/negative, 실패 layout, runtime outlier, dependency/BCF gate 결과와
-protocol deviation을 이 문서에 추가한다. 결과가 사전 목표에 못 미쳐도 protocol이나 raw result를
-성과에 맞게 수정하지 않는다.
+계획 문서의 8월 freeze/final 날짜보다 앞선 2026-07-12에 protocol freeze와 evaluation을 실행했다.
+달력 일정은 변경됐지만 순서는 `pilot → protocol freeze → clean engine run → 별도 analysis correction`으로
+유지했다. 공모전 제출 전 외부 viewer·license·CI gate 결과가 추가되면 기존 raw result나 protocol을
+덮어쓰지 않고 별도 evidence로 남긴다.
+
+<!-- ANALYSIS_CORRECTION_START -->
+## Post-freeze 평가 구현 수정
+
+동결된 engine report의 최초 집계에서 GEO-01 pair key, ablation recall denominator,
+family target macro-F1 구현 오류 3건을 발견했다.
+
+- 영향 case: EVAL-L1-S2102, EVAL-L2-S2202, EVAL-L2-S2206, EVAL-L3-S2308
+- 최초 full TP/FP/FN: 326/4/4
+- 최초 Geometry F1: 0.933333333
+- 수정 후 full TP/FP/FN: 330/0/0
+- 수정 후 Geometry F1: 1.0
+- engine 재실행 없음; detector, 입력, truth, 규칙, threshold 변경 없음
+- 원본 byte SHA-256: `sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9`
+- 원본은 `evidence/raw_results_pre_analysis_fix.jsonl`로 보존
+
+이는 detector 성능을 조정한 것이 아니라 사전등록한 matching, ablation, macro-F1 정의에 분석 코드를
+일치시킨 post-freeze evaluator correction이다. 상세 provenance는
+`evidence/ANALYSIS_CORRECTION.md`를 따른다.
+<!-- ANALYSIS_CORRECTION_END -->

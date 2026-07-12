@@ -472,6 +472,7 @@ class OperationalControls:
         self.solid_enabled = env_flag("DATUMGUARD_ENABLE_SOLID", True)
         self.artifact_lab_enabled = env_flag("DATUMGUARD_ENABLE_ARTIFACT_LAB", True)
         self.openbim_enabled = env_flag("DATUMGUARD_ENABLE_OPENBIM", True)
+        self.bcf_enabled = env_flag("DATUMGUARD_ENABLE_BCF", False)
         if reset_metrics:
             self.metrics = BoundedMetrics()
 

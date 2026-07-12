@@ -6,7 +6,11 @@
 - 연구 protocol 동결 목표: 2026-08-16
 - 최종 실험 목표: 2026-08-20
 - 패널 디자인·편집: 이 문서의 범위 밖
-- 상태: 사전 연구계획. 아직 결과를 수집하지 않았으며 목표 수치를 성과처럼 표현하지 않는다.
+- 상태: 사전 연구계획 snapshot. 실제 결과와 deviation은 [RESULTS](RESULTS.md),
+  [LIMITATIONS](LIMITATIONS.md)와 correction audit를 따른다.
+
+> 실행 기록: 계획 일정보다 앞선 2026-07-12에 `protocol-v1`을 동결하고 held-out evaluation을
+> 수행했다. BCF 독립 viewer gate는 미완료이므로 아래 확장 제목이 아니라 Core title을 유지한다.
 
 ## 1. 연구 제목
 

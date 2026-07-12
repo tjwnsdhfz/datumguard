@@ -249,6 +249,9 @@
 .ob-profile-row label { font-size: 11px; font-weight: 700; }
 .ob-profile-row select { min-height: 46px; padding: 0 38px 0 13px; border: 1px solid #cbd5e1; border-radius: 0; background: #f1f5f9; color: #334155; }
 .ob-profile-row p { grid-column: 1 / -1; margin: 2px 0 0; color: #64748b; font-size: 10px; line-height: 1.6; }
+.ob-package-option { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: start; gap: 12px; margin-top: 18px; color: #475569; font-size: 10px; line-height: 1.65; cursor: pointer; }
+.ob-package-option input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: #16a34a; }
+.ob-package-option strong { display: block; color: #0f172a; font-size: 11px; }
 
 .ob-boundary-panel > ul { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
 .ob-boundary-panel > ul li { display: grid; min-height: 82px; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 12px; border-top: 1px solid #cbd5e1; }

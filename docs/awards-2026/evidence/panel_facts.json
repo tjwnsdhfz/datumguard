@@ -1,0 +1,81 @@
+{
+  "approval_eligible": false,
+  "assurance_boundary": "Synthetic research validation only; not structural, safety, code, fabrication, or construction approval.",
+  "claim_status": "actual experiment output",
+  "completed_candidate_runs": 120,
+  "completed_case_count": 30,
+  "controls": {
+    "authorized_false_positives": 0,
+    "candidate_runs": 120,
+    "clean_false_positives": 0,
+    "corrected_issue_closure_rate": 1.0,
+    "corrected_new_issues": 0,
+    "deterministic_candidate_runs": 120,
+    "engine_errors": 0,
+    "low_level_diagnostic_alerts": 30
+  },
+  "dataset_id": "virtual-fab-v1",
+  "external_bcf_viewer_gate": "not_completed",
+  "family_macro_f1": 1.0,
+  "full_pipeline": {
+    "admissible_secondary": 0,
+    "f1": 1.0,
+    "fn": 0,
+    "fp": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "tp": 330
+  },
+  "injected_primary_faults_evaluated": 330,
+  "machine_generated": true,
+  "measured_engine_runs": 1200,
+  "preregistered_targets": {
+    "Authorized false positives = 0": {
+      "operator": "=",
+      "status": "PASS",
+      "threshold": 0,
+      "value": 0
+    },
+    "Clean false positives = 0": {
+      "operator": "=",
+      "status": "PASS",
+      "threshold": 0,
+      "value": 0
+    },
+    "Engine p95 < 5000 ms": {
+      "operator": "<",
+      "status": "PASS",
+      "threshold": 5000.0,
+      "value": 1876.2216
+    },
+    "Geometry F1 >= 0.95": {
+      "operator": ">=",
+      "status": "PASS",
+      "threshold": 0.95,
+      "value": 1.0
+    },
+    "Information supported-rule macro-F1 >= 0.95": {
+      "operator": ">=",
+      "status": "PASS",
+      "threshold": 0.95,
+      "value": 1.0
+    },
+    "Revision supported-rule macro-F1 >= 0.95": {
+      "operator": ">=",
+      "status": "PASS",
+      "threshold": 0.95,
+      "value": 1.0
+    }
+  },
+  "research_validation_only": true,
+  "runtime": {
+    "engine_iqr_ms": 189.417,
+    "engine_median_ms": 1272.713,
+    "engine_p95_ms": 1876.2216,
+    "measured_run_count": 1200,
+    "wall_iqr_ms": 314.584075,
+    "wall_median_ms": 1864.64575,
+    "wall_p95_ms": 2811.615785
+  },
+  "schema_version": "openbim-panel-facts-v1"
+}

@@ -109,6 +109,17 @@ def sha256_file(path: Path) -> str:
     return sha256_bytes(path.read_bytes())
 
 
+def is_canonical_sha256(value: Any) -> bool:
+    text = str(value)
+    digest = text.removeprefix("sha256:")
+    return (
+        text.startswith("sha256:")
+        and len(digest) == 64
+        and digest == digest.lower()
+        and all(character in "0123456789abcdef" for character in digest)
+    )
+
+
 def write_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(pretty_json(data))
@@ -379,6 +390,12 @@ def normalized_prediction(
 
     raw_pair = [str(value) for value in issue.get("entity_pair") or []]
     pair = sorted(indexes["by_global_id"].get(value, value) for value in raw_pair)
+    raw_source_hashes = issue.get("source_hashes")
+    source_hashes = (
+        {str(key): str(value) for key, value in raw_source_hashes.items() if value is not None}
+        if isinstance(raw_source_hashes, Mapping)
+        else {}
+    )
     return {
         "rule_id": rule_id,
         "scope": str(issue.get("scope") or scope_for_rule(rule_id)),
@@ -389,6 +406,7 @@ def normalized_prediction(
         "step_ids": sorted(step_ids),
         "field": canonical_field(rule_id, issue.get("field")),
         "issue_key": str(issue.get("issue_key") or ""),
+        "source_hashes": source_hashes,
     }
 
 
@@ -626,6 +644,35 @@ def write_jsonl(path: Path, records: Iterable[Mapping[str, Any]]) -> None:
             stream.write(canonical_json(record))
 
 
+def affected_case_ids_by_fix(records: Sequence[Mapping[str, Any]]) -> dict[str, list[str]]:
+    geo_cases: set[str] = set()
+    denominator_cases: set[str] = set()
+    for record in records:
+        matches = record.get("matches")
+        if not isinstance(matches, Mapping):
+            continue
+        full = matches.get("D")
+        if not isinstance(full, Mapping):
+            continue
+        if any(
+            isinstance(issue, Mapping) and issue.get("rule_id") == "GEO-01"
+            for issue in full.get("false_positives", [])
+        ):
+            geo_cases.add(str(record["case_id"]))
+        full_denominator = int(full.get("tp", 0)) + int(full.get("fn", 0))
+        if any(
+            isinstance(matches.get(ablation), Mapping)
+            and int(matches[ablation].get("tp", 0)) + int(matches[ablation].get("fn", 0))
+            != full_denominator
+            for ablation in ABLATION_SCOPES
+        ):
+            denominator_cases.add(str(record["case_id"]))
+    return {
+        "EVAL-GEO-PAIR-01": sorted(geo_cases),
+        "EVAL-ABLATION-DENOM-01": sorted(denominator_cases),
+    }
+
+
 def reanalyze_engine_records(
     *,
     evidence_dir: Path,
@@ -791,19 +838,13 @@ def reanalyze_engine_records(
         )
 
     preliminary_metrics, _ = aggregate_metrics(source_records)
+    affected_by_fix = affected_case_ids_by_fix(source_records)
     affected_cases = sorted(
-        {
-            record["case_id"]
-            for record in source_records
-            if any(
-                issue.get("rule_id") == "GEO-01"
-                for issue in record.get("matches", {}).get("D", {}).get("false_positives", [])
-            )
-        }
+        {case for cases_by_fix in affected_by_fix.values() for case in cases_by_fix}
     )
     audit = {
         "schema_version": "openbim-analysis-audit-v1",
-        "analysis_revision": "post-freeze-evaluator-fix-1",
+        "analysis_revision": "post-freeze-evaluator-fix-2",
         "reanalyzed_at_utc": datetime.now(UTC).isoformat(),
         "detector_rerun": False,
         "detector_inputs_changed": False,
@@ -836,7 +877,9 @@ def reanalyze_engine_records(
             "tag_commit": frozen_tag_commit,
         },
         "affected_case_ids": affected_cases,
+        "affected_case_ids_by_fix": affected_by_fix,
         "preliminary_metrics": {
+            "ablations": preliminary_metrics.get("ablations", {}),
             "full_pipeline": preliminary_metrics.get("ablations", {}).get("D"),
             "geometry": preliminary_metrics.get("families", {}).get("Geometry"),
         },
@@ -860,14 +903,15 @@ def reanalyze_engine_records(
                     "filtering predictions by enabled scope."
                 ),
             },
-            {
-                "id": "EVAL-METRIC-MACRO-01",
-                "description": (
-                    "Report preregistered information and revision macro-F1 as the mean of "
-                    "supported rule-level F1 values within each fault family."
-                ),
-            },
         ],
+        "post_freeze_metric_interpretation": {
+            "id": "METRIC-MACRO-SENSITIVITY-01",
+            "description": (
+                "Supported-rule family macro-F1 is reported only as a post-freeze sensitivity "
+                "metric because the protocol did not freeze zero-support rule handling."
+            ),
+            "hypothesis_status": "NOT_CONCLUSIVE",
+        },
     }
     return analyzed, audit
 
@@ -946,6 +990,58 @@ def aggregate_metrics(
         )
         aggregate["ablations"][ablation] = scores
         metric_rows.append({"metric_group": "ablation", "key": ablation, **scores})
+
+    ablation_denominators = {
+        ablation: int(values["tp"]) + int(values["fn"])
+        for ablation, values in aggregate["ablations"].items()
+    }
+    denominator_consistent = len(set(ablation_denominators.values())) == 1
+    fixed_denominator = next(iter(ablation_denominators.values()), 0)
+    transitions = {"A_to_B": ("A", "B"), "B_to_C": ("B", "C"), "C_to_D": ("C", "D")}
+    aggregate["incremental_true_positives"] = {
+        name: int(aggregate["ablations"][after]["tp"]) - int(aggregate["ablations"][before]["tp"])
+        for name, (before, after) in transitions.items()
+    }
+    aggregate["incremental_recall"] = {
+        name: round(safe_ratio(delta, fixed_denominator), 9) if denominator_consistent else None
+        for name, delta in aggregate["incremental_true_positives"].items()
+    }
+    aggregate["ablation_denominator_consistent"] = denominator_consistent
+    for key, value in aggregate["incremental_recall"].items():
+        metric_rows.append({"metric_group": "incremental_recall", "key": key, "value": value})
+
+    faulty_records = [record for record in successful if record.get("candidate") == "v1_faulty"]
+    aggregate["paired_incremental_recall"] = {}
+    for name, (before, after) in transitions.items():
+        paired_values: list[float] = []
+        for record in faulty_records:
+            record_denominators = {
+                int(record["matches"][ablation]["tp"])
+                + int(record["matches"][ablation]["fn"])
+                for ablation in ABLATION_SCOPES
+            }
+            if len(record_denominators) != 1:
+                continue
+            before_match = record["matches"][before]
+            after_match = record["matches"][after]
+            denominator = int(after_match["tp"]) + int(after_match["fn"])
+            paired_values.append(
+                safe_ratio(int(after_match["tp"]) - int(before_match["tp"]), denominator)
+            )
+        aggregate["paired_incremental_recall"][name] = {
+            "case_count": len(paired_values),
+            "mean": round(statistics.mean(paired_values), 9) if paired_values else 0.0,
+            "median": round(statistics.median(paired_values), 9) if paired_values else 0.0,
+            "minimum": round(min(paired_values), 9) if paired_values else 0.0,
+            "maximum": round(max(paired_values), 9) if paired_values else 0.0,
+        }
+        metric_rows.append(
+            {
+                "metric_group": "paired_incremental_recall",
+                "key": name,
+                **aggregate["paired_incremental_recall"][name],
+            }
+        )
 
     full_matches = [record["matches"]["D"] for record in successful]
     supported_rule_scores: dict[str, dict[str, Any]] = {}
@@ -1045,6 +1141,68 @@ def aggregate_metrics(
         "engine_p95_ms": round(percentile(engine_times, 0.95), 6),
         "measured_run_count": len(engine_times),
     }
+    trace_entries: list[tuple[dict[str, Any], dict[str, str], set[str]]] = []
+    for record in faulty_records:
+        report = record["runs"][0]["report"]
+        expected_hashes = {
+            "baseline": str(report.get("baseline_hash") or record.get("baseline_hash") or ""),
+            "candidate": str(report.get("candidate_hash") or record.get("candidate_hash") or ""),
+            "ids": str(report.get("ids_hash") or ""),
+            "profile": str(report.get("profile_hash") or ""),
+        }
+        valid_rule_ids = {
+            str(result.get("rule_id"))
+            for result in report.get("rule_results", [])
+            if result.get("rule_id")
+        }
+        trace_entries.extend(
+            (prediction, expected_hashes, valid_rule_ids)
+            for prediction in record["normalized_predictions"]
+        )
+
+    def traceability_for(
+        entries: Sequence[tuple[dict[str, Any], dict[str, str], set[str]]],
+    ) -> dict[str, Any]:
+        total = len(entries)
+        source_count = sum(
+            prediction.get("source_hashes") == expected_hashes
+            and all(is_canonical_sha256(value) for value in expected_hashes.values())
+            for prediction, expected_hashes, _valid_rule_ids in entries
+        )
+        rule_count = sum(
+            prediction.get("rule_id") in valid_rule_ids
+            for prediction, _expected_hashes, valid_rule_ids in entries
+        )
+        entity_count = sum(
+            bool(
+                prediction.get("asset_keys")
+                or prediction.get("entity_pair")
+                or prediction.get("step_ids")
+            )
+            for prediction, _expected_hashes, _valid_rule_ids in entries
+        )
+        return {
+            "issue_count": total,
+            "source_hash_coverage_count": source_count,
+            "source_hash_coverage": round(safe_ratio(source_count, total), 9),
+            "rule_id_coverage_count": rule_count,
+            "rule_id_coverage": round(safe_ratio(rule_count, total), 9),
+            "entity_reference_coverage_count": entity_count,
+            "entity_reference_coverage": round(safe_ratio(entity_count, total), 9),
+        }
+
+    primary_trace_entries = [
+        entry for entry in trace_entries if entry[0].get("rule_id") in PRIMARY_RULE_IDS
+    ]
+    aggregate["traceability"] = {
+        "all_issues": traceability_for(trace_entries),
+        "primary_issues": traceability_for(primary_trace_entries),
+    }
+    for scope, values in aggregate["traceability"].items():
+        for key, value in values.items():
+            metric_rows.append(
+                {"metric_group": "traceability", "key": f"{scope}.{key}", "value": value}
+            )
     return aggregate, metric_rows
 
 
@@ -1160,12 +1318,21 @@ def panel_facts(
         ),
         "full_pipeline": metrics.get("ablations", {}).get("D", {}),
         "family_macro_f1": metrics.get("family_macro_f1"),
+        "incremental_recall": metrics.get("incremental_recall", {}),
+        "paired_incremental_recall": metrics.get("paired_incremental_recall", {}),
+        "traceability": metrics.get("traceability", {}),
         "preregistered_targets": preregistered_target_status(metrics),
         "controls": metrics.get("controls", {}),
         "runtime": metrics.get("runtime", {}),
         "research_validation_only": True,
         "approval_eligible": False,
-        "external_bcf_viewer_gate": "not_completed",
+        "external_gates": {
+            "bcf_viewer_import": "not_completed",
+            "buildingSMART_ifc_validation_service": "not_completed",
+            "distribution_license_review": "not_completed",
+            "docker_linux_ci": "not_completed",
+            "production_smoke": "not_completed",
+        },
         "assurance_boundary": (
             "Synthetic research validation only; not structural, safety, code, fabrication, "
             "or construction approval."
@@ -1179,7 +1346,7 @@ def preregistered_target_status(metrics: Mapping[str, Any]) -> dict[str, dict[st
     controls = metrics.get("controls", {})
     runtime = metrics.get("runtime", {})
     values = {
-        "Information supported-rule macro-F1 >= 0.95": (
+        "Information macro-F1 >= 0.95": (
             float(family_macros.get("Information", 0.0)),
             0.95,
             ">=",
@@ -1189,7 +1356,7 @@ def preregistered_target_status(metrics: Mapping[str, Any]) -> dict[str, dict[st
             0.95,
             ">=",
         ),
-        "Revision supported-rule macro-F1 >= 0.95": (
+        "Revision macro-F1 >= 0.95": (
             float(family_macros.get("Revision", 0.0)),
             0.95,
             ">=",
@@ -1210,7 +1377,7 @@ def preregistered_target_status(metrics: Mapping[str, Any]) -> dict[str, dict[st
             "<",
         ),
     }
-    return {
+    results = {
         name: {
             "value": value,
             "threshold": threshold,
@@ -1225,6 +1392,28 @@ def preregistered_target_status(metrics: Mapping[str, Any]) -> dict[str, dict[st
         }
         for name, (value, threshold, operator) in values.items()
     }
+    for name in ("Information macro-F1 >= 0.95", "Revision macro-F1 >= 0.95"):
+        sensitivity_value = results[name]["value"]
+        results[name].update(
+            {
+                "value": None,
+                "status": "NOT_CONCLUSIVE",
+                "basis": "post-freeze supported-rule macro; zero-support policy not preregistered",
+                "sensitivity_value": sensitivity_value,
+                "sensitivity_definition": "mean F1 across supported rules only",
+            }
+        )
+    return results
+
+
+def target_assessment_line(name: str, result: Mapping[str, Any]) -> str:
+    if result.get("status") == "NOT_CONCLUSIVE":
+        return (
+            f"- {name}: **NOT_CONCLUSIVE** "
+            f"(post-freeze sensitivity {result.get('sensitivity_value')}; "
+            f"{result.get('sensitivity_definition')}) — {result.get('basis')}"
+        )
+    return f"- {name}: **{result['status']}** (actual {result['value']})"
 
 
 def write_results_markdown(
@@ -1238,6 +1427,9 @@ def write_results_markdown(
     controls = metrics.get("controls", {})
     runtime = metrics.get("runtime", {})
     targets = preregistered_target_status(metrics)
+    traceability = metrics.get("traceability", {})
+    all_trace = traceability.get("all_issues", {})
+    primary_trace = traceability.get("primary_issues", {})
     lines = [
         "# OpenBIM Evidence Guard 실험 결과",
         "",
@@ -1269,6 +1461,24 @@ def write_results_markdown(
             for ablation, values in metrics.get("ablations", {}).items()
         ],
         "",
+        "## Incremental recall contribution",
+        "",
+        *[
+            f"- {transition}: {value:+.6f}"
+            for transition, value in metrics.get("incremental_recall", {}).items()
+        ],
+        "",
+        "## Paired per-case incremental recall",
+        "",
+        *[
+            (
+                f"- {transition}: cases {values['case_count']}, mean {values['mean']:+.6f}, "
+                f"median {values['median']:+.6f}, range "
+                f"[{values['minimum']:+.6f}, {values['maximum']:+.6f}]"
+            )
+            for transition, values in metrics.get("paired_incremental_recall", {}).items()
+        ],
+        "",
         "## Fault-family F1",
         "",
         *[
@@ -1279,12 +1489,9 @@ def write_results_markdown(
             for family, values in metrics.get("families", {}).items()
         ],
         "",
-        "## Preregistered target status",
+        "## Preregistered target assessment",
         "",
-        *[
-            f"- {name}: **{result['status']}** (actual {result['value']})"
-            for name, result in targets.items()
-        ],
+        *[target_assessment_line(name, result) for name, result in targets.items()],
         "",
         "## Controls and reproducibility",
         "",
@@ -1301,6 +1508,33 @@ def write_results_markdown(
         f"- p95 wall runtime: {runtime.get('wall_p95_ms', 0):.3f} ms",
         "- Canonical JSON determinism covers timestamp/run-ID-excluded engine payloads only.",
         "- BCFZIP byte determinism was not part of the repeated-run experiment.",
+        "",
+        "## Issue traceability",
+        "",
+        (
+            "- All detected issues — source hash coverage: "
+            f"{all_trace.get('source_hash_coverage_count', 0)}/"
+            f"{all_trace.get('issue_count', 0)}"
+        ),
+        (
+            "- All detected issues — registered rule ID coverage: "
+            f"{all_trace.get('rule_id_coverage_count', 0)}/"
+            f"{all_trace.get('issue_count', 0)}"
+        ),
+        (
+            "- All detected issues — entity reference coverage: "
+            f"{all_trace.get('entity_reference_coverage_count', 0)}/"
+            f"{all_trace.get('issue_count', 0)}"
+        ),
+        (
+            "- Primary issues — source/rule/entity coverage: "
+            f"{primary_trace.get('source_hash_coverage_count', 0)}/"
+            f"{primary_trace.get('issue_count', 0)}, "
+            f"{primary_trace.get('rule_id_coverage_count', 0)}/"
+            f"{primary_trace.get('issue_count', 0)}, "
+            f"{primary_trace.get('entity_reference_coverage_count', 0)}/"
+            f"{primary_trace.get('issue_count', 0)}"
+        ),
         "",
         "## Bootstrap",
         "",
@@ -1325,8 +1559,11 @@ def write_results_markdown(
         ),
         "## Open gates and negative findings",
         "",
-        "- The first frozen aggregation exposed three evaluator defects; the preserved raw "
+        "- The first frozen aggregation exposed two evaluator defects; the preserved raw "
         "reports were reanalyzed without rerunning the detector.",
+        "- Information/revision supported-rule macro-F1 is a post-freeze sensitivity metric; "
+        "the preregistered hypotheses are not declared confirmed because zero-support handling "
+        "was not frozen.",
         "- Independent BCF viewer import and final distribution-license review are not completed.",
         "- Docker/Linux CI and production deployment gates are outside this local experiment.",
         "- No detector miss remained in this synthetic corpus after evaluator correction; this is "
@@ -1350,6 +1587,7 @@ def write_analysis_correction(
     corrected_full = metrics["ablations"]["D"]
     corrected_geometry = metrics["families"]["Geometry"]
     audit["corrected_metrics"] = {
+        "ablations": metrics["ablations"],
         "full_pipeline": corrected_full,
         "geometry": corrected_geometry,
     }
@@ -1366,6 +1604,23 @@ def write_analysis_correction(
     write_json(evidence_dir / "analysis_correction.json", audit)
     preliminary_full = audit["preliminary_metrics"]["full_pipeline"] or {}
     preliminary_geometry = audit["preliminary_metrics"]["geometry"] or {}
+    preliminary_ablations = audit["preliminary_metrics"].get("ablations", {})
+    ablation_effect_lines = [
+        (
+            "| Ablation | Preliminary TP/FP/FN | Corrected TP/FP/FN | "
+            "Preliminary denominator | Corrected denominator |"
+        ),
+        "|---|---:|---:|---:|---:|",
+    ]
+    for ablation in ABLATION_SCOPES:
+        before = preliminary_ablations.get(ablation, {})
+        after = metrics["ablations"].get(ablation, {})
+        ablation_effect_lines.append(
+            f"| {ablation} | {before.get('tp')}/{before.get('fp')}/{before.get('fn')} | "
+            f"{after.get('tp')}/{after.get('fp')}/{after.get('fn')} | "
+            f"{int(before.get('tp', 0)) + int(before.get('fn', 0))} | "
+            f"{int(after.get('tp', 0)) + int(after.get('fn', 0))} |"
+        )
     lines = [
         "# Analysis correction audit",
         "",
@@ -1378,7 +1633,11 @@ def write_analysis_correction(
         f"- Analysis tag: `{audit['analysis_git']['tag']}`",
         (f"- Preserved pre-fix raw SHA-256: `{audit['pre_fix_raw_results']['sha256']}`"),
         f"- Raw engine-only SHA-256: `{audit['raw_engine_results']['sha256']}`",
-        f"- Affected cases: {', '.join(audit['affected_case_ids'])}",
+        f"- Affected case union: {len(audit['affected_case_ids'])} cases",
+        *[
+            f"- {fix_id}: {len(case_ids)} cases ({', '.join(case_ids)})"
+            for fix_id, case_ids in audit["affected_case_ids_by_fix"].items()
+        ],
         f"- Fixed primary-fault denominator: {audit['primary_fault_denominator']}",
         "",
         "## Corrected evaluator defects",
@@ -1387,10 +1646,16 @@ def write_analysis_correction(
         "STEP IDs remain audit evidence for duplicate-GlobalId cases.",
         "2. `EVAL-ABLATION-DENOM-01`: all ablations retain the same primary-fault recall "
         "denominator; only predictions are scope-filtered.",
-        "3. `EVAL-METRIC-MACRO-01`: information and revision target macro-F1 values are "
-        "computed across supported rule-level F1 values within each family.",
+        "",
+        "## Post-freeze metric interpretation",
+        "",
+        "`METRIC-MACRO-SENSITIVITY-01` reports supported-rule information/revision macro-F1, "
+        "but does not declare the preregistered hypotheses confirmed because zero-support "
+        "handling was not frozen.",
         "",
         "## Metric effect",
+        "",
+        *ablation_effect_lines,
         "",
         (
             "- Preliminary full TP/FP/FN: "
@@ -1418,11 +1683,19 @@ def write_analysis_correction(
             "## Post-freeze 평가 구현 수정",
             "",
             (
-                "동결된 engine report를 처음 집계할 때 GEO-01 pair key, ablation recall "
-                "denominator, family target macro-F1 집계 구현 오류가 발견됐다."
+                "동결된 engine report를 처음 집계할 때 GEO-01 pair key와 ablation recall "
+                "denominator 구현 오류가 발견됐다."
             ),
             "",
-            (f"- 영향 case: {', '.join(audit['affected_case_ids'])}"),
+            (f"- 영향 case union: {len(audit['affected_case_ids'])}개"),
+            (
+                "- GEO-01 pair 영향: "
+                f"{len(audit['affected_case_ids_by_fix']['EVAL-GEO-PAIR-01'])}개 case"
+            ),
+            (
+                "- ablation denominator 영향: "
+                f"{len(audit['affected_case_ids_by_fix']['EVAL-ABLATION-DENOM-01'])}개 case"
+            ),
             (
                 "- 최초 full TP/FP/FN: "
                 f"{preliminary_full.get('tp')}/{preliminary_full.get('fp')}/"
@@ -1436,6 +1709,10 @@ def write_analysis_correction(
             f"- 수정 후 Geometry F1: {corrected_geometry['f1']}",
             "- engine 재실행 없음; detector, 입력, truth, 규칙, threshold 변경 없음",
             "- 원본 byte는 `evidence/raw_results_pre_analysis_fix.jsonl`로 보존",
+            (
+                "- information/revision supported-rule macro-F1은 zero-support 정책을 사전등록하지 "
+                "않아 post-freeze sensitivity로만 보고"
+            ),
             "",
             (
                 "이는 모델 성능 수정이 아니라 사전등록한 matching/ablation 정의에 분석 코드를 "

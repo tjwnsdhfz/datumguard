@@ -1,0 +1,65 @@
+{
+  "case_count": 30,
+  "corrected_closure_rate": {
+    "ci95": [
+      1.0,
+      1.0
+    ],
+    "estimate": 1.0
+  },
+  "family_f1": {
+    "Geometry": {
+      "ci95": [
+        1.0,
+        1.0
+      ],
+      "estimate": 1.0
+    },
+    "IFC Identity": {
+      "ci95": [
+        1.0,
+        1.0
+      ],
+      "estimate": 1.0
+    },
+    "Information": {
+      "ci95": [
+        1.0,
+        1.0
+      ],
+      "estimate": 1.0
+    },
+    "Integrity": {
+      "ci95": [
+        1.0,
+        1.0
+      ],
+      "estimate": 1.0
+    },
+    "Revision": {
+      "ci95": [
+        1.0,
+        1.0
+      ],
+      "estimate": 1.0
+    }
+  },
+  "full_minus_ids_recall": {
+    "ci95": [
+      0.545454545,
+      0.545454545
+    ],
+    "estimate": 0.545454545
+  },
+  "full_recall": {
+    "ci95": [
+      1.0,
+      1.0
+    ],
+    "estimate": 1.0
+  },
+  "iterations": 10000,
+  "schema_version": "openbim-bootstrap-v1",
+  "seed": 20260820,
+  "stratification": "layout-preserving paired bootstrap"
+}

@@ -37,6 +37,7 @@ test.describe("OpenBIM Evidence Guard", () => {
     await expect(page.getByText("Research validation only", { exact: false }).first()).toBeVisible();
     await expect(page.getByText(/AI 추론이나 자동 수정 없이/)).toBeVisible();
     await expect(page.getByText(/3D viewer 없이/)).toBeVisible();
+    await expect(page.getByTestId("openbim-include-bcf")).not.toBeChecked();
     await expect(page.getByTestId("openbim-run")).toBeDisabled();
     await expectNoHorizontalPageOverflow(page);
   });
@@ -51,7 +52,7 @@ test.describe("OpenBIM Evidence Guard", () => {
 
     await expect(page.getByText(/세 파일의 합계가 41\.0 MB 제한을 초과/)).toBeVisible();
     await expect(page.getByText(/파일이 1\.0 MB 제한을 초과/)).toBeVisible();
-    await page.getByRole("checkbox").check();
+    await page.getByLabel(/research validation only/).check();
     await expect(page.getByTestId("openbim-run")).toBeDisabled();
   });
 
@@ -65,7 +66,8 @@ test.describe("OpenBIM Evidence Guard", () => {
     await expect(page.getByTestId("baseline-filename")).toContainText("v0_clean.ifc");
     await expect(page.getByTestId("candidate-filename")).toContainText("v1_faulty.ifc");
     await expect(page.getByTestId("requirements-filename")).toContainText("virtual_fab_v1.ids");
-    await page.getByRole("checkbox").check();
+    await page.getByLabel(/research validation only/).check();
+    await page.getByLabel(/BCFZIP 추가/).check();
     await expect(page.getByTestId("openbim-run")).toBeEnabled();
 
     const responsePromise = page.waitForResponse((response) =>

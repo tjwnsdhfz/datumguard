@@ -1,0 +1,12 @@
+command="C:\Users\thats\OneDrive\Desktop\codex project\datumguard\.venv\Scripts\python.exe" tools/run_openbim_experiment.py --reanalyze-existing --reanalyze-source C:\Users\thats\AppData\Local\Temp\datumguard-protocol-v1-raw_results.jsonl --expected-source-sha256 sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9 --analysis-tag analysis-v1.0.1 --split evaluation --repeats 10 --bootstrap-iterations 10000
+status=completed
+protocol_hash=sha256:d18cf856bde7879d6887091fb4851502d3979ab998ef6f96d6eb22c86c275b36
+dataset_manifest_hash=sha256:317a68807ddefd0ca3854261fed28b4e5fd166056a68e0925f255435f8e7c7c8
+raw_results_hash=sha256:9b663d7604c710a0edac3e4580a66fe1b1d9b9a7c00984f021c81289b42be037
+completed_candidate_runs=120
+engine_errors=0
+detector_rerun=false
+analysis_revision=post-freeze-evaluator-fix-1
+analysis_commit=0ed7ff7716e9f625998a1a17342de9f9fa9cd9b9
+pre_fix_raw_results_hash=sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9
+raw_engine_results_hash=sha256:87b7d2edfda50dbe1c6d09bfd63f0cc9995df623911c62340115c3fe9d98b32e

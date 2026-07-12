@@ -56,6 +56,8 @@ def _mock_report() -> OpenBimEvidenceReport:
 def test_openbim_endpoint_returns_deterministic_download_shape(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv("DATUMGUARD_ENABLE_BCF", "true")
+    reset_operational_state_for_tests()
     monkeypatch.setattr(api_module, "run_openbim_evidence", lambda **_kwargs: _mock_report())
 
     response = client.post(
@@ -76,6 +78,24 @@ def test_openbim_endpoint_returns_deterministic_download_shape(
         "byte_size": 2,
         "content_base64": "e30=",
     }
+
+
+def test_openbim_bcf_export_is_server_gated_before_worker_execution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden_worker(**_kwargs: object) -> OpenBimEvidenceReport:
+        raise AssertionError("worker must not run when BCF packaging is disabled")
+
+    monkeypatch.setattr(api_module, "run_openbim_evidence", forbidden_worker)
+    response = client.post(
+        "/api/v1/openbim/evidence/run",
+        files=_files(),
+        data={"profile_id": "virtual-fab-v1", "include_bcf": "true"},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "DG_CAPABILITY_DISABLED"
+    assert response.json()["error"]["details"]["capability"] == "openbim_bcf"
 
 
 @pytest.mark.parametrize(

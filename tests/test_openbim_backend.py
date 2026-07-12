@@ -417,6 +417,22 @@ def test_bcf_export_semantically_round_trips_twice() -> None:
             try:
                 assert loaded is not None
                 assert len(loaded.topics) == len(report.issues)
+                loaded_topics = list(loaded.topics.values())
+                assert all(topic.topic.topic_status == "Open" for topic in loaded_topics)
+                assert all(topic.topic.title.startswith("[") for topic in loaded_topics)
+                expected_guids = {
+                    entity_id
+                    for issue in report.issues
+                    for entity_id in (issue.entity_pair or issue.entity_ids)
+                    if len(entity_id) == 22
+                }
+                loaded_guids = {
+                    guid
+                    for topic in loaded_topics
+                    for viewpoint in topic.viewpoints.values()
+                    for guid in (viewpoint.get_selected_guids() or [])
+                }
+                assert loaded_guids == expected_guids
             finally:
                 if loaded is not None:
                     loaded.close()

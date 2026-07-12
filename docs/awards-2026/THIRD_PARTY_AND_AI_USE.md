@@ -11,19 +11,30 @@
 |---|---:|---|---|---|
 | `ifcopenshell` | 0.8.5 | IFC 생성·재개방·geometry | classifier: LGPLv3+ | [IfcOpenShell](https://github.com/IfcOpenShell/IfcOpenShell) |
 | `ifctester` | 0.8.5 | IDS 1.0 parse·validation | classifier: LGPLv3+ | [IfcTester docs](https://docs.ifcopenshell.org/ifctester.html) |
-| `bcf-client` | 0.8.5 | 조건부 BCFZIP package | classifier: GPLv3 | [IfcOpenShell BCF](https://docs.ifcopenshell.org/autoapi/bcf/index.html) |
+| `bcf-client` | 0.8.5 | 조건부 BCFZIP package | classifier: GPLv3 | [PyPI 0.8.5 metadata](https://pypi.org/pypi/bcf-client/0.8.5/json) · [IfcOpenShell BCF](https://docs.ifcopenshell.org/autoapi/bcf/index.html) |
 
 세 distribution 모두 설치 metadata의 `License`와 `License-Expression` 값이 비어 있었고 wheel file
-목록에 이름이 `LICENSE` 또는 `COPYING`인 파일이 없었다. 현재 IfcOpenShell repository 표는 BCF를
-LGPL-3.0-or-later로 표시하지만 `bcf-client==0.8.5` PyPI wheel classifier는 GPLv3로 표시한다. 이
-불일치는 해석으로 덮지 않는다.
+목록에 이름이 `LICENSE` 또는 `COPYING`인 파일이 없었다. 현재
+[IfcOpenShell repository 표](https://github.com/IfcOpenShell/IfcOpenShell)는 BCF를
+LGPL-3.0-or-later로 표시하지만 `bcf-client==0.8.5` PyPI JSON과 설치 wheel classifier는 GPLv3로
+표시한다. 이 불일치는 해석으로 덮지 않는다.
 
 따라서 다음을 release gate로 둔다.
+
+`ifctester`가 `bcf-client`를 전이 의존성으로 설치한다는 점까지 포함해, `ifctester` 자체를 base
+dependency에서 제거하고 `openbim`/`dev` extra로 분리했다. `bcf-client`의 직접 pin은 `bcf`/`dev`
+extra에만 둔다. 따라서 Docker/Render base image는 두 package를 설치하지 않고 OpenBIM도 `false`로
+비활성화한다. Web의 BCFZIP 선택도 기본값 `false`다. OpenBIM JSON/HTML 경로에는 `openbim` extra가
+필요하며, BCF export를 명시적으로 사용할 때는 `openbim`과 `bcf` extra를 함께 설치하고 API의
+`DATUMGUARD_ENABLE_BCF=true`를 별도로 켠다. 기본값은 false다. 단, `openbim` extra는 IfcTester의
+전이 의존성으로 `bcf-client`도 설치한다. 따라서 이 분리는 base image에서 package를 제거하지만,
+연구용 OpenBIM 환경 내부에서 BCF package 자체를 제거하는 격리는 아니다.
 
 1. 0.8.5 source tag의 실제 license 파일과 각 Python distribution의 package boundary를 확인한다.
 2. source와 wheel metadata가 다른 `bcf-client`는 maintainer 또는 배포자 자료로 재확인한다.
 3. DatumGuard MIT 코드, offline research bundle, hosted runtime 각각의 배포 방식을 별도로 검토한다.
-4. 해결 전에는 BCF를 optional/offline 기능으로 유지하고 BCF artifact를 필수 배포물로 주장하지 않는다.
+4. 해결 전에는 `pip install -e ".[openbim,bcf]"` 또는 dev 환경에서만 BCF를 사용하고 BCF
+   artifact를 필수 배포물로 주장하지 않는다.
 5. 최종 NOTICE에는 실제 포함한 distribution, version, URL, license text 제공 위치, 수정 여부를 기록한다.
 
 이 문서는 “호환된다” 또는 “호환되지 않는다”는 법률 결론을 내리지 않는다.

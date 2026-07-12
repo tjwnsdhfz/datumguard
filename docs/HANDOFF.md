@@ -85,8 +85,40 @@ Production smoke:
 
 이 목록의 immutable run·deployment ID는 [v0.2.1 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.1)에 기록한다.
 
+## Unreleased OpenBIM research branch
+
+`codex/bim-awards-2026`은 v0.2.1 production과 분리된 학생 연구 preview다. production route,
+release 수치 또는 hosted capability로 해석하지 않는다.
+
+- Web: `/openbim`
+- API: `POST /api/v1/openbim/evidence/run`
+- Domain id: `openbim_evidence`
+- 판정 경계: `research_validation_only=true`, `approval_eligible=false`
+- 입력: baseline IFC 20MiB, candidate IFC 20MiB, IDS 1MiB, 의미 입력 합계 41MiB
+- request middleware body limit: multipart overhead를 포함한 48MiB
+- 격리: heavy-operation queue + native IFC/IDS subprocess + timeout + redacted error
+- 산출물: canonical JSON, escaped HTML, optional BCFZIP, manifest와 source SHA-256
+- kill switch: `DATUMGUARD_ENABLE_OPENBIM`
+- BCF API gate: `DATUMGUARD_ENABLE_BCF=false`가 기본이며 offline 연구 환경에서만 명시적으로 활성화
+- Render blueprint: gate 완료 전 `DATUMGUARD_ENABLE_OPENBIM=false`로 fail-closed
+
+연구 provenance:
+
+- `protocol-v1` → `40f1f7a991e592511033a480c6799516578a45f8`
+- `analysis-v1.0.1` → `0ed7ff7716e9f625998a1a17342de9f9fa9cd9b9`
+- 30 held-out cases, 120 candidate records, 1,200 measured runs, engine error 0
+- corrected Full TP/FP/FN `330/0/0`; clean·authorized FP 0; corrected 신규 issue 0
+- local branch gate: pytest 294 passed, Chromium Playwright 27 passed, web typecheck·lint·build pass
+- 최초 raw hash `sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9`
+- detector 재실행 없이 clean analysis tag에서 evaluator field만 재계산
+
+공식 연구 진입점은 [`awards-2026/README.md`](awards-2026/README.md)다. BCF 독립 viewer,
+`bcf-client` license 검토, Docker/Linux CI와 production cold-start·CORS·부하 smoke는 아직 완료되지
+않았으며, 이 gate 전에는 OpenBIM을 production 완료 기능으로 표시하지 않는다.
+
 ## 다음 release로 넘기는 항목
 
 1. 계획 상태인 100개 golden contract + 자연어 50개 benchmark를 실행하고 결과를 공개한다.
 2. Render Free가 아닌 후보 환경에서 동시성·최대 upload 부하 검증과 rollback drill을 수행한다.
 3. 외부 uptime/error tracking과 장기 metric retention은 비용 승인 뒤 연결한다.
+4. OpenBIM 외부 BCF viewer·license·Docker/Linux·production smoke gate를 별도 evidence로 완료한다.
