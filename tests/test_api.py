@@ -32,17 +32,26 @@ def configure_operations(
     reset_operational_state_for_tests()
 
 
-def test_health() -> None:
+def test_health(monkeypatch) -> None:
+    expected_sha = "a" * 40
+    monkeypatch.setenv("RENDER_GIT_COMMIT", expected_sha.upper())
     response = client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+    assert response.json()["version"] == "0.2.1"
+    assert response.json()["release_sha"] == expected_sha
+
+    monkeypatch.setenv("DATUMGUARD_RELEASE_SHA", "not-a-commit")
+    monkeypatch.setenv("RENDER_GIT_COMMIT", "also-invalid")
+    assert client.get("/api/v1/health").json()["release_sha"] == "unknown"
 
 
 def test_liveness_readiness_and_metrics_are_public() -> None:
     assert client.get("/api/v1/live").status_code == 200
     ready = client.get("/api/v1/ready")
     assert ready.status_code == 200
-    assert ready.json()["version"] == "0.2.0"
+    assert ready.json()["version"] == "0.2.1"
+    assert ready.json()["release_sha"] == "unknown"
     assert ready.json()["queue"]["active"] == 0
 
     metrics = client.get("/api/v1/metrics")

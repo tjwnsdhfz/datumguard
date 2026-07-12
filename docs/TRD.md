@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 |---|---|
 | 문서 버전 | 1.0.0 |
-| 작성일 | 2026-07-11 |
+| 작성일 | 2026-07-12 |
 | 제품 요구사항 | [PRD.md](./PRD.md) |
 | Prompt 계약 | [prompt-design.md](./prompt-design.md) |
 | 내부 단위·평면 | millimeter, WCS XY |
@@ -641,8 +641,8 @@ MCP 공개 도구 수와 이름은 유지하고 `design_kind`로 plate/architect
 
 - Backend/MCP는 하나의 Python package와 Docker image에서 build한다.
 - Web은 정적 frontend와 stateless API URL로 구성한다.
-- CI 순서: format check → type check → unit/property → golden → API/MCP integration → web build/E2E → Docker build → benchmark artifact.
-- Release에는 schema, sample contracts, benchmark report, Docker image, MCP 설치법과 공개 웹 URL을 포함한다.
+- 현재 CI 순서: format/lint/type check → unit/property/API/MCP integration → web build/E2E → backend·web Docker build → SBOM → fixed-critical scan.
+- 현재 release에는 source tag, schema·sample contract·MCP 설치법·공개 웹 URL과 backend/web CycloneDX SBOM을 포함한다. 100+50 benchmark report와 registry에 publish한 signed Docker image는 M8b 후속 release 목표이며 v0.2.1 완료 조건으로 주장하지 않는다.
 
 ## 23. 구현 순서
 

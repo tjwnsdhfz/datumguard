@@ -3,11 +3,6 @@ import Link from "next/link";
 import "./privacy.css";
 import LocalDataControls from "./local-data-controls";
 
-export const metadata = {
-  title: "Privacy & local data | DatumGuard",
-  description: "DatumGuard CAD upload processing and browser draft retention policy",
-};
-
 export default function PrivacyPage() {
   return (
     <main className="privacy-shell">

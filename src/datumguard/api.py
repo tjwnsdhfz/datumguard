@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import os
+import re
 from typing import Annotated, Any
 
 import uvicorn
@@ -13,6 +14,7 @@ from fastapi.responses import JSONResponse
 from pydantic import Field
 from starlette.concurrency import run_in_threadpool
 
+from . import __version__
 from .architecture_models import ArchitecturalPlanContract
 from .architecture_service import run_architecture_design, validate_architecture_contract
 from .artifact_service import MAX_ARTIFACT_BYTES, audit_artifact, compare_artifacts
@@ -42,6 +44,15 @@ from .solid_models import SolidPartContract
 from .solid_service import run_solid_design
 
 MAX_BODY_BYTES = DEFAULT_MAX_BODY_BYTES
+
+
+def _release_sha() -> str:
+    """Return a public deployment revision without trusting arbitrary values."""
+    for name in ("DATUMGUARD_RELEASE_SHA", "RENDER_GIT_COMMIT"):
+        value = os.getenv(name, "").strip().lower()
+        if re.fullmatch(r"[0-9a-f]{40}", value):
+            return value
+    return "unknown"
 
 
 class DraftRequest(StrictModel):
@@ -85,7 +96,7 @@ def _origin_regex() -> str | None:
 
 app = FastAPI(
     title="DatumGuard API",
-    version="0.2.0",
+    version=__version__,
     description=(
         "Contract-first architecture, plant piping, plate, and 3D solid generation with "
         "independent serialized-DXF/STEP remeasurement and DXF/STEP/IFC artifact audit. "
@@ -181,7 +192,8 @@ async def unhandled_exception_handler(request: Request, _exc: Exception) -> JSON
 def root() -> dict[str, str]:
     return {
         "name": "DatumGuard API",
-        "version": "0.2.0",
+        "version": __version__,
+        "release_sha": _release_sha(),
         "docs": "/docs",
         "health": "/api/v1/health",
     }
@@ -189,7 +201,12 @@ def root() -> dict[str, str]:
 
 @app.get("/api/v1/health")
 async def health() -> dict[str, str]:
-    return {"status": "ok", "service": "datumguard", "version": "0.2.0"}
+    return {
+        "status": "ok",
+        "service": "datumguard",
+        "version": __version__,
+        "release_sha": _release_sha(),
+    }
 
 
 @app.get("/api/v1/live")
@@ -206,7 +223,8 @@ async def readiness() -> JSONResponse:
         content={
             "status": "ready" if ready else "not_ready",
             "service": "datumguard",
-            "version": "0.2.0",
+            "version": __version__,
+            "release_sha": _release_sha(),
             "queue": {
                 "limit": gate.limit,
                 "active": gate.active,

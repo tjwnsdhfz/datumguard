@@ -4,7 +4,7 @@
 
 ## 현재 공개 배포
 
-| 구성요소 | 공개 URL | 2026-07-11 상태 |
+| 구성요소 | 공개 URL | 2026-07-12 상태 |
 |---|---|---|
 | Next.js web | `https://datumguard-tjwnsdhfz.vercel.app` | Vercel Production `Ready` |
 | FastAPI backend | `https://datumguard-api.onrender.com` | Render Free health `200 ok` |
@@ -16,10 +16,10 @@ Vercel에는 `NEXT_PUBLIC_DATUMGUARD_API_URL=https://datumguard-api.onrender.com
 
 | 구성요소 | 기준 manifest | 책임 |
 |---|---|---|
-| Next.js web | `web/vercel.json`, `web/Dockerfile` | `/`, `/piping`, `/plate`, `/solid`, `/intake` UI와 API 호출 |
+| Next.js web | `web/vercel.json`, `web/Dockerfile` | `/case-study`, `/`, `/piping`, `/plate`, `/solid`, `/intake`, `/privacy` UI와 API 호출 |
 | FastAPI backend | `render.yaml`, 루트 `Dockerfile` | contract 기반 DXF/STEP 검증과 외부 DXF·STEP·IFC 감사 |
 | CI | `.github/workflows/ci.yml` | backend, web, Playwright, backend/web Docker image build gate |
-| Deployment smoke | `.github/workflows/deployment-smoke.yml` | Vercel deployment status 이후 web routes, API와 CORS 검사 |
+| Deployment smoke | `.github/workflows/deployment-smoke.yml` | Vercel 완료 뒤 호환성 검사, Render 완료 뒤 exact revision·web/API·CORS 검사 |
 
 Web과 API는 별도 origin이다. API는 stateless이며 계정, DB, 장기 artifact 저장을 요구하지 않는다.
 
@@ -82,17 +82,20 @@ Scale-to-zero 또는 유휴 sleep을 사용하는 Render plan에서는 첫 healt
 3. Render backend를 배포하고 health endpoint를 확인한다.
 4. Render의 `DATUMGUARD_CORS_ORIGINS=$WEB_ORIGIN`을 설정한다.
 5. Vercel의 `NEXT_PUBLIC_DATUMGUARD_API_URL=$API_ORIGIN`을 설정하고 Git repository의 Root Directory를 `web`으로 연결한다.
-6. PR Preview 또는 Production `deployment_status` 이후 `deployment-smoke`로 실제 DOM sentinel, API version/capability, CORS와 synthetic canary를 검사한다.
+6. Vercel `deployment_status` 이후 새 web과 기존 API의 하위 호환성을 먼저 검사한다.
+7. Render success event 이후 canonical web, API version/capability, health `release_sha`, CORS와 synthetic canary를 같은 checkout revision으로 다시 검사한다.
 
-Production에서 Vercel과 Render는 독립적으로 완료될 수 있다. 새 web이 먼저 Ready가 되어도 smoke는 strict API version/capability가 수렴할 때까지 제한된 시간 동안 재시도한다. Production의 optional capability 기대값은 같은 SHA의 `render.yaml` kill switch와 일치해야 하며, 비활성 기능이 domain registry에 남아 있어도 실패한다. Backend 변경은 기존 web의 base architecture/piping/plate contract를 깨지 않는 backward-compatible release로 배포한다. Preview는 shared production API가 이전 capability set이면 base canary만 실행할 수 있지만, 이 상태는 Production 승인으로 사용하지 않는다.
+Production에서 Vercel과 Render는 독립적으로 완료될 수 있다. Vercel-triggered run은 이전 API와의 base compatibility를 확인해 Render의 `checksPass` 배포와 순환 의존하지 않는다. Render success event가 발생하면 두 번째 run이 canonical web을 다시 확인하고 strict API version/capability와 `release_sha == deployment.sha`를 강제한다. Render는 공식 runtime 변수 `RENDER_GIT_COMMIT`을 제공하며 API는 40자리 hex만 공개한다. Backend 변경은 기존 web의 base architecture/piping/plate contract를 깨지 않는 backward-compatible release로 배포한다. Preview가 shared production API의 이전 capability set을 사용하는 상태는 Production 승인으로 사용하지 않는다. [Render default environment variables](https://render.com/docs/environment-variables)를 따른다.
 
 | Mode | Web | Run endpoint |
 |---|---|---|
+| Product Case Study | `$WEB_ORIGIN/case-study` | 없음; public evidence page |
 | Architecture | `$WEB_ORIGIN/` | `$API_ORIGIN/api/v1/architecture/designs/run` |
 | Piping | `$WEB_ORIGIN/piping` | `$API_ORIGIN/api/v1/piping/designs/run` |
 | Plate | `$WEB_ORIGIN/plate` | `$API_ORIGIN/api/v1/designs/run` |
 | 3D Solid | `$WEB_ORIGIN/solid` | `$API_ORIGIN/api/v1/solid/designs/run` |
 | Artifact Lab | `$WEB_ORIGIN/intake` | `$API_ORIGIN/api/v1/artifacts/audit` |
+| Privacy | `$WEB_ORIGIN/privacy` | 없음; data-boundary page |
 
 ## 5. Smoke check
 
@@ -103,9 +106,9 @@ curl --fail --silent "$API_ORIGIN/api/v1/domains"
 
 Vercel generated deployment URL은 Vercel Authentication으로 보호될 수 있다. GitHub repository secret `VERCEL_AUTOMATION_BYPASS_SECRET`에 project의 automation bypass 값을 등록한다. workflow는 이 값을 header로만 보내고, login page title을 거부하며 route별 `data-testid` sentinel을 요구한다. secret이 없거나 잘못되면 status `200`인 login page도 smoke 실패다. [Vercel automation bypass 문서](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation)를 따른다.
 
-Smoke checkout은 deployment SHA를 사용한다. Production은 해당 `pyproject.toml` version과 web route가 요구하는 API capability를 strict하게 확인하고, Preview는 base capability를 backward-compatible하게 확인한다. Architecture canary는 `architecture_four_room.json`, solid capability가 광고되면 solid canary는 `solid_mounting_plate.json`을 사용한다. 두 canary 모두 `passed`, hash, official bundle과 핵심 geometry sentinel을 검사하며 response payload를 log에 출력하지 않는다.
+Smoke checkout은 deployment SHA를 사용한다. Vercel event는 web sentinel과 backward-compatible API를 확인하고, Render event는 해당 `pyproject.toml` version, health `release_sha`, web route가 요구하는 API capability를 strict하게 확인한다. Preview는 base capability를 backward-compatible하게 확인한다. Architecture canary는 `architecture_four_room.json`, solid capability가 광고되면 solid canary는 `solid_mounting_plate.json`을 사용한다. 두 canary 모두 `passed`, hash, official bundle과 핵심 geometry sentinel을 검사하며 response payload를 log에 출력하지 않는다.
 
-브라우저에서는 `/`, `/piping`, `/plate`, `/solid`, `/intake`가 각각 유지되는지, 실패 preset에서 ZIP이 비활성인지, `passed` 응답과 `bundle_base64`가 함께 있을 때만 ZIP이 활성인지 확인한다. CORS 오류가 나면 browser console의 요청 origin과 `DATUMGUARD_CORS_ORIGINS`를 exact string으로 비교한다.
+브라우저에서는 `/case-study`, `/`, `/piping`, `/plate`, `/solid`, `/intake`, `/privacy`가 각각 유지되는지, 실패 preset에서 ZIP이 비활성인지, `passed` 응답과 `bundle_base64`가 함께 있을 때만 ZIP이 활성인지 확인한다. 자동 deployment smoke는 `/case-study`와 다섯 engineering workspace의 DOM sentinel을 검사하고, `/privacy` metadata와 local-data control은 Playwright에서 검사한다. CORS 오류가 나면 browser console의 요청 origin과 `DATUMGUARD_CORS_ORIGINS`를 exact string으로 비교한다.
 
 ### 기준 배포 smoke 결과
 
@@ -121,7 +124,7 @@ Smoke checkout은 deployment SHA를 사용한다. Production은 해당 `pyprojec
 
 - Backend: `uv==0.8.22`, frozen `uv.lock`, Ruff format/lint, mypy, pytest, pip-audit
 - Web: npm lockfile install/audit, typecheck, ESLint, production build
-- Browser: 실제 FastAPI와 Next.js를 함께 실행하는 5-workspace Playwright suite
+- Browser: 실제 FastAPI와 Next.js를 함께 실행하는 5-workspace + Case Study + Privacy Playwright suite
 - Containers: 루트 backend image와 `web/` image의 독립 build, CycloneDX SBOM과 fixed CRITICAL Trivy gate
 - Security: PR dependency review, Python/JavaScript CodeQL, weekly Dependabot
 

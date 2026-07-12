@@ -27,14 +27,15 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.deployment_status.state == 'success' &&
-      endsWith(github.event.deployment_status.environment_url, '.vercel.app'))
+      (endsWith(github.event.deployment_status.environment_url, '.vercel.app') ||
+      github.event.deployment_status.environment_url == 'https://datumguard-api.onrender.com'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      DEPLOYMENT_URL: ${{ inputs.deployment_url || github.event.deployment_status.environment_url }}
+      DEPLOYMENT_SOURCE_URL: ${{ inputs.deployment_url || github.event.deployment_status.environment_url }}
       API_URL: https://datumguard-api.onrender.com
       CAPABILITY_MODE: ${{ inputs.capability_mode || 'auto' }}
-      DEPLOYMENT_ENVIRONMENT: ${{ github.event.deployment.environment || 'workflow_dispatch' }}
+      EVENT_NAME: ${{ github.event_name }}
       VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
     steps:
       - name: Check out the deployed revision
@@ -52,7 +53,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          origin="$(python - "${DEPLOYMENT_URL}" <<'PY'
+          trigger_kind=vercel
+          web_target="${DEPLOYMENT_SOURCE_URL}"
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            trigger_kind=manual
+          elif [[ "${DEPLOYMENT_SOURCE_URL}" == "${API_URL}" ]]; then
+            trigger_kind=render
+            web_target="https://datumguard-tjwnsdhfz.vercel.app"
+          fi
+          origin="$(python - "${web_target}" <<'PY'
           import re
           import sys
           from urllib.parse import urlsplit
@@ -67,12 +76,16 @@ jobs:
           PY
           )"
           echo "origin=${origin}" >> "${GITHUB_OUTPUT}"
+          echo "trigger_kind=${trigger_kind}" >> "${GITHUB_OUTPUT}"
+          echo "expected_sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+          echo "Smoke trigger ${trigger_kind}; web target ${origin}."
 
       - name: Determine release compatibility contract
         id: contract
         shell: bash
         env:
           ORIGIN: ${{ steps.target.outputs.origin }}
+          TRIGGER_KIND: ${{ steps.target.outputs.trigger_kind }}
         run: |
           set -euo pipefail
           expected_version="$(python - <<'PY'
@@ -116,7 +129,7 @@ jobs:
               expected_artifact=true
               ;;
             auto)
-              if [[ "${DEPLOYMENT_ENVIRONMENT}" == "Production" || "${ORIGIN}" == "https://datumguard-tjwnsdhfz.vercel.app" ]]; then
+              if [[ "${TRIGGER_KIND}" == "render" || "${TRIGGER_KIND}" == "manual" ]]; then
                 strict_version=true
                 if [[ "${has_solid}" == "true" ]]; then expected_solid="${manifest_solid}"; fi
                 if [[ "${has_artifact}" == "true" ]]; then expected_artifact="${manifest_artifact}"; fi
@@ -129,9 +142,14 @@ jobs:
           echo "strict_version=${strict_version}" >> "${GITHUB_OUTPUT}"
           echo "expected_solid=${expected_solid}" >> "${GITHUB_OUTPUT}"
           echo "expected_artifact=${expected_artifact}" >> "${GITHUB_OUTPUT}"
+          require_release_sha=false
+          if [[ "${strict_version}" == "true" && ( "${TRIGGER_KIND}" == "render" || "${TRIGGER_KIND}" == "manual" ) ]]; then
+            require_release_sha=true
+          fi
+          echo "require_release_sha=${require_release_sha}" >> "${GITHUB_OUTPUT}"
           echo "Expected optional capabilities: solid=${expected_solid}, artifact=${expected_artifact}"
           if [[ "${strict_version}" != "true" && ( "${has_solid}" == "true" || "${has_artifact}" == "true" ) ]]; then
-            echo "Preview compatibility mode: v0.2 web is checked against the currently deployed base API; optional canaries run only when advertised."
+            echo "Compatibility mode: the deployed web is checked against the current base API; optional canaries run only when advertised."
           fi
 
       - name: Verify DatumGuard page sentinels
@@ -183,11 +201,13 @@ jobs:
             rm -f "${body}"
           done
 
-      - name: Wake API and verify version and capabilities
+      - name: Wake API and verify version, revision and capabilities
         id: api
         shell: bash
         env:
           EXPECTED_VERSION: ${{ steps.contract.outputs.expected_version }}
+          EXPECTED_RELEASE_SHA: ${{ steps.target.outputs.expected_sha }}
+          REQUIRE_RELEASE_SHA: ${{ steps.contract.outputs.require_release_sha }}
           STRICT_VERSION: ${{ steps.contract.outputs.strict_version }}
           EXPECTED_SOLID: ${{ steps.contract.outputs.expected_solid }}
           EXPECTED_ARTIFACT: ${{ steps.contract.outputs.expected_artifact }}
@@ -204,21 +224,25 @@ jobs:
                 "${API_URL}/api/v1/health" --output "${health}" && \
               curl --fail --silent --show-error --connect-timeout 10 --max-time 30 \
                 "${API_URL}/api/v1/domains" --output "${domains}" && \
-              python - "${health}" "${domains}" "${EXPECTED_VERSION}" "${STRICT_VERSION}" "${EXPECTED_SOLID}" "${EXPECTED_ARTIFACT}" <<'PY'
+              python - "${health}" "${domains}" "${EXPECTED_VERSION}" "${EXPECTED_RELEASE_SHA}" "${REQUIRE_RELEASE_SHA}" "${STRICT_VERSION}" "${EXPECTED_SOLID}" "${EXPECTED_ARTIFACT}" <<'PY'
           import json
           import sys
 
           health = json.load(open(sys.argv[1], encoding="utf-8"))
           domains = json.load(open(sys.argv[2], encoding="utf-8"))
           expected = sys.argv[3]
-          strict = sys.argv[4] == "true"
-          expected_solid = sys.argv[5] == "true"
-          expected_artifact = sys.argv[6] == "true"
+          expected_release_sha = sys.argv[4]
+          require_release_sha = sys.argv[5] == "true"
+          strict = sys.argv[6] == "true"
+          expected_solid = sys.argv[7] == "true"
+          expected_artifact = sys.argv[8] == "true"
           ids = {item.get("id") for item in domains if isinstance(item, dict)}
           base = {"architecture", "plant_piping", "mechanical_ship_plate"}
           if health.get("status") != "ok" or not base.issubset(ids):
               raise SystemExit(1)
           if strict and health.get("version") != expected:
+              raise SystemExit(1)
+          if require_release_sha and health.get("release_sha") != expected_release_sha:
               raise SystemExit(1)
           for capability, required in {
               "solid_part": expected_solid,
@@ -242,12 +266,14 @@ jobs:
           fi
 
           api_version="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "${health}")"
+          api_release_sha="$(python -c 'import json,sys; print(json.load(open(sys.argv[1])).get("release_sha", "unknown"))' "${health}")"
           solid_supported="$(python -c 'import json,sys; print(str(any(x.get("id") == "solid_part" for x in json.load(open(sys.argv[1])))).lower())' "${domains}")"
           artifact_supported="$(python -c 'import json,sys; print(str(any(x.get("id") == "artifact_lab" for x in json.load(open(sys.argv[1])))).lower())' "${domains}")"
           echo "version=${api_version}" >> "${GITHUB_OUTPUT}"
+          echo "release_sha=${api_release_sha}" >> "${GITHUB_OUTPUT}"
           echo "solid_supported=${solid_supported}" >> "${GITHUB_OUTPUT}"
           echo "artifact_supported=${artifact_supported}" >> "${GITHUB_OUTPUT}"
-          echo "API version ${api_version}; solid=${solid_supported}, artifact=${artifact_supported}."
+          echo "API version ${api_version}; release_sha=${api_release_sha}; solid=${solid_supported}, artifact=${artifact_supported}."
 
       - name: Run small architecture canary
         shell: bash

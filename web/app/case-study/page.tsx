@@ -40,7 +40,7 @@ export default function CaseStudyPage() {
 
       <section className={styles.hero} aria-labelledby="case-study-title">
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>PUBLIC ENGINEERING CASE STUDY · V0.2.0</p>
+          <p className={styles.eyebrow}>PUBLIC ENGINEERING CASE STUDY · V0.2.1</p>
           <h1 id="case-study-title">
             CAD COMMAND SUCCESS
             <br />
@@ -70,7 +70,7 @@ export default function CaseStudyPage() {
       <section className={styles.proofStrip} aria-label="Verified project evidence">
         <div><strong>0.001 mm</strong><span>comparison grid</span></div>
         <div><strong>256</strong><span>pytest baseline</span></div>
-        <div><strong>19</strong><span>Playwright baseline</span></div>
+        <div><strong>24</strong><span>Playwright baseline</span></div>
         <div><strong>5</strong><span>engineering workspaces</span></div>
         <div><strong>0</strong><span>unverified exports allowed</span></div>
       </section>
@@ -266,7 +266,7 @@ export default function CaseStudyPage() {
           <h2 id="release-title">설명보다 재현 경로를 남깁니다.</h2>
         </div>
         <div className={styles.releaseGrid}>
-          <article><span>TEST</span><strong>256 pytest + 19 Playwright</strong><p>v0.2.0 pre-case-study baseline</p></article>
+          <article><span>TEST</span><strong>256 pytest + 24 Playwright</strong><p>v0.2.1 release baseline</p></article>
           <article><span>CI</span><strong>Type · lint · build · containers</strong><p>SBOM, CodeQL, audit, Trivy 포함</p></article>
           <article><span>DEPLOY</span><strong>Vercel + Render</strong><p>DOM, API capability, canary, CORS smoke</p></article>
           <article><span>ROLLBACK</span><strong>Known-good SHA + deployment IDs</strong><p>Wrong PASS를 SEV1으로 처리</p></article>
