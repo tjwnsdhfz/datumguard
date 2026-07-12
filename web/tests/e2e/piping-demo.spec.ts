@@ -43,14 +43,16 @@ test.describe("plant and semiconductor utility piping workspace", () => {
     await expect(page.locator('a[href="/plate"]')).toHaveCount(1);
   });
 
-  test("keeps Piping navigation and content inside a 390 px viewport", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
+  test("keeps Piping navigation and content inside a 375 px viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/piping");
 
     await expect(page.getByRole("heading", { level: 1, name: "Plant piping accuracy workspace", includeHidden: true })).toHaveCount(1);
     const navigation = page.getByRole("navigation", { name: "Engineering workspaces" });
     await expect(navigation).toBeVisible();
-    await expect(navigation.getByRole("link", { name: "Piping", exact: true })).toHaveAttribute("aria-current", "page");
+    const activeLink = navigation.getByRole("link", { name: "Piping", exact: true });
+    await expect(activeLink).toHaveAttribute("aria-current", "page");
+    await expect(activeLink).toHaveCSS("background-color", "rgb(27, 27, 30)");
     await expect(navigation.getByRole("link", { name: "Architecture", exact: true })).toBeVisible();
     await expect(navigation.getByRole("link", { name: "Case Study", exact: true })).toBeVisible();
     await expectNoHorizontalPageOverflow(page);

@@ -109,7 +109,7 @@ class OpenBimRuleResult(StrictModel):
 
 
 class OpenBimReportArtifact(StrictModel):
-    kind: Literal["evidence_json", "html", "bcfzip", "manifest"]
+    kind: Literal["evidence_json", "html", "bcf", "bcfzip", "manifest"]
     filename: str = Field(min_length=1, max_length=200)
     media_type: str = Field(min_length=1, max_length=200)
     artifact_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")

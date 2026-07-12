@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import base64
+import io
 import json
+import zipfile
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree
 
 import ifcopenshell
 import ifcopenshell.api
@@ -410,6 +413,15 @@ def test_bcf_export_semantically_round_trips_twice() -> None:
 
     for index in range(2):
         content = render_bcfzip(report, max_topics=100)
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            extensions = ElementTree.fromstring(archive.read("extensions.xml"))
+        assert [item.text for item in extensions.findall("./TopicTypes/TopicType")] == [
+            "IDS_REQUIREMENT",
+            "IFC_SCHEMA",
+            "PROJECT_GEOMETRY_RULE",
+            "PROJECT_REVISION_RULE",
+        ]
+        assert [item.text for item in extensions.findall("./TopicStatuses/TopicStatus")] == ["Open"]
         path = Path.cwd() / f".test-openbim-{index}.bcfzip"
         try:
             path.write_bytes(content)
@@ -417,6 +429,16 @@ def test_bcf_export_semantically_round_trips_twice() -> None:
             try:
                 assert loaded is not None
                 assert len(loaded.topics) == len(report.issues)
+                assert loaded.extensions is not None
+                assert loaded.extensions.topic_types is not None
+                assert loaded.extensions.topic_types.topic_type == [
+                    "IDS_REQUIREMENT",
+                    "IFC_SCHEMA",
+                    "PROJECT_GEOMETRY_RULE",
+                    "PROJECT_REVISION_RULE",
+                ]
+                assert loaded.extensions.topic_statuses is not None
+                assert loaded.extensions.topic_statuses.topic_status == ["Open"]
                 loaded_topics = list(loaded.topics.values())
                 assert all(topic.topic.topic_status == "Open" for topic in loaded_topics)
                 assert all(topic.topic.title.startswith("[") for topic in loaded_topics)
@@ -454,6 +476,7 @@ def test_public_service_uses_worker_and_returns_hashed_downloads() -> None:
 
     assert report.status == "passed"
     assert [artifact.kind for artifact in report.reports] == [
+        "bcf",
         "bcfzip",
         "evidence_json",
         "html",
@@ -469,6 +492,21 @@ def test_public_service_uses_worker_and_returns_hashed_downloads() -> None:
         )
     )
     assert manifest["input_hashes"]["candidate"] == report.candidate_hash
+    bcf = next(item for item in report.reports if item.kind == "bcf")
+    bcfzip = next(item for item in report.reports if item.kind == "bcfzip")
+    assert bcf.filename == "openbim-evidence.bcf"
+    assert bcfzip.filename == "openbim-evidence.bcfzip"
+    assert bcf.artifact_hash == bcfzip.artifact_hash
+    assert bcf.byte_size == bcfzip.byte_size
+    assert bcf.content_base64 == bcfzip.content_base64
+    assert {
+        item["filename"]: (item["artifact_hash"], item["byte_size"])
+        for item in manifest["artifacts"]
+        if item["kind"] in {"bcf", "bcfzip"}
+    } == {
+        "openbim-evidence.bcf": (bcf.artifact_hash, bcf.byte_size),
+        "openbim-evidence.bcfzip": (bcfzip.artifact_hash, bcfzip.byte_size),
+    }
 
 
 def test_attach_reports_keeps_bcf_randomness_out_of_canonical_evidence() -> None:

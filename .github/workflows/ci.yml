@@ -76,9 +76,41 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  openbim-interoperability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - name: Validate representative BCF with the pinned buildingSMART checker
+        shell: bash
+        env:
+          BCF_SPEC_COMMIT: 5834466b2477ac700d7a61990b4e67ec1005cc68
+          BCF_TOOL_DLL_SHA256: 0409626bba8a017620da95fa1b52f3bfe4f3147b9771a0e604a616a78650c3dc
+        run: |
+          set -euo pipefail
+          spec_dir="${RUNNER_TEMP}/buildingSMART-BCF-XML"
+          git init "${spec_dir}"
+          git -C "${spec_dir}" remote add origin https://github.com/buildingSMART/BCF-XML.git
+          git -C "${spec_dir}" fetch --depth 1 origin "${BCF_SPEC_COMMIT}"
+          git -C "${spec_dir}" checkout --detach FETCH_HEAD
+          test "$(git -C "${spec_dir}" rev-parse HEAD)" = "${BCF_SPEC_COMMIT}"
+
+          dotnet restore "${spec_dir}/build/_build.csproj"
+          tool_dll="${HOME}/.nuget/packages/bcf-tool.commandline/1.0.7/tools/net5.0/bcf-tool.dll"
+          test -f "${tool_dll}"
+          echo "${BCF_TOOL_DLL_SHA256}  ${tool_dll}" | sha256sum --check --strict
+
+          standard_bcf="${GITHUB_WORKSPACE}/docs/awards-2026/evidence/representative/openbim-evidence.bcf"
+          legacy_bcf="${GITHUB_WORKSPACE}/docs/awards-2026/evidence/representative/openbim-evidence.bcfzip"
+          cmp "${standard_bcf}" "${legacy_bcf}"
+          (
+            cd "$(dirname "${tool_dll}")"
+            DOTNET_ROLL_FORWARD=Major dotnet "${tool_dll}" check -s -g -f -r v3.0 "${standard_bcf}"
+            DOTNET_ROLL_FORWARD=Major dotnet "${tool_dll}" check -s -g -f -r v3.0 "${legacy_bcf}"
+          )
+
   containers:
     runs-on: ubuntu-latest
-    needs: [backend, web]
+    needs: [backend, web, openbim-interoperability]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Build backend Docker image

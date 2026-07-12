@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useMemo, useRef, useState } from "react";
 
+import { WorkspaceNavigation } from "@/app/components/workspace-navigation";
 import { apiErrorMessage, apiPostForm } from "@/lib/api-client";
 
 type UploadKey = "baseline" | "candidate" | "requirements";
@@ -136,7 +137,8 @@ const ARTIFACT_COPY: Record<string, { label: string; extension: string }> = {
   evidence_json: { label: "Evidence JSON", extension: "JSON" },
   manifest: { label: "Manifest", extension: "JSON" },
   html: { label: "검토 보고서", extension: "HTML" },
-  bcfzip: { label: "BCF 이슈", extension: "BCFZIP" },
+  bcf: { label: "BCF 3.0 이슈", extension: "BCF" },
+  bcfzip: { label: "BCFZIP 호환본", extension: "BCFZIP" },
 };
 
 function formatBytes(bytes: number | undefined): string {
@@ -379,12 +381,7 @@ export default function OpenBimWorkspace() {
           <span aria-hidden="true">DG</span>
           <div><strong>DatumGuard</strong><small>Independent evidence</small></div>
         </Link>
-        <nav aria-label="Engineering workspaces">
-          <Link href="/">Architecture</Link>
-          <Link href="/intake">Artifact Lab</Link>
-          <Link href="/openbim" aria-current="page">OpenBIM</Link>
-          <Link href="/case-study">Case Study</Link>
-        </nav>
+        <WorkspaceNavigation active="openbim" />
       </header>
 
       <section className="ob-hero" aria-labelledby="openbim-title">
@@ -424,7 +421,7 @@ export default function OpenBimWorkspace() {
             </div>
             <label className="ob-package-option">
               <input data-testid="openbim-include-bcf" type="checkbox" checked={includeBcf} disabled={loading} onChange={(event) => setIncludeBcf(event.target.checked)} />
-              <span><strong>BCFZIP 추가</strong>선택 기능입니다. 현재 배포 license와 독립 viewer gate가 완료되지 않아 기본값은 꺼져 있습니다.</span>
+              <span><strong>BCF 3.0 추가</strong>표준 `.bcf`와 동일 바이트의 기존 `.bcfzip` 호환본을 함께 제공합니다. 현재 배포 license와 독립 viewer gate가 완료되지 않아 기본값은 꺼져 있습니다.</span>
             </label>
           </div>
 

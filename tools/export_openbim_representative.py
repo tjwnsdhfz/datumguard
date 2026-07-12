@@ -179,6 +179,7 @@ def main() -> int:
 
         artifact_index: list[dict[str, Any]] = []
         bcf_check: dict[str, Any] | None = None
+        bcf_artifacts: dict[str, bytes] = {}
         manifest_payload: dict[str, Any] | None = None
         for artifact in report.reports:
             filename = artifact.filename
@@ -198,13 +199,16 @@ def main() -> int:
                     "sha256": actual_hash,
                 }
             )
-            if artifact.kind == "bcfzip":
+            if artifact.kind in {"bcf", "bcfzip"}:
+                bcf_artifacts[artifact.kind] = content
                 bcf_check = inspect_bcfzip(content, expected_topics=len(report.issues))
             if artifact.kind == "manifest":
                 manifest_payload = json.loads(content)
 
-        if bcf_check is None:
-            raise RuntimeError("Representative export did not include BCFZIP")
+        if bcf_check is None or set(bcf_artifacts) != {"bcf", "bcfzip"}:
+            raise RuntimeError("Representative export did not include both BCF filename variants")
+        if bcf_artifacts["bcf"] != bcf_artifacts["bcfzip"]:
+            raise RuntimeError("Standard BCF and legacy BCFZIP artifacts differ")
         if manifest_payload is None:
             raise RuntimeError("Representative export did not include a manifest")
         expected_manifest_artifacts = [
@@ -225,7 +229,7 @@ def main() -> int:
             raise RuntimeError("Evidence manifest artifact index does not match exported bytes")
 
         verification = {
-            "schema_version": "openbim-representative-export-v2",
+            "schema_version": "openbim-representative-export-v3",
             "source_commit": source_commit,
             "source_tags": sorted(git_value("tag", "--points-at", "HEAD").splitlines()),
             "analysis_tag": git_value("describe", "--tags", "--match", "analysis-*", "--abbrev=0"),
@@ -260,6 +264,12 @@ def main() -> int:
             "rule_result_count": len(report.rule_results),
             "issue_count": len(report.issues),
             "artifacts": sorted(artifact_index, key=lambda item: item["kind"]),
+            "bcf_filename_compatibility": {
+                "standard_filename": "openbim-evidence.bcf",
+                "legacy_filename": "openbim-evidence.bcfzip",
+                "identical_bytes": True,
+                "sha256": sha256_bytes(bcf_artifacts["bcf"]),
+            },
             "bcf_generic_structure_check": bcf_check,
             "external_bcf_viewer_gate": "not_completed",
         }

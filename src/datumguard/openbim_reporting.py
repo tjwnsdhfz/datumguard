@@ -12,6 +12,13 @@ from .ifc_evidence import canonical_json_bytes, sha256_bytes
 from .openbim_models import OpenBimEvidenceReport, OpenBimReportArtifact
 
 _IFC_GUID_PATTERN = re.compile(r"^[0-9A-Za-z_$]{22}$")
+_BCF_TOPIC_TYPES = (
+    "IDS_REQUIREMENT",
+    "IFC_SCHEMA",
+    "PROJECT_GEOMETRY_RULE",
+    "PROJECT_REVISION_RULE",
+)
+_BCF_TOPIC_STATUSES = ("Open",)
 
 
 def canonical_evidence_payload(report: OpenBimEvidenceReport) -> dict[str, Any]:
@@ -126,10 +133,17 @@ def render_bcfzip(report: OpenBimEvidenceReport, *, max_topics: int) -> bytes:
     try:
         import numpy as np
         from bcf.v3.bcfxml import BcfXml
+        from bcf.v3.model import Extensions, ExtensionsTopicStatuses, ExtensionsTopicTypes
     except ImportError as exc:
         raise RuntimeError("BCF export dependency is unavailable") from exc
 
-    bcfxml = BcfXml.create_new("OpenBIM Evidence Guard")
+    bcfxml = BcfXml.create_new(
+        "OpenBIM Evidence Guard",
+        extensions=Extensions(
+            topic_types=ExtensionsTopicTypes(topic_type=list(_BCF_TOPIC_TYPES)),
+            topic_statuses=ExtensionsTopicStatuses(topic_status=list(_BCF_TOPIC_STATUSES)),
+        ),
+    )
     try:
         expected_topic_semantics: list[tuple[Any, ...]] = []
         for issue in report.issues:
@@ -259,12 +273,21 @@ def attach_reports(
             )
         )
     if include_bcf:
-        artifacts.append(
-            _artifact(
-                "bcfzip",
-                "openbim-evidence.bcfzip",
-                "application/vnd.bcf+zip",
-                render_bcfzip(report, max_topics=max_bcf_topics),
+        bcf_content = render_bcfzip(report, max_topics=max_bcf_topics)
+        artifacts.extend(
+            (
+                _artifact(
+                    "bcf",
+                    "openbim-evidence.bcf",
+                    "application/vnd.bcf+zip",
+                    bcf_content,
+                ),
+                _artifact(
+                    "bcfzip",
+                    "openbim-evidence.bcfzip",
+                    "application/vnd.bcf+zip",
+                    bcf_content,
+                ),
             )
         )
     manifest_payload = {

@@ -67,7 +67,7 @@ test.describe("OpenBIM Evidence Guard", () => {
     await expect(page.getByTestId("candidate-filename")).toContainText("v1_faulty.ifc");
     await expect(page.getByTestId("requirements-filename")).toContainText("virtual_fab_v1.ids");
     await page.getByLabel(/research validation only/).check();
-    await page.getByLabel(/BCFZIP 추가/).check();
+    await page.getByLabel(/BCF 3.0 추가/).check();
     await expect(page.getByTestId("openbim-run")).toBeEnabled();
 
     const responsePromise = page.waitForResponse((response) =>
@@ -96,7 +96,7 @@ test.describe("OpenBIM Evidence Guard", () => {
     expect(payload.approval_eligible).toBe(false);
     expect(payload.rule_results.length).toBeGreaterThan(0);
     expect(payload.issues.length).toBeGreaterThan(0);
-    expect(payload.reports.map((report) => report.kind)).toEqual(expect.arrayContaining(["evidence_json", "html", "bcfzip", "manifest"]));
+    expect(payload.reports.map((report) => report.kind)).toEqual(expect.arrayContaining(["evidence_json", "html", "bcf", "bcfzip", "manifest"]));
     for (const hash of [payload.baseline_hash, payload.candidate_hash, payload.ids_hash, payload.profile_hash]) {
       expect(hash).toMatch(/^sha256:[0-9a-f]{64}$/);
     }
@@ -110,6 +110,7 @@ test.describe("OpenBIM Evidence Guard", () => {
     await expect(page.getByText(/각 이슈는 이 네 입력 해시/)).toBeVisible();
     await expect(page.getByRole("button", { name: "Evidence JSON 다운로드" })).toBeEnabled();
     await expect(page.getByRole("button", { name: "검토 보고서 다운로드" })).toBeEnabled();
-    await expect(page.getByRole("button", { name: "BCF 이슈 다운로드" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "BCF 3.0 이슈 다운로드" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "BCFZIP 호환본 다운로드" })).toBeEnabled();
   });
 });

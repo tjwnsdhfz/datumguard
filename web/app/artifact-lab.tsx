@@ -7,6 +7,7 @@ import { apiErrorMessage, apiPostForm } from "@/lib/api-client";
 import { useBackendReadiness } from "@/lib/use-backend-readiness";
 import BackendReadinessNotice from "./components/backend-readiness";
 import MeshPreview from "./components/mesh-preview";
+import { WorkspaceNavigation, WorkspaceSkipLink } from "./components/workspace-navigation";
 
 type Metric = {
   metric_id: string;
@@ -338,12 +339,13 @@ export default function ArtifactLab() {
 
   return (
     <main className="lab-shell" data-testid="artifact-lab">
+      <WorkspaceSkipLink targetId="artifact-workspace-content" />
       <header className="lab-topbar">
         <Link href="/" className="lab-brand"><span>DG</span><div><strong>DatumGuard</strong><small>Engineering artifact assurance</small></div></Link>
-        <nav aria-label="Engineering workspaces"><Link href="/">Architecture</Link><Link href="/piping">Piping</Link><Link href="/plate">Plate</Link><Link href="/solid">3D Solid</Link><Link href="/intake" aria-current="page">Artifact Lab</Link><Link href="/openbim">OpenBIM</Link><Link href="/case-study">Case Study</Link></nav>
+        <WorkspaceNavigation active="intake" />
       </header>
 
-      <section className="lab-hero">
+      <section className="lab-hero" id="artifact-workspace-content" tabIndex={-1}>
         <div><span>CAD ARTIFACT LAB · IMMUTABLE INPUT</span><h1>생성기가 아니라<br /><em>실제 파일</em>을 검사합니다.</h1></div>
         <p>AutoCAD·Rhino·FreeCAD·Revit 등에서 내보낸 DXF, STEP, IFC를 원본 hash로 잠그고 구조·단위·geometry·revision을 독립 감사합니다.</p>
       </section>

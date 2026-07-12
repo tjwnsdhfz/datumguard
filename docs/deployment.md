@@ -26,12 +26,16 @@ Web과 API는 별도 origin이다. API는 stateless이며 계정, DB, 장기 art
 ## 2. Render backend
 
 1. 저장소 루트의 `render.yaml`을 Blueprint로 사용한다.
-2. 서비스는 `plan: free`로 생성하고 루트 `Dockerfile`을 build하며 queue capacity를 포함한 `/api/v1/ready`를 health check로 사용한다.
+2. 서비스는 `plan: free`로 생성하고 루트 `Dockerfile`을 build하며 플랫폼 health check는 `/api/v1/live`를 사용한다.
 3. Render가 제공하는 `PORT`를 애플리케이션이 읽으므로 고정 public port를 manifest에 넣지 않는다.
 4. `DATUMGUARD_CORS_ORIGINS`를 실제 production web origin으로 설정한다.
 5. Preview가 필요하면 `DATUMGUARD_CORS_ORIGIN_REGEX`를 해당 Vercel project prefix로 제한한다.
 
-현재 Blueprint는 Docker 서비스에 `runtime: docker`, `plan: free`, `dockerfilePath`, `dockerContext`, `healthCheckPath`, `autoDeployTrigger: checksPass`를 명시한다. 무료 instance는 유휴 상태에서 중지될 수 있으므로 공개 포트폴리오 시현용으로만 사용한다. 마지막 설정은 연결된 CI check가 통과한 commit만 자동 배포 대상으로 삼는다.
+현재 Blueprint는 Docker 서비스에 `runtime: docker`, `plan: free`, `dockerfilePath`, `dockerContext`, `healthCheckPath`, `autoDeployTrigger: commit`을 명시한다. `/api/v1/live`는 process liveness만 확인하고, `/api/v1/ready`는 heavy worker saturation과 queue capacity를 포함한 admission readiness를 보고한다. 장시간 CAD 작업 중 readiness `503`은 정상적인 backpressure일 수 있으므로 Render와 Docker가 이를 process failure로 판단해서는 안 된다. 무료 instance는 유휴 상태에서 중지될 수 있으므로 공개 포트폴리오 시현용으로만 사용한다.
+
+`commit` 배포는 보호된 `main`에 merge된 revision만 즉시 배포하기 위한 의도적인 설정이다. CI·Security·Vercel Preview·compatibility smoke는 PR branch protection에서 merge 전에 강제한다. Render 성공 후 실행되는 exact-revision smoke는 post-deploy gate이므로 `checksPass`의 pre-deploy 입력으로 다시 사용하지 않는다. 두 단계를 연결하면 backend가 배포돼야 통과하는 검사가 backend 배포를 막는 순환 의존이 생긴다.
+
+Render dashboard의 기준 상태는 service `Auto-Deploy: On Commit`, Blueprint `Auto Sync: Yes`, branch `main`, Blueprint path `render.yaml`이다. Manifest 변경 직후 dashboard와 값이 다르면 다음 merge 전에 Blueprint를 수동 sync한다. 설정을 바꾼 바로 그 commit이 배포되지 않더라도 이전 live revision을 유지하고, 다음 보호된 `main` commit에서 자동 deploy record 생성 여부를 확인한다.
 
 Blueprint는 48MB request·20MB artifact·40MB compare 합계 제한과 anonymous quota를 명시한다. Free instance에서는 OOM 위험을 줄이기 위해 heavy concurrency를 `1`, bounded waiter를 `4`로 제한한다. 실제 Production Solid canary가 HTTP 502를 반환했으므로 `DATUMGUARD_ENABLE_SOLID=false`, Artifact Lab은 `true`가 현재 계약이다. OOM 또는 worker restart는 직접 확인되지 않은 의심 원인이다. API key가 필요하면 dashboard secret `DATUMGUARD_API_KEYS`를 추가하며 Git이나 `NEXT_PUBLIC_*`에 값을 기록하지 않는다.
 
@@ -85,7 +89,9 @@ Scale-to-zero 또는 유휴 sleep을 사용하는 Render plan에서는 첫 healt
 6. Vercel `deployment_status` 이후 새 web과 기존 API의 하위 호환성을 먼저 검사한다.
 7. Render success event 이후 canonical web, API version/capability, health `release_sha`, CORS와 synthetic canary를 같은 checkout revision으로 다시 검사한다.
 
-Production에서 Vercel과 Render는 독립적으로 완료될 수 있다. Vercel-triggered run은 이전 API와의 base compatibility를 확인해 Render의 `checksPass` 배포와 순환 의존하지 않는다. Render success event가 발생하면 두 번째 run이 canonical web을 다시 확인하고 strict API version/capability와 `release_sha == deployment.sha`를 강제한다. Render는 공식 runtime 변수 `RENDER_GIT_COMMIT`을 제공하며 API는 40자리 hex만 공개한다. Backend 변경은 기존 web의 base architecture/piping/plate contract를 깨지 않는 backward-compatible release로 배포한다. Preview가 shared production API의 이전 capability set을 사용하는 상태는 Production 승인으로 사용하지 않는다. [Render default environment variables](https://render.com/docs/environment-variables)를 따른다.
+Production에서 Vercel과 Render는 독립적으로 완료될 수 있다. Vercel-triggered run은 이전 API와의 base compatibility를 확인하며 Render의 `commit` 배포 시작 조건이 아니다. Render success event가 발생하면 두 번째 run이 canonical web을 다시 확인하고 strict API version/capability와 `release_sha == deployment.sha`를 강제한다. Render는 공식 runtime 변수 `RENDER_GIT_COMMIT`을 제공하며 API는 40자리 hex만 공개한다. Backend 변경은 기존 web의 base architecture/piping/plate contract를 깨지 않는 backward-compatible release로 배포한다. Preview가 shared production API의 이전 capability set을 사용하는 상태는 Production 승인으로 사용하지 않는다. [Render default environment variables](https://render.com/docs/environment-variables)를 따른다.
+
+모든 `deployment-smoke` run은 shared Production API의 단일 concurrency group에서 직렬 실행하고 진행 중 run을 취소하지 않는다. Vercel과 Render가 같은 SHA의 success event를 연속 기록해도 Architecture·Artifact heavy canary가 동시에 worker를 점유하지 않으므로 정상 배포를 queue saturation `503`으로 오판하지 않는다.
 
 | Mode | Web | Run endpoint |
 |---|---|---|

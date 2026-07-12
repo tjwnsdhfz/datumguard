@@ -93,7 +93,8 @@ uv run --frozen python tools/run_openbim_experiment.py --reanalyze-existing `
 
 ## 제출 전 남은 외부 gate
 
-1. 독립 BCF viewer에 대표 BCFZIP을 import하고 component/status를 화면 증거로 남긴다.
+1. 독립 BCF viewer에 대표 `.bcf`와 동일 바이트의 `.bcfzip` 호환본을 import하고
+   component/status를 화면 증거로 남긴다.
 2. buildingSMART IFC Validation Service에서 clean 대표 IFC의 외부 결과를 보존한다.
 3. `bcf-client==0.8.5` source/wheel license 표기 차이를 최종 배포 방식 기준으로 검토한다.
 4. Docker/Linux CI, production cold-start·CORS·부하 smoke를 실행한다.

@@ -87,14 +87,18 @@ test.describe("interactive architecture demo", () => {
     await expect(page.getByText(/not a certification/i)).toBeVisible();
   });
 
-  test("keeps Architecture navigation and content inside a 390 px viewport", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
+  test("keeps Architecture navigation and content inside a 375 px viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/");
 
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("link", { name: "Skip to engineering workspace" })).toBeFocused();
     await expect(page.getByRole("heading", { level: 1, name: "Architecture accuracy workspace", includeHidden: true })).toHaveCount(1);
     const navigation = page.getByRole("navigation", { name: "Engineering workspaces" });
     await expect(navigation).toBeVisible();
-    await expect(navigation.getByRole("link", { name: "Architecture", exact: true })).toHaveAttribute("aria-current", "page");
+    const activeLink = navigation.getByRole("link", { name: "Architecture", exact: true });
+    await expect(activeLink).toHaveAttribute("aria-current", "page");
+    await expect(activeLink).toHaveCSS("background-color", "rgb(27, 27, 30)");
     await expect(navigation.getByRole("link", { name: "Piping", exact: true })).toBeVisible();
     await expect(navigation.getByRole("link", { name: "Case Study", exact: true })).toBeVisible();
     await expectNoHorizontalPageOverflow(page);
@@ -255,17 +259,24 @@ test("keeps the detailed plate designer deep-linkable", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Piping", exact: true })).toHaveAttribute("href", "/piping");
 });
 
-test("keeps Plate navigation usable inside a 390 px viewport", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/plate");
+test("keeps Plate navigation usable at phone and tablet widths", async ({ page }) => {
+  for (const viewport of [
+    { width: 375, height: 812 },
+    { width: 768, height: 1024 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/plate");
 
-  const navigation = page.getByRole("navigation", { name: "주요 링크" });
-  await expect(navigation).toBeVisible();
-  await expect(navigation.getByRole("link", { name: "Plate", exact: true })).toHaveAttribute("aria-current", "page");
-  await expect(navigation.getByRole("link", { name: "Architecture", exact: true })).toBeVisible();
-  await expect(navigation.getByRole("link", { name: "Case Study", exact: true })).toBeVisible();
-  await expect(navigation.getByRole("link", { name: "GitHub", exact: true })).toBeVisible();
-  await expectNoHorizontalPageOverflow(page);
+    const navigation = page.getByRole("navigation", { name: "주요 링크" });
+    await expect(navigation).toBeVisible();
+    const activeLink = navigation.getByRole("link", { name: "Plate", exact: true });
+    await expect(activeLink).toHaveAttribute("aria-current", "page");
+    await expect(activeLink).toHaveCSS("background-color", "rgb(27, 27, 30)");
+    await expect(navigation.getByRole("link", { name: "Architecture", exact: true })).toBeVisible();
+    await expect(navigation.getByRole("link", { name: "Case Study", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "GitHub source", exact: true })).toBeVisible();
+    await expectNoHorizontalPageOverflow(page);
+  }
 });
 
 test("verifies the mechanical and ship plate preset with the real API", async ({ page }) => {

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import BackendReadinessNotice from "./components/backend-readiness";
 import LocalDraftNotice from "./components/local-draft-notice";
 import MeshPreview from "./components/mesh-preview";
+import { WorkspaceNavigation, WorkspaceSkipLink } from "./components/workspace-navigation";
 import { apiErrorMessage, apiPostJson } from "@/lib/api-client";
 import { loadDraft, saveDraft } from "@/lib/draft-db";
 import { useBackendReadiness } from "@/lib/use-backend-readiness";
@@ -194,14 +195,15 @@ export default function SolidWorkspace() {
 
   return (
     <main className="solid-shell" data-testid="solid-workspace" data-run-status={loading ? "running" : result?.status || "idle"}>
+      <WorkspaceSkipLink targetId="solid-workspace-content" />
       <header className="lab-topbar">
         <Link href="/" className="lab-brand"><span>DG</span><div><strong>DatumGuard</strong><small>OpenCascade solid assurance</small></div></Link>
-        <nav aria-label="Engineering workspaces"><Link href="/">Architecture</Link><Link href="/piping">Piping</Link><Link href="/plate">Plate</Link><Link href="/solid" aria-current="page">3D Solid</Link><Link href="/intake">Artifact Lab</Link><Link href="/openbim">OpenBIM</Link><Link href="/case-study">Case Study</Link></nav>
+        <WorkspaceNavigation active="solid" />
       </header>
 
       <LocalDraftNotice error={storageError} onDismiss={() => setStorageError(null)} />
 
-      <section className="solid-header">
+      <section className="solid-header" id="solid-workspace-content" tabIndex={-1}>
         <div><span>3D SOLID CONTRACT · STEP AUTHORITY</span><h1>정확한 3D 형상을 만들고<br /><em>다시 열어 측정합니다.</em></h1></div>
         <div className="solid-kernel"><span>WRITER</span><strong>OpenCascade 7.9</strong><span>VERIFIER</span><strong>Isolated STEP re-import</strong></div>
       </section>

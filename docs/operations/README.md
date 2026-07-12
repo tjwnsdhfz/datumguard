@@ -2,11 +2,31 @@
 
 이 디렉터리는 DatumGuard의 배포 검증, 장애 대응, 관측성, 데이터 수명과 비용 통제를 위한 운영 계약이다. 공개 환경은 제품 demo이며 10k DAU 용량 검증이나 운영 승인을 뜻하지 않는다.
 
-## 현재 release와 v0.2.0 rollback snapshot
+## Evidence release, live revision, rollback snapshot
 
-현재 공개 release의 source SHA, 두 deployment, CI·Security와 Render-success exact-revision smoke는
-[v0.2.1 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.1)에 고정한다. 아래 표는
-독립적으로 복구 가능한 이전 v0.2.0 기준점이다.
+`evidence release`는 불변 검증 자료이고 `live production revision`은 현재 배포된 `main`이다.
+두 SHA는 UI·문서의 continuous deployment 때문에 다를 수 있다. 현재 상태는 문서에 움직이는 SHA를
+복사해 두지 않고 `/api/v1/health.release_sha`, GitHub Deployment record와 최신 성공
+`deployment-smoke`에서 조회한다.
+
+| 항목 | 고정 기준 |
+|---|---|
+| Latest evidence release | [`v0.2.1`](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.1) / `0e871c4a93872415f7151a99050b102f273986dd` |
+| Nearest v0.2.1 rollback | Vercel `5410294611`; Render `5410321107` |
+
+현재 revision은 다음 경로로 확인한다. liveness와 admission readiness는 목적이 다르므로 둘 다 확인한다.
+
+```bash
+curl --fail https://datumguard-api.onrender.com/api/v1/health
+curl --fail https://datumguard-api.onrender.com/api/v1/live
+curl --fail https://datumguard-api.onrender.com/api/v1/ready
+gh api 'repos/tjwnsdhfz/datumguard/deployments?sha=<release_sha>'
+gh run list --repo tjwnsdhfz/datumguard --workflow deployment-smoke.yml --limit 5
+```
+
+Web-only 장애이고 API contract가 유지되면 Vercel만 nearest v0.2.1 deployment로 복구할 수 있다.
+Wrong PASS, unverified export 또는 API contract 불일치이면 Render를 먼저 복구하고 필요하면 web을 같은
+tag로 맞춘다. 아래 표는 독립적으로 복구 가능한 이전 v0.2.0 full-stack 기준점이다.
 
 | 항목 | 검증된 상태 |
 |---|---|
@@ -21,6 +41,7 @@
 ## 문서 지도
 
 - [Rollback baseline](rollback-baseline.md): 고정 commit, backup tag, GitHub deployment ID와 복구 순서
+- [GitHub deployment and promotion](../github-deployment.md): Preview, merge gate, Production revision, evidence release와 component rollback
 - [Incident runbook](incident-runbook.md): SEV 분류, kill switch, 연락·상태 공지, 복구와 postmortem
 - [SLO/SLI](slo-sli.md): 안전성과 가용성 목표, 측정 방법, error budget
 - [Logging and redaction](logging-redaction.md): 구조화 로그 필드, 금지 데이터, 보존·알림 기준

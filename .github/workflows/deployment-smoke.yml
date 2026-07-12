@@ -19,8 +19,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: deployment-smoke-${{ github.event.deployment.id || github.run_id }}
-  cancel-in-progress: true
+  # Preview and Production deployments share the same single-worker Render API.
+  group: datumguard-shared-api-deployment-smoke
+  cancel-in-progress: false
 
 jobs:
   web-and-api:
