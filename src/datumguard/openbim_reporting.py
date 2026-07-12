@@ -148,7 +148,7 @@ def render_bcfzip(report: OpenBimEvidenceReport, *, max_topics: int) -> bytes:
                 sort_keys=True,
             )
             title = f"[{issue.rule_id}] {issue.message}"[:250]
-            topic = bcfxml.add_topic(
+            created_topic = bcfxml.add_topic(
                 title,
                 description,
                 "OpenBIM Evidence Guard",
@@ -165,7 +165,7 @@ def render_bcfzip(report: OpenBimEvidenceReport, *, max_topics: int) -> bytes:
             camera_semantics: tuple[tuple[float, ...], ...] = ()
             if guids:
                 position = np.array(issue.location or (0.0, 0.0, 0.0), dtype=float)
-                viewpoint = topic.add_viewpoint_from_point_and_guids(position, *guids)
+                viewpoint = created_topic.add_viewpoint_from_point_and_guids(position, *guids)
                 camera = _camera_semantics(viewpoint)
                 camera_semantics = (camera,) if camera is not None else ()
             expected_topic_semantics.append(
@@ -181,7 +181,7 @@ def render_bcfzip(report: OpenBimEvidenceReport, *, max_topics: int) -> bytes:
                     raise RuntimeError("BCF semantic round-trip failed")
                 loaded_topic_semantics: list[tuple[Any, ...]] = []
                 for topic_handler in loaded.topics.values():
-                    topic = topic_handler.topic
+                    loaded_topic = topic_handler.topic
                     selected_guids = sorted(
                         {
                             guid
@@ -198,10 +198,10 @@ def render_bcfzip(report: OpenBimEvidenceReport, *, max_topics: int) -> bytes:
                     )
                     loaded_topic_semantics.append(
                         (
-                            str(topic.title or ""),
-                            str(topic.description or ""),
-                            str(topic.topic_type or ""),
-                            str(topic.topic_status or ""),
+                            str(loaded_topic.title or ""),
+                            str(loaded_topic.description or ""),
+                            str(loaded_topic.topic_type or ""),
+                            str(loaded_topic.topic_status or ""),
                             tuple(selected_guids),
                             cameras,
                         )

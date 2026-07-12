@@ -1016,8 +1016,7 @@ def aggregate_metrics(
         paired_values: list[float] = []
         for record in faulty_records:
             record_denominators = {
-                int(record["matches"][ablation]["tp"])
-                + int(record["matches"][ablation]["fn"])
+                int(record["matches"][ablation]["tp"]) + int(record["matches"][ablation]["fn"])
                 for ablation in ABLATION_SCOPES
             }
             if len(record_denominators) != 1:
