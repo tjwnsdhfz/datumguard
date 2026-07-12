@@ -91,6 +91,8 @@ Scale-to-zero 또는 유휴 sleep을 사용하는 Render plan에서는 첫 healt
 
 Production에서 Vercel과 Render는 독립적으로 완료될 수 있다. Vercel-triggered run은 이전 API와의 base compatibility를 확인하며 Render의 `commit` 배포 시작 조건이 아니다. Render success event가 발생하면 두 번째 run이 canonical web을 다시 확인하고 strict API version/capability와 `release_sha == deployment.sha`를 강제한다. Render는 공식 runtime 변수 `RENDER_GIT_COMMIT`을 제공하며 API는 40자리 hex만 공개한다. Backend 변경은 기존 web의 base architecture/piping/plate contract를 깨지 않는 backward-compatible release로 배포한다. Preview가 shared production API의 이전 capability set을 사용하는 상태는 Production 승인으로 사용하지 않는다. [Render default environment variables](https://render.com/docs/environment-variables)를 따른다.
 
+모든 `deployment-smoke` run은 shared Production API의 단일 concurrency group에서 직렬 실행하고 진행 중 run을 취소하지 않는다. Vercel과 Render가 같은 SHA의 success event를 연속 기록해도 Architecture·Artifact heavy canary가 동시에 worker를 점유하지 않으므로 정상 배포를 queue saturation `503`으로 오판하지 않는다.
+
 | Mode | Web | Run endpoint |
 |---|---|---|
 | Product Case Study | `$WEB_ORIGIN/case-study` | 없음; public evidence page |
