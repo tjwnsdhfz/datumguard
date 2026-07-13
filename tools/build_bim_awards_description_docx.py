@@ -23,6 +23,7 @@ MUTED = RGBColor(84, 96, 112)
 LIGHT_BLUE = "E8EEF5"
 LIGHT_GRAY = "F4F6F9"
 BORDER = "C9D4E2"
+IMAGE_PATTERN = re.compile(r"^!\[(?P<alt>.+?)\]\((?P<path>.+?)\)$")
 
 # Official-form overrides to the narrative_proposal preset.
 PAGE_WIDTH_DXA = 11907  # A4
@@ -252,13 +253,53 @@ def add_callout(doc: Document, text: str) -> None:
     add_inline_markdown(paragraph, text, size=10)
 
 
+def set_image_alt_text(shape, alt_text: str) -> None:
+    shape._inline.docPr.set("descr", alt_text)
+
+
+def add_figure_strip(
+    doc: Document,
+    source_directory: Path,
+    figures: list[tuple[str, str]],
+) -> None:
+    if len(figures) != 2:
+        raise ValueError("The competition description figure strip requires exactly two images")
+
+    paragraph = doc.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.paragraph_format.space_before = Pt(3)
+    paragraph.paragraph_format.space_after = Pt(1)
+    paragraph.paragraph_format.line_spacing = 1.0
+
+    for index, (alt_text, relative_path) in enumerate(figures):
+        image_path = (source_directory / relative_path).resolve()
+        if not image_path.is_file():
+            raise FileNotFoundError(f"Figure image does not exist: {image_path}")
+        run = paragraph.add_run()
+        shape = run.add_picture(str(image_path), width=Cm(8.15))
+        set_image_alt_text(shape, alt_text)
+        if index == 0:
+            spacer = paragraph.add_run("  ")
+            set_run_font(spacer, size=5, color=INK)
+
+    caption = doc.add_paragraph()
+    caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    caption.paragraph_format.space_before = Pt(0)
+    caption.paragraph_format.space_after = Pt(3)
+    caption.paragraph_format.line_spacing = 1.1
+    text = f"{figures[0][0]}  ·  {figures[1][0]}"
+    run = caption.add_run(text)
+    set_run_font(run, size=8.2, color=MUTED)
+
+
 def normalize_paragraph(lines: list[str]) -> str:
     return " ".join(line.strip() for line in lines).strip()
 
 
-def render_section_body(doc: Document, body: str) -> None:
+def render_section_body(doc: Document, body: str, source_directory: Path) -> None:
     paragraph_lines: list[str] = []
     quote_lines: list[str] = []
+    figures: list[tuple[str, str]] = []
 
     def flush_paragraph() -> None:
         if not paragraph_lines:
@@ -279,28 +320,45 @@ def render_section_body(doc: Document, body: str) -> None:
         add_callout(doc, normalize_paragraph(quote_lines))
         quote_lines.clear()
 
+    def flush_figures() -> None:
+        if not figures:
+            return
+        add_figure_strip(doc, source_directory, figures)
+        figures.clear()
+
     for raw_line in body.splitlines():
         line = raw_line.rstrip()
+        image_match = IMAGE_PATTERN.match(line.strip())
         if line.startswith("### "):
             flush_paragraph()
             flush_quote()
+            flush_figures()
             doc.add_paragraph(line[4:].strip(), style="Heading 2")
         elif line.startswith(">"):
             flush_paragraph()
+            flush_figures()
             quote_lines.append(line[1:].strip())
+        elif image_match:
+            flush_paragraph()
+            flush_quote()
+            figures.append((image_match.group("alt"), image_match.group("path")))
         elif not line.strip():
             flush_paragraph()
             flush_quote()
+            flush_figures()
         elif line.startswith("- "):
             flush_paragraph()
             flush_quote()
+            flush_figures()
             raise ValueError("Bulleted source content requires a real numbering definition")
         else:
             flush_quote()
+            flush_figures()
             paragraph_lines.append(line)
 
     flush_paragraph()
     flush_quote()
+    flush_figures()
 
 
 def section_text(source: str, page: int) -> tuple[str, str]:
@@ -440,7 +498,7 @@ def build_document(source_path: Path, output_path: Path) -> None:
         heading = doc.add_paragraph(f"{page}. {title}", style="Heading 1")
         if page > 1:
             heading.paragraph_format.page_break_before = True
-        render_section_body(doc, body)
+        render_section_body(doc, body, source_path.parent)
 
     properties = doc.core_properties
     properties.title = "BIM Awards 2026 Student Research Description"

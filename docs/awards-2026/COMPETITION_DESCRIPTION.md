@@ -55,38 +55,32 @@ revision을 계층적으로 구분했다.
 
 ### BIM 적용의 주안점
 
-첫째, 검사 범위를 `IFC_SCHEMA`, `IDS_REQUIREMENT`, `PROJECT_GEOMETRY_RULE`,
-`PROJECT_REVISION_RULE`로 구분했다. IFC 범위에서는 IFC4, IfcProject, 길이 단위, GlobalId,
-공간 containment를 검사한다. IDS 범위에서는 AssetTag, UtilityType, SystemCode, 분류와 필수
-속성을 검사한다. 프로젝트 geometry는 직교 box 모델의 world AABB를 사용해 FAB Tool 한쪽에
-0.6 m service envelope를 만들고 양의 중첩만 실패로 처리한다. 프로젝트 revision은
-`DG_Identity.AssetKey`로 같은 자산을 매칭하고 GlobalId 변화와 locked field의 승인 여부를
-검사한다. geometry 누락과 identity 모호성은 PASS가 아니라 사람 확인이 필요한 상태로 분리한다.
+첫째, scope를 `IFC_SCHEMA`, `IDS_REQUIREMENT`, `PROJECT_GEOMETRY_RULE`,
+`PROJECT_REVISION_RULE`로 분리했다. IFC는 schema·project·단위·GlobalId·containment, IDS는 필수
+속성과 분류를 검사한다. geometry는 직교 box의 world AABB로 0.6 m service envelope를 만들고,
+revision은 `DG_Identity.AssetKey`로 같은 자산의 GlobalId·locked field 변화를 검사한다. geometry
+누락과 identity 모호성은 PASS가 아니라 사람 확인 상태로 남긴다.
 
-둘째, 작성 도구의 성공 메시지가 아니라 실제로 저장된 IFC bytes를 검사한다. baseline, candidate,
-IDS, profile에 SHA-256을 부여하고 worker가 새로 연 모델에서만 판정한다. 각 issue에는 source
-hash, rule ID, entity GlobalId 또는 STEP ID, field, expected, actual을 저장한다. 같은 입력의
-timestamp와 run ID를 제외한 canonical payload가 반복 실행에서 동일한지도 확인했다.
+둘째, 저장된 IFC bytes를 별도 worker에서 다시 열고 baseline·candidate·IDS·profile의 SHA-256을
+판정과 연결했다. 각 issue는 rule ID, entity/STEP ID, field, expected/actual과 source hash를
+보존하며, timestamp와 run ID를 제외한 canonical payload의 반복 결정성도 확인했다.
 
-셋째, 결과를 보고 규칙을 바꾸지 않기 위해 Design Science Research와 통제된 오류주입 평가를
-결합했다. `virtual-fab-v1`은 실제 기업·FAB 자료를 포함하지 않는 코드 생성 IFC4 dataset이다.
-대표 1개, 개발용 pilot 6개, held-out evaluation 30개로 총 37개 case를 구성했다. 세 layout은
-각각 32·40·48개 검사 자산을 포함한다. 각 case에는 clean, authorized, faulty, corrected 네
-revision과 detector와 분리된 mutation manifest·truth가 있다. faulty candidate마다 서로 다른
-객체에 11개 오류를 주입해 held-out evaluation에서 총 330개 primary fault를 평가했다.
+![그림 1. 기준·후보 IFC와 IDS 입력 세트](assets/openbim-demo-input.png)
+![그림 2. 실패 판정·규칙별 결과·입력 해시](assets/openbim-demo-result.png)
+
+셋째, Design Science Research와 통제 오류주입 평가를 결합했다. 실제 기업 자료가 없는
+`virtual-fab-v1`은 대표 1, pilot 6, held-out 30의 총 37 case와 32·40·48개 자산 layout으로
+구성했다. 각 case에는 clean·authorized·faulty·corrected revision과 독립 manifest·truth가 있고,
+faulty candidate마다 11개 오류를 주입해 held-out에서 330개 primary fault를 평가했다.
 
 ### 실험 통제와 비교 조건
 
-generator, detector, mutation manifest와 evaluator를 파일 수준에서 분리하고 pilot과
-evaluation seed도 분리했다. 규칙, seed, matching key, metric과 threshold는 결과 확인 전에
-`protocol-v1`로 동결했다. IFC를 serialize한 뒤 새 프로세스에서 다시 열었으며, model·IDS·profile·
-truth·output hash를 보존했다. 각 candidate는 warm-up 후 10회 측정했다.
+generator·detector·manifest·evaluator와 pilot/evaluation seed를 분리했다. 규칙·seed·matching
+key·metric·threshold는 `protocol-v1`로 사전 동결했고, 저장 IFC를 새 프로세스에서 열어 hash를
+보존하며 candidate마다 warm-up 후 10회 측정했다.
 
-동일 evaluation case에서 네 ablation을 비교했다. A는 IDS only, B는 A+IFC integrity, C는
-B+geometry, D는 C+revision의 Full pipeline이다. 고정된 330개 primary fault 분모에서 recall은
-A 0.454545, B 0.636364, C 0.818182, D 1.000000이었고, 각 계층 추가 기여는
-`+0.181818`이었다. 이는 IDS가 형상과 revision을 검사했다는 뜻이 아니라 서로 다른 scope의
-규칙을 순차적으로 결합했을 때의 추가 검출량을 나타낸다.
+330개 고정 분모의 ablation recall은 IDS(A) 0.454545 → +IFC(B) 0.636364 → +geometry(C)
+0.818182 → +revision(D) 1.000000으로, 각 scope의 추가 기여는 `+0.181818`이었다.
 
 ---
 

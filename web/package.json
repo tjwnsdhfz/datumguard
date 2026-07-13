@@ -12,7 +12,8 @@
     "demo:capture": "node scripts/capture-architecture-demo.mjs",
     "demo:capture:piping": "node scripts/capture-piping-demo.mjs",
     "demo:capture:solid": "node scripts/capture-solid-demo.mjs",
-    "demo:capture:frame": "node scripts/capture-frame-demo.mjs"
+    "demo:capture:frame": "node scripts/capture-frame-demo.mjs",
+    "demo:capture:openbim": "node scripts/capture-openbim-awards.mjs"
   },
   "dependencies": {
     "@fontsource/dm-mono": "5.2.7",
