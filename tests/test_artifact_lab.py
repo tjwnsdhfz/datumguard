@@ -108,6 +108,146 @@ def test_dxf_revision_compare_detects_geometry_change() -> None:
     assert result.comparison["geometry"]["removed_entity_count"] == 1
 
 
+def test_dxf_completeness_marks_direct_geometry_as_measured() -> None:
+    document = ezdxf.new("R2013")
+    document.units = ezdxf.units.MM
+    document.modelspace().add_line((0, 0), (100, 0))
+
+    result = audit_artifact("measured-line.dxf", _dxf_bytes(document))
+
+    assert result.status == "audited"
+    assert result.dxf_completeness is not None
+    assert result.dxf_completeness.support_matrix_version == "2026-07-13.1"
+    assert result.dxf_completeness.comparison_complete is True
+    assert result.dxf_completeness.entity_support[0].support_level == "MEASURED"
+
+
+def test_dxf_insert_is_render_only_and_never_claims_geometry_equality() -> None:
+    baseline = ezdxf.new("R2013")
+    baseline.units = ezdxf.units.MM
+    block = baseline.blocks.new("EQUIPMENT")
+    block.add_line((0, 0), (100, 0))
+    baseline.modelspace().add_blockref("EQUIPMENT", (0, 0))
+    candidate = ezdxf.new("R2013")
+    candidate.units = ezdxf.units.MM
+    candidate_block = candidate.blocks.new("EQUIPMENT")
+    candidate_block.add_line((0, 0), (100, 0))
+    candidate.modelspace().add_blockref("EQUIPMENT", (0, 0))
+
+    result = compare_artifacts(
+        "baseline-block.dxf",
+        _dxf_bytes(baseline),
+        "candidate-block.dxf",
+        _dxf_bytes(candidate),
+    )
+
+    assert result.status == "needs_confirmation"
+    assert result.comparison_complete is False
+    assert result.support_matrix_version == "2026-07-13.1"
+    assert result.comparison["geometry"]["same_geometry_multiset"] is None
+    assert result.comparison["geometry"]["measured_geometry_multiset_match"] is True
+    assert result.candidate.dxf_completeness is not None
+    assert result.candidate.dxf_completeness.entity_support[0].support_level == "RENDER_ONLY"
+
+
+def test_dxf_xref_and_wipeout_are_fail_closed_as_unsupported() -> None:
+    document = ezdxf.new("R2013")
+    document.units = ezdxf.units.MM
+    xref = document.blocks.new("REMOTE-XREF")
+    xref.block.dxf.flags = 4
+    document.modelspace().add_blockref("REMOTE-XREF", (0, 0))
+    document.modelspace().add_wipeout([(0, 0), (100, 0), (100, 100), (0, 100)])
+
+    result = audit_artifact("unsupported-content.dxf", _dxf_bytes(document))
+
+    assert result.status == "needs_confirmation"
+    assert result.dxf_completeness is not None
+    assert result.dxf_completeness.comparison_complete is False
+    assert result.dxf_completeness.render_eligible is False
+    assert result.dxf_completeness.xref_names == ["REMOTE-XREF"]
+    support = {
+        item.entity_type: item.support_level for item in result.dxf_completeness.entity_support
+    }
+    assert support == {"INSERT[XREF]": "UNSUPPORTED", "WIPEOUT": "UNSUPPORTED"}
+    assert "DG_DXF_ENTITY_UNSUPPORTED" in {issue.code for issue in result.issues}
+
+
+def test_dxf_nested_opaque_content_blocks_preview_expansion() -> None:
+    document = ezdxf.new("R2013")
+    document.units = ezdxf.units.MM
+    block = document.blocks.new("OPAQUE-EQUIPMENT")
+    block.add_wipeout([(0, 0), (100, 0), (100, 100), (0, 100)])
+    document.modelspace().add_blockref(block.name, (0, 0))
+
+    result = audit_artifact("nested-opaque-content.dxf", _dxf_bytes(document))
+
+    assert result.status == "needs_confirmation"
+    assert result.dxf_completeness is not None
+    assert result.dxf_completeness.render_eligible is False
+    support = {
+        item.entity_type: item.support_level for item in result.dxf_completeness.entity_support
+    }
+    assert support == {"INSERT": "RENDER_ONLY", "WIPEOUT": "UNSUPPORTED"}
+    assert result.preview_svg is None
+
+
+def test_dxf_deep_block_nesting_stops_at_complexity_gate() -> None:
+    document = ezdxf.new("R2013")
+    document.units = ezdxf.units.MM
+    blocks = [document.blocks.new(f"NEST-{index:02d}") for index in range(18)]
+    for index, block in enumerate(blocks[:-1]):
+        block.add_blockref(blocks[index + 1].name, (0, 0))
+    blocks[-1].add_line((0, 0), (10, 0))
+    document.modelspace().add_blockref(blocks[0].name, (0, 0))
+
+    result = audit_artifact("deep-nesting.dxf", _dxf_bytes(document))
+
+    assert result.status == "needs_confirmation"
+    assert result.dxf_completeness is not None
+    assert result.dxf_completeness.max_nesting_depth > 16
+    assert "nesting_depth" in result.dxf_completeness.budget_exceeded
+    assert result.dxf_completeness.render_eligible is False
+    assert "DG_DXF_COMPLEXITY_BUDGET_EXCEEDED" in {issue.code for issue in result.issues}
+
+
+def test_dxf_repeated_blocks_stop_before_exponential_render_expansion() -> None:
+    document = ezdxf.new("R2013")
+    document.units = ezdxf.units.MM
+    blocks = [document.blocks.new(f"ARRAY-{index:02d}") for index in range(10)]
+    for index, block in enumerate(blocks[:-1]):
+        for offset in range(4):
+            block.add_blockref(blocks[index + 1].name, (offset * 20, 0))
+    blocks[-1].add_line((0, 0), (10, 0))
+    document.modelspace().add_blockref(blocks[0].name, (0, 0))
+
+    result = audit_artifact("expanded-block-budget.dxf", _dxf_bytes(document))
+
+    assert result.status == "needs_confirmation"
+    assert result.dxf_completeness is not None
+    assert result.dxf_completeness.nested_block_entity_count < 100
+    assert result.dxf_completeness.estimated_expanded_entity_count == 250_001
+    assert "expanded_entities" in result.dxf_completeness.budget_exceeded
+    assert result.dxf_completeness.render_eligible is False
+
+
+def test_dxf_cyclic_block_reference_does_not_expand_or_render() -> None:
+    document = ezdxf.new("R2013")
+    document.units = ezdxf.units.MM
+    first = document.blocks.new("CYCLE-A")
+    second = document.blocks.new("CYCLE-B")
+    first.add_blockref(second.name, (0, 0))
+    second.add_blockref(first.name, (0, 0))
+    document.modelspace().add_blockref(first.name, (0, 0))
+
+    result = audit_artifact("cyclic-blocks.dxf", _dxf_bytes(document))
+
+    assert result.status == "failed_verification"
+    assert result.dxf_completeness is not None
+    assert result.dxf_completeness.cyclic_block_references is True
+    assert result.dxf_completeness.render_eligible is False
+    assert "cyclic_block_reference" in result.dxf_completeness.budget_exceeded
+
+
 def test_ifc_audit_and_global_id_revision_compare() -> None:
     baseline_bytes = _ifc_bytes()
     candidate_model = ifcopenshell.file.from_string(baseline_bytes.decode("utf-8"))

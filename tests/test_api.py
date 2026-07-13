@@ -138,6 +138,8 @@ def test_artifact_audit_endpoint_accepts_real_dxf_upload(
     assert payload["format"] == "dxf"
     assert payload["artifact_hash"].startswith("sha256:")
     assert payload["approval_eligible"] is False
+    assert payload["dxf_completeness"]["support_matrix_version"] == "2026-07-13.1"
+    assert payload["dxf_completeness"]["comparison_complete"] is True
 
 
 def test_solid_contract_schema_is_public() -> None:

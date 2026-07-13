@@ -12,6 +12,7 @@ import sys
 import tempfile
 import uuid
 from collections import Counter
+from itertools import chain, islice
 from pathlib import Path
 from typing import Any, cast
 
@@ -30,6 +31,9 @@ from .artifact_models import (
     ArtifactFormat,
     ArtifactMetric,
     AuditIssue,
+    DxfCompleteness,
+    DxfEntitySupport,
+    DxfSupportLevel,
     PreviewMesh,
 )
 from .cad_subprocess import CadWorkerFailure, run_cad_worker, run_parser_worker
@@ -49,6 +53,67 @@ def _configured_artifact_limit() -> int:
 MAX_ARTIFACT_BYTES = _configured_artifact_limit()
 MAX_PREVIEW_TRIANGLES = 3500
 MAX_ISSUES = 100
+DXF_SUPPORT_MATRIX_VERSION = "2026-07-13.1"
+MAX_DXF_MODELSPACE_ENTITIES = 100_000
+MAX_DXF_BLOCK_DEFINITIONS = 10_000
+MAX_DXF_NESTED_ENTITIES = 250_000
+MAX_DXF_EXPANDED_ENTITIES = 250_000
+MAX_DXF_INSERTS = 10_000
+MAX_DXF_NESTING_DEPTH = 16
+MAX_DXF_RENDER_ENTITIES = 50_000
+
+_DXF_MEASURED_TYPES = frozenset(
+    {
+        "3DFACE",
+        "ARC",
+        "CIRCLE",
+        "ELLIPSE",
+        "LINE",
+        "LWPOLYLINE",
+        "MTEXT",
+        "POINT",
+        "POLYLINE",
+        "RAY",
+        "SOLID",
+        "SPLINE",
+        "TEXT",
+        "TRACE",
+        "XLINE",
+    }
+)
+_DXF_RENDER_ONLY_TYPES = frozenset(
+    {
+        "ACAD_TABLE",
+        "ATTRIB",
+        "ATTDEF",
+        "DIMENSION",
+        "HATCH",
+        "HELIX",
+        "INSERT",
+        "LEADER",
+        "MESH",
+        "MLEADER",
+        "MLINE",
+        "MULTILEADER",
+        "SHAPE",
+        "VIEWPORT",
+    }
+)
+_DXF_UNSUPPORTED_TYPES = frozenset(
+    {
+        "ACAD_PROXY_ENTITY",
+        "BODY",
+        "DGNUNDERLAY",
+        "DWFUNDERLAY",
+        "IMAGE",
+        "OLE2FRAME",
+        "OLEFRAME",
+        "PDFUNDERLAY",
+        "REGION",
+        "UNDERLAY",
+        "WIPEOUT",
+    }
+)
 
 _FORMAT_MEDIA_TYPES: dict[ArtifactFormat, str] = {
     "dxf": "image/vnd.dxf",
@@ -168,10 +233,10 @@ def _read_dxf(data: bytes) -> tuple[Any, Any]:
     return recover.read(io.BytesIO(data), errors="strict")
 
 
-def _datumguard_xdata(document: Any) -> tuple[int, str | None]:
+def _datumguard_xdata(entities: list[Any]) -> tuple[int, str | None]:
     count = 0
     design_kind: str | None = None
-    for entity in document.modelspace():
+    for entity in entities:
         try:
             tags = entity.get_xdata("DATUMGUARD")
         except (DXFError, ValueError):
@@ -236,11 +301,292 @@ def _entity_payload(entity: Any) -> dict[str, Any]:
     return {"type": entity_type, "attributes": attributes}
 
 
-def _dxf_fingerprints(data: bytes) -> tuple[Counter[str], dict[str, str]]:
+def _entity_support(
+    entity: Any,
+    xref_names: set[str],
+) -> tuple[str, DxfSupportLevel, str]:
+    entity_type = str(entity.dxftype()).upper()
+    if entity_type == "INSERT":
+        block_name = str(getattr(entity.dxf, "name", "") or "")
+        if block_name in xref_names:
+            return (
+                "INSERT[XREF]",
+                "UNSUPPORTED",
+                "External reference content is not available for deterministic comparison.",
+            )
+        return (
+            entity_type,
+            "RENDER_ONLY",
+            "Block placement can be rendered, but nested geometry is not flattened for equality.",
+        )
+    if entity_type in _DXF_MEASURED_TYPES:
+        return (
+            entity_type,
+            "MEASURED",
+            "Canonical DXF attributes and explicit geometry payload are fingerprinted.",
+        )
+    if entity_type in _DXF_RENDER_ONLY_TYPES:
+        return (
+            entity_type,
+            "RENDER_ONLY",
+            "The entity can contribute to preview but is not a complete geometry fingerprint.",
+        )
+    if entity_type in _DXF_UNSUPPORTED_TYPES:
+        return (
+            entity_type,
+            "UNSUPPORTED",
+            "External, opaque, raster, proxy, or clipping content is not measured.",
+        )
+    return (
+        entity_type,
+        "UNSUPPORTED",
+        "This entity type is not present in the current support matrix.",
+    )
+
+
+def _block_analysis(
+    document: Any,
+    modelspace_entities: list[Any],
+) -> tuple[int, int, int, int, int, bool, set[str], list[Any], list[str]]:
+    layouts = list(islice(iter(document.blocks), MAX_DXF_BLOCK_DEFINITIONS + 1))
+    budget_exceeded: list[str] = []
+    if len(layouts) > MAX_DXF_BLOCK_DEFINITIONS:
+        layouts = layouts[:MAX_DXF_BLOCK_DEFINITIONS]
+        budget_exceeded.append("block_definitions")
+
+    graph: dict[str, Counter[str]] = {}
+    direct_entity_counts: dict[str, int] = {}
+    xref_names: set[str] = set()
+    nested_entities: list[Any] = []
+    nested_entity_count = 0
+    insert_count = sum(1 for entity in modelspace_entities if entity.dxftype() == "INSERT")
+    for block_layout in layouts:
+        name = str(getattr(block_layout, "name", "") or "")
+        if not name or name.startswith("*"):
+            continue
+        block_entity = getattr(block_layout, "block", None)
+        block_record = getattr(block_layout, "block_record", None)
+        if bool(getattr(block_entity, "is_xref", False)) or bool(
+            getattr(block_record, "is_xref", False)
+        ):
+            xref_names.add(name)
+        remaining = MAX_DXF_NESTED_ENTITIES - nested_entity_count
+        if remaining <= 0:
+            if "nested_entities" not in budget_exceeded:
+                budget_exceeded.append("nested_entities")
+            break
+        block_entities = list(islice(iter(block_layout), remaining + 1))
+        if len(block_entities) > remaining:
+            block_entities = block_entities[:remaining]
+            budget_exceeded.append("nested_entities")
+        nested_entity_count += len(block_entities)
+        nested_entities.extend(block_entities)
+        nested_inserts = [entity for entity in block_entities if entity.dxftype() == "INSERT"]
+        child_names: Counter[str] = Counter(
+            str(getattr(entity.dxf, "name", "") or "") for entity in nested_inserts
+        )
+        child_names.pop("", None)
+        insert_count += len(nested_inserts)
+        graph[name] = child_names
+        direct_entity_counts[name] = len(block_entities)
+
+    cyclic = False
+
+    def depth(block_name: str, path: frozenset[str]) -> int:
+        nonlocal cyclic
+        if block_name in path:
+            cyclic = True
+            return MAX_DXF_NESTING_DEPTH + 1
+        if len(path) > MAX_DXF_NESTING_DEPTH:
+            return len(path)
+        children = graph.get(block_name, Counter())
+        if not children:
+            return 1
+        return 1 + max(depth(child, path | {block_name}) for child in children)
+
+    root_names: Counter[str] = Counter(
+        str(getattr(entity.dxf, "name", "") or "")
+        for entity in modelspace_entities
+        if entity.dxftype() == "INSERT"
+    )
+    root_names.pop("", None)
+    max_depth = max((depth(name, frozenset()) for name in root_names), default=0)
+
+    expanded_cap = MAX_DXF_EXPANDED_ENTITIES + 1
+
+    def expanded_count(block_name: str, path: frozenset[str]) -> int:
+        if block_name in path or len(path) > MAX_DXF_NESTING_DEPTH:
+            return expanded_cap
+        total = direct_entity_counts.get(block_name, 0)
+        for child, multiplicity in graph.get(block_name, Counter()).items():
+            child_count = expanded_count(child, path | {block_name})
+            total += multiplicity * child_count
+            if total >= expanded_cap:
+                return expanded_cap
+        return total
+
+    expanded_entity_count = len(modelspace_entities)
+    for root_name, multiplicity in root_names.items():
+        expanded_entity_count += multiplicity * expanded_count(root_name, frozenset())
+        if expanded_entity_count >= expanded_cap:
+            expanded_entity_count = expanded_cap
+            break
+    if insert_count > MAX_DXF_INSERTS:
+        budget_exceeded.append("insert_count")
+    if max_depth > MAX_DXF_NESTING_DEPTH:
+        budget_exceeded.append("nesting_depth")
+    if expanded_entity_count > MAX_DXF_EXPANDED_ENTITIES:
+        budget_exceeded.append("expanded_entities")
+    if cyclic:
+        budget_exceeded.append("cyclic_block_reference")
+    return (
+        len([layout for layout in layouts if not str(layout.name).startswith("*")]),
+        nested_entity_count,
+        expanded_entity_count,
+        insert_count,
+        max_depth,
+        cyclic,
+        xref_names,
+        nested_entities,
+        sorted(set(budget_exceeded)),
+    )
+
+
+def _dxf_completeness(
+    document: Any,
+    entities: list[Any],
+    modelspace_entity_count: int,
+) -> DxfCompleteness:
+    analysis_truncated = modelspace_entity_count > MAX_DXF_MODELSPACE_ENTITIES
+    analyzed_entities = entities[:MAX_DXF_MODELSPACE_ENTITIES]
+    (
+        block_definition_count,
+        nested_entity_count,
+        expanded_entity_count,
+        insert_count,
+        max_depth,
+        cyclic,
+        xref_names,
+        nested_entities,
+        budget_exceeded,
+    ) = _block_analysis(document, analyzed_entities)
+    if analysis_truncated:
+        budget_exceeded.append("modelspace_entities")
+
+    support_counts: Counter[tuple[str, DxfSupportLevel, str]] = Counter(
+        _entity_support(entity, xref_names) for entity in chain(analyzed_entities, nested_entities)
+    )
+    support_records = [
+        DxfEntitySupport(
+            entity_type=entity_type,
+            support_level=support_level,
+            entity_count=count,
+            reason=reason,
+        )
+        for (entity_type, support_level, reason), count in sorted(support_counts.items())
+    ]
+    unsupported = any(item.support_level == "UNSUPPORTED" for item in support_records)
+    render_only = any(item.support_level == "RENDER_ONLY" for item in support_records)
+    budgets = {
+        "max_modelspace_entities": MAX_DXF_MODELSPACE_ENTITIES,
+        "max_block_definitions": MAX_DXF_BLOCK_DEFINITIONS,
+        "max_nested_entities": MAX_DXF_NESTED_ENTITIES,
+        "max_expanded_entities": MAX_DXF_EXPANDED_ENTITIES,
+        "max_inserts": MAX_DXF_INSERTS,
+        "max_nesting_depth": MAX_DXF_NESTING_DEPTH,
+        "max_render_entities": MAX_DXF_RENDER_ENTITIES,
+    }
+    comparison_complete = not (
+        analysis_truncated or unsupported or render_only or budget_exceeded or cyclic
+    )
+    render_eligible = not (
+        unsupported
+        or budget_exceeded
+        or cyclic
+        or modelspace_entity_count > MAX_DXF_RENDER_ENTITIES
+    )
+    return DxfCompleteness(
+        support_matrix_version=DXF_SUPPORT_MATRIX_VERSION,
+        comparison_complete=comparison_complete,
+        render_eligible=render_eligible,
+        analysis_truncated=analysis_truncated,
+        modelspace_entity_count=modelspace_entity_count,
+        block_definition_count=block_definition_count,
+        nested_block_entity_count=nested_entity_count,
+        estimated_expanded_entity_count=expanded_entity_count,
+        insert_count=insert_count,
+        max_nesting_depth=(
+            MAX_DXF_NESTING_DEPTH + 1
+            if cyclic and max_depth <= MAX_DXF_NESTING_DEPTH
+            else max_depth
+        ),
+        cyclic_block_references=cyclic,
+        xref_names=sorted(xref_names),
+        entity_support=support_records,
+        budget_exceeded=sorted(set(budget_exceeded)),
+        budgets=budgets,
+    )
+
+
+def _completeness_issues(completeness: DxfCompleteness) -> list[AuditIssue]:
+    issues: list[AuditIssue] = []
+    unsupported = [
+        item.entity_type
+        for item in completeness.entity_support
+        if item.support_level == "UNSUPPORTED"
+    ]
+    render_only = [
+        item.entity_type
+        for item in completeness.entity_support
+        if item.support_level == "RENDER_ONLY"
+    ]
+    if unsupported:
+        issues.append(
+            AuditIssue(
+                code="DG_DXF_ENTITY_UNSUPPORTED",
+                severity="warning",
+                message="일부 DXF entity는 현재 버전에서 측정하거나 완전 비교할 수 없습니다.",
+                details={"entity_types": unsupported},
+            )
+        )
+    if render_only:
+        issues.append(
+            AuditIssue(
+                code="DG_DXF_COMPARISON_INCOMPLETE",
+                severity="warning",
+                message=(
+                    "일부 DXF entity는 preview만 가능하므로 geometry equality를 주장하지 않습니다."
+                ),
+                details={"entity_types": render_only},
+            )
+        )
+    if completeness.budget_exceeded:
+        issues.append(
+            AuditIssue(
+                code="DG_DXF_COMPLEXITY_BUDGET_EXCEEDED",
+                severity="warning",
+                message="DXF 복잡도가 안전한 분석 예산을 넘어 완전 비교를 중단했습니다.",
+                details={"budgets": completeness.budgets, "exceeded": completeness.budget_exceeded},
+            )
+        )
+    return issues
+
+
+def _dxf_fingerprints(
+    data: bytes,
+) -> tuple[Counter[str], dict[str, str], DxfCompleteness]:
     document, _auditor = _read_dxf(data)
+    modelspace = document.modelspace()
+    entity_count = len(modelspace)
+    entities = list(islice(iter(modelspace), MAX_DXF_MODELSPACE_ENTITIES + 1))
+    completeness = _dxf_completeness(document, entities, entity_count)
+    xref_names = set(completeness.xref_names)
     fingerprints: Counter[str] = Counter()
     handles: dict[str, str] = {}
-    for entity in document.modelspace():
+    for entity in entities[:MAX_DXF_MODELSPACE_ENTITIES]:
+        _entity_type, support_level, _reason = _entity_support(entity, xref_names)
+        if support_level != "MEASURED":
+            continue
         payload = _entity_payload(entity)
         serialized = json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
         fingerprint = hashlib.sha256(serialized.encode("utf-8")).hexdigest()
@@ -248,7 +594,7 @@ def _dxf_fingerprints(data: bytes) -> tuple[Counter[str], dict[str, str]]:
         handle = str(getattr(entity.dxf, "handle", "") or "")
         if handle:
             handles[handle] = fingerprint
-    return fingerprints, handles
+    return fingerprints, handles, completeness
 
 
 def _audit_dxf(filename: str, data: bytes, artifact_hash: str) -> ArtifactAuditResponse:
@@ -264,10 +610,14 @@ def _audit_dxf(filename: str, data: bytes, artifact_hash: str) -> ArtifactAuditR
             artifact_format="dxf",
         )
 
-    entities = list(document.modelspace())
+    modelspace = document.modelspace()
+    modelspace_entity_count = len(modelspace)
+    entities = list(islice(iter(modelspace), MAX_DXF_MODELSPACE_ENTITIES + 1))
+    completeness = _dxf_completeness(document, entities, modelspace_entity_count)
+    entities = entities[:MAX_DXF_MODELSPACE_ENTITIES]
     entity_counts = Counter(entity.dxftype() for entity in entities)
     layer_counts = Counter(str(entity.dxf.layer) for entity in entities)
-    issues = _auditor_issues(auditor)
+    issues = [*_auditor_issues(auditor), *_completeness_issues(completeness)]
     if not entities:
         issues.append(
             AuditIssue(
@@ -290,6 +640,8 @@ def _audit_dxf(filename: str, data: bytes, artifact_hash: str) -> ArtifactAuditR
 
     extents_payload: dict[str, Any] | None = None
     try:
+        if not completeness.render_eligible:
+            raise ValueError("DXF completeness gate blocked extents expansion")
         box = bbox.extents(entities, fast=True)
         if box.has_data:
             extents_payload = {
@@ -310,8 +662,8 @@ def _audit_dxf(filename: str, data: bytes, artifact_hash: str) -> ArtifactAuditR
             )
         )
 
-    xdata_count, design_kind = _datumguard_xdata(document)
-    preview_svg = _render_dxf_svg(document)
+    xdata_count, design_kind = _datumguard_xdata(entities)
+    preview_svg = _render_dxf_svg(document) if completeness.render_eligible else None
     if preview_svg is None:
         issues.append(
             AuditIssue(
@@ -325,7 +677,7 @@ def _audit_dxf(filename: str, data: bytes, artifact_hash: str) -> ArtifactAuditR
         "dxf_version": document.dxfversion,
         "units": unit_name,
         "unit_code": unit_code,
-        "entity_count": len(entities),
+        "entity_count": modelspace_entity_count,
         "entity_types": dict(sorted(entity_counts.items())),
         "layer_count": len(layer_counts),
         "layers": dict(sorted(layer_counts.items())),
@@ -335,9 +687,16 @@ def _audit_dxf(filename: str, data: bytes, artifact_hash: str) -> ArtifactAuditR
         "audit_error_count": len(getattr(auditor, "errors", [])),
         "audit_fix_count": len(getattr(auditor, "fixes", [])),
         "binary_dxf": data.startswith(b"AutoCAD Binary DXF"),
+        "support_matrix_version": completeness.support_matrix_version,
+        "comparison_complete": completeness.comparison_complete,
+        "entity_type_counts_truncated": completeness.analysis_truncated,
     }
     metrics = [
-        ArtifactMetric(metric_id="entity-count", label="Modelspace entities", value=len(entities)),
+        ArtifactMetric(
+            metric_id="entity-count",
+            label="Modelspace entities",
+            value=modelspace_entity_count,
+        ),
         ArtifactMetric(metric_id="layer-count", label="Layers used", value=len(layer_counts)),
         ArtifactMetric(
             metric_id="xdata-count", label="Traceable XDATA entities", value=xdata_count
@@ -378,6 +737,7 @@ def _audit_dxf(filename: str, data: bytes, artifact_hash: str) -> ArtifactAuditR
         summary=summary,
         issues=issues,
         preview_svg=preview_svg,
+        dxf_completeness=completeness,
     )
 
 
@@ -812,7 +1172,9 @@ def _metric_deltas(
     return deltas
 
 
-def _isolated_dxf_fingerprints(data: bytes) -> tuple[Counter[str], dict[str, str]]:
+def _isolated_dxf_fingerprints(
+    data: bytes,
+) -> tuple[Counter[str], dict[str, str], DxfCompleteness]:
     result = run_parser_worker(
         {
             "operation": "dxf_fingerprints",
@@ -823,7 +1185,8 @@ def _isolated_dxf_fingerprints(data: bytes) -> tuple[Counter[str], dict[str, str
         {str(key): int(value) for key, value in dict(result["fingerprints"]).items()}
     )
     handles = {str(key): str(value) for key, value in dict(result["handles"]).items()}
-    return fingerprints, handles
+    completeness = DxfCompleteness.model_validate(result["completeness"])
+    return fingerprints, handles, completeness
 
 
 def _isolated_ifc_index(data: bytes) -> dict[str, str]:
@@ -849,6 +1212,8 @@ def _compare_artifacts_uncached(
     same_artifact = baseline_hash == candidate_hash and baseline_hash != "sha256:unavailable"
     issues: list[AuditIssue] = []
     comparison: dict[str, Any] = {"metric_deltas": _metric_deltas(baseline, candidate)}
+    support_matrix_version: str | None = None
+    comparison_complete: bool | None = None
 
     if baseline.format is None or candidate.format is None or baseline.format != candidate.format:
         issues.append(
@@ -860,9 +1225,23 @@ def _compare_artifacts_uncached(
             )
         )
     elif baseline.format == "dxf":
+        support_matrix_version = DXF_SUPPORT_MATRIX_VERSION
+        comparison_complete = False
         try:
-            baseline_fingerprints, baseline_handles = _isolated_dxf_fingerprints(baseline_data)
-            candidate_fingerprints, candidate_handles = _isolated_dxf_fingerprints(candidate_data)
+            (
+                baseline_fingerprints,
+                baseline_handles,
+                baseline_completeness,
+            ) = _isolated_dxf_fingerprints(baseline_data)
+            (
+                candidate_fingerprints,
+                candidate_handles,
+                candidate_completeness,
+            ) = _isolated_dxf_fingerprints(candidate_data)
+            comparison_complete = (
+                baseline_completeness.comparison_complete
+                and candidate_completeness.comparison_complete
+            )
             added = candidate_fingerprints - baseline_fingerprints
             removed = baseline_fingerprints - candidate_fingerprints
             common_handles = set(baseline_handles) & set(candidate_handles)
@@ -876,7 +1255,14 @@ def _compare_artifacts_uncached(
                 "removed_entity_count": sum(removed.values()),
                 "changed_handle_count": len(changed_handles),
                 "changed_handles": changed_handles[:50],
-                "same_geometry_multiset": not added and not removed,
+                "same_geometry_multiset": (
+                    not added and not removed if comparison_complete else None
+                ),
+                "measured_geometry_multiset_match": not added and not removed,
+                "comparison_complete": comparison_complete,
+                "support_matrix_version": support_matrix_version,
+                "baseline_completeness": baseline_completeness.model_dump(mode="json"),
+                "candidate_completeness": candidate_completeness.model_dump(mode="json"),
             }
         except (
             CadWorkerFailure,
@@ -959,6 +1345,8 @@ def _compare_artifacts_uncached(
         baseline_hash=baseline_hash,
         candidate_hash=candidate_hash,
         same_artifact=same_artifact,
+        support_matrix_version=support_matrix_version,
+        comparison_complete=comparison_complete,
         comparison=comparison,
         baseline=baseline,
         candidate=candidate,
@@ -1021,8 +1409,12 @@ def parser_worker_main() -> None:
         artifact_hash = str(payload.get("artifact_hash") or _sha256(content))
         result = _audit_ifc(filename, content, artifact_hash).model_dump(mode="json")
     elif operation == "dxf_fingerprints":
-        fingerprints, handles = _dxf_fingerprints(content)
-        result = {"fingerprints": dict(fingerprints), "handles": handles}
+        fingerprints, handles, completeness = _dxf_fingerprints(content)
+        result = {
+            "fingerprints": dict(fingerprints),
+            "handles": handles,
+            "completeness": completeness.model_dump(mode="json"),
+        }
     elif operation == "ifc_index":
         _model, index = _ifc_index(content)
         result = {"index": index}

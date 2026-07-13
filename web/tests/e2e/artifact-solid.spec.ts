@@ -40,6 +40,11 @@ test.describe("real CAD artifact and solid workspaces", () => {
     await expect(results).toContainText(/sha256:[0-9a-f]{64}/i);
     await expect(results).toContainText("ORIGINAL PRESERVED");
     await expect(results.getByRole("img")).toBeVisible();
+    const completeness = page.getByTestId("dxf-completeness-gate");
+    await expect(completeness).toContainText("2026-07-13.1");
+    await expect(completeness).toContainText("COMPLETE");
+    await expect(completeness).toContainText("MEASURED");
+    await expect(completeness).toContainText("ALLOWED");
   });
 
   test("compares two DXF revisions by serialized geometry", async ({ page }) => {
@@ -65,6 +70,8 @@ test.describe("real CAD artifact and solid workspaces", () => {
     await expect(results).toContainText("CHANGED");
     await expect(results).toContainText("Added geometry");
     await expect(results).toContainText("Removed geometry");
+    const completeness = page.getByTestId("dxf-comparison-completeness");
+    await expect(completeness).toContainText("COMPLETE GEOMETRY COMPARISON");
   });
 
   test("generates and independently reimports a real OpenCascade STEP solid", async ({ page }) => {
