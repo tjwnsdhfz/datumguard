@@ -370,6 +370,7 @@ export default function ArchitectureWorkspace() {
   const healthAttempts = readiness.attempts;
   const svgRef = useRef<SVGSVGElement>(null);
   const inspectorRef = useRef<HTMLFieldSetElement>(null);
+  const verificationSectionRef = useRef<HTMLElement>(null);
   const resultHeadingRef = useRef<HTMLHeadingElement>(null);
   const userRequestedVerification = useRef(false);
   const draftRevision = useRef(0);
@@ -458,7 +459,7 @@ export default function ArchitectureWorkspace() {
 
     userRequestedVerification.current = false;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    resultHeadingRef.current.scrollIntoView({
+    verificationSectionRef.current?.scrollIntoView({
       behavior: reducedMotion ? "auto" : "smooth",
       block: "start",
     });
@@ -1050,7 +1051,7 @@ export default function ArchitectureWorkspace() {
         <button type="button" disabled={primaryDisabled} onClick={handlePrimaryAction}>{primaryLabel}</button>
       </div>
 
-      <section className={`arch-verification ${verification}`} id="verification" aria-labelledby="architecture-result-heading">
+      <section ref={verificationSectionRef} className={`arch-verification ${verification}`} id="verification" aria-labelledby="architecture-result-heading">
         <div className="arch-result-head">
           <div><span>INDEPENDENT EVIDENCE</span><h2 id="architecture-result-heading" data-testid="architecture-result-heading" ref={resultHeadingRef} tabIndex={-1}>{verification === "passed" ? "DXF 재측정 통과" : verification === "failed" ? "공식 export 차단" : verification === "error" ? "검증 요청 실패" : verification === "running" ? "도면을 다시 읽는 중" : "검증 대기"}</h2><p>{message || "캔버스 값을 DesignContract로 잠근 뒤 저장된 DXF만 다시 측정합니다."}</p></div>
           <div data-testid="architecture-verified-badge" className={`arch-verified ${verification}`} role="status" aria-label={`Architecture verification status: ${verification}`}>{verification === "passed" ? <ArchitectureIcon name="check" /> : verification === "failed" || verification === "error" ? <ArchitectureIcon name="alert" /> : null}<span>{verification === "passed" ? "VERIFIED / PASS" : verification === "error" ? "REQUEST ERROR" : verification.toUpperCase()}</span></div>

@@ -291,10 +291,17 @@ test.describe("interactive architecture demo", () => {
     await expect(page.getByTestId("verification-summary")).toContainText(/96(?:\.0)?\s*m²/i);
     await expect(page.getByTestId("verification-summary")).toContainText(/4/);
     await expect(page.getByTestId("architecture-download")).toBeEnabled();
-    const verificationSectionBox = await page.locator("#verification").boundingBox();
+    const verificationSection = page.locator("#verification");
+    await expect.poll(
+      async () => {
+        const y = (await verificationSection.boundingBox())?.y;
+        return y != null && y >= 120 && y <= 130;
+      },
+      { message: "verification section must settle below sticky chrome" },
+    ).toBe(true);
+    const verificationSectionBox = await verificationSection.boundingBox();
     expect(verificationSectionBox, "verification section must be rendered below sticky chrome").not.toBeNull();
     expect(verificationSectionBox?.y).toBeGreaterThanOrEqual(120);
-    expect(verificationSectionBox?.y).toBeLessThanOrEqual(130);
 
     const pendingInput = page.getByTestId("architecture-inspector-center-x");
     await pendingInput.fill("4001");

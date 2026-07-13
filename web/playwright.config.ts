@@ -59,6 +59,10 @@ export default defineConfig({
       env: {
         DATUMGUARD_CORS_ORIGINS:
           process.env.DATUMGUARD_CORS_ORIGINS ?? baseURL,
+        // Browser integration tests exercise functional flows, while the backend suite
+        // verifies production rate-limit behavior independently.
+        DATUMGUARD_ANON_HEAVY_RATE_LIMIT_PER_MINUTE:
+          process.env.DATUMGUARD_ANON_HEAVY_RATE_LIMIT_PER_MINUTE ?? "10000",
       },
     },
     {
