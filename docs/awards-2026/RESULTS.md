@@ -90,8 +90,13 @@
 
 - The first frozen aggregation exposed two evaluator defects; the preserved raw reports were reanalyzed without rerunning the detector.
 - Information/revision supported-rule macro-F1 is a post-freeze sensitivity metric; the preregistered hypotheses are not declared confirmed because zero-support handling was not frozen.
-- Independent BCF viewer import and final distribution-license review are not completed.
-- Docker/Linux CI and production deployment gates are outside this local experiment.
+- A qualified BCF 3.0 graphical viewer import is not completed. BIMcollab Zoom 9.8.14 was attempted but
+  officially supports BCF only through 2.1, so it is not counted as a BCF 3.0 validation result.
+- Hosted buildingSMART validation was not completed because login was unavailable; no upload is claimed.
+- The distribution-license review found an unresolved `bcf-client==0.8.5` source/wheel metadata conflict,
+  so BCF remains opt-in and public distribution remains blocked pending clarification.
+- Draft PR Docker/Linux CI, container/SBOM/security gates and preview deployment smoke passed; OpenBIM
+  production runtime remains intentionally disabled and is not claimed as production validation.
 - No detector miss remained in this synthetic corpus after evaluator correction; this is not evidence of performance on real industrial IFC files.
 
 상세 실패와 모든 반복 결과는 `evidence/raw_results.jsonl`을 기준으로 한다. 합성 IFC 결과를

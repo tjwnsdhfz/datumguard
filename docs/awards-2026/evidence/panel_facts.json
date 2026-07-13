@@ -16,11 +16,11 @@
   },
   "dataset_id": "virtual-fab-v1",
   "external_gates": {
-    "bcf_viewer_import": "not_completed",
-    "buildingSMART_ifc_validation_service": "not_completed",
-    "distribution_license_review": "not_completed",
-    "docker_linux_ci": "not_completed",
-    "production_smoke": "not_completed"
+    "bcf_viewer_import": "not_completed_no_qualified_bcf3_viewer",
+    "buildingSMART_ifc_validation_service": "not_completed_login_unavailable",
+    "distribution_license_review": "blocked_upstream_metadata_conflict",
+    "docker_linux_ci": "completed_pr20_run_29192363975",
+    "production_smoke": "preview_web_api_contract_completed_run_29192389643_openbim_runtime_disabled"
   },
   "family_macro_f1": 1.0,
   "full_pipeline": {

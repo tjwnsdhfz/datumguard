@@ -30,6 +30,11 @@
 
 ## 문서와 증거
 
+- [BIM Awards 2026 학생부 Research 제출 가이드](SUBMISSION_GUIDE.md)
+- [3매 출품 설명서 원고](COMPETITION_DESCRIPTION.md)
+- [편집 가능한 3매 DOCX](BIM_AWARDS_2026_STUDENT_RESEARCH_DESCRIPTION.docx)
+- [Student Design Edition PRD](PRD_STUDENT_EDITION.md)
+- [실제 학생 설계 적용 가능성 감사](STUDENT_DESIGN_FEASIBILITY.md)
 - [개발 계획](DEVELOPMENT_PLAN.md)
 - [연구 계획](RESEARCH_PLAN.md)
 - [동결 protocol](protocol.yaml)
@@ -53,7 +58,8 @@
 - 실제 FAB·기업 자료 없이 IFC4 합성 데이터만 사용한다.
 - `research_validation_only=true`, `approval_eligible=false`를 고정한다.
 - BCF는 same-library round-trip 외에 buildingSMART BCF 3.0 공식 checker와 독립 .NET XSD·의미
-  검증까지 통과했다. 독립 graphical viewer와 license gate가 끝나기 전 핵심 성과로 주장하지 않는다.
+  검증까지 통과했다. BIMcollab Zoom은 공식 지원 범위가 BCF 2.1까지라 BCF 3.0 판정에 사용하지 않으며,
+  BCF 3.0 graphical viewer와 license gate가 끝나기 전 핵심 성과로 주장하지 않는다.
 - API의 BCF packaging은 별도 `DATUMGUARD_ENABLE_BCF=false` gate로 기본 차단한다.
 - `/openbim` 웹 경로는 v0.3.0에 배포됐지만 hosted API 실행은 비활성인 research preview다.
 - Render production은 외부 gate 완료 전 `DATUMGUARD_ENABLE_OPENBIM=false`와
@@ -111,13 +117,15 @@ uv run --frozen python tools/run_openbim_experiment.py --reanalyze-existing `
   --bootstrap-iterations 10000
 ```
 
-## 제출 전 남은 외부 gate
+## 제출 전 외부 gate 상태
 
-1. 독립 BCF viewer에 대표 `.bcf`와 동일 바이트의 `.bcfzip` 호환본을 import하고
-   component/status를 화면 증거로 남긴다.
-2. buildingSMART IFC Validation Service에서 clean 대표 IFC의 외부 결과를 보존한다.
-3. `bcf-client==0.8.5` source/wheel license 표기 차이를 최종 배포 방식 기준으로 검토한다.
-4. OpenBIM gate를 켠 별도 후보 환경에서 cold-start·CORS·최대 입력·동시성 smoke를 실행한다.
-5. 공모전 원고에서 실제 산업 일반화, 안전·법규·제작 승인 표현을 제거한다.
+1. BCF 3.0 지원을 명시한 독립 viewer에 대표 `.bcf`를 import하고 component/status를 화면 증거로
+   남기는 gate는 열려 있다. BIMcollab Zoom 9.8.14는 BCF 2.1까지만 지원하므로 판정 대상에서 제외했다.
+2. buildingSMART IFC Validation Service는 로그인 불가로 업로드하지 않았고 hosted 결과를 주장하지 않는다.
+3. `bcf-client==0.8.5` source/wheel license 표기 차이는 upstream 확인 전 공개 BCF 배포를 차단한다.
+4. PR의 Docker/Linux CI·container·SBOM·security와 preview deployment smoke는 통과했다. OpenBIM
+   production runtime은 계속 비활성이라 production·부하 검증으로 확대 해석하지 않는다.
+5. OpenBIM gate를 켠 별도 후보 환경에서 cold-start·CORS·최대 입력·동시성 smoke를 실행한다.
+6. 공모전 원고에서 실제 산업 일반화, 안전·법규·제작 승인 표현을 제거한다.
 
 이 외부 gate는 구현·합성 실험의 완료 여부와 분리해 공개하며, 미완료 상태를 성과로 바꾸어 쓰지 않는다.
