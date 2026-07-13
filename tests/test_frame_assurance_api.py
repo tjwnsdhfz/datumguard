@@ -70,6 +70,8 @@ def test_rhino_adapter_has_bounded_heavy_operation_controls() -> None:
     path = "/api/v1/frame/rhino/adapt"
     assert path in HEAVY_PATHS
     assert _normalized_route(path) == path
+    assert "/api/v1/frame/rhino/roundtrip" in HEAVY_PATHS
+    assert _normalized_route("/api/v1/frame/rhino/roundtrip") == ("/api/v1/frame/rhino/roundtrip")
     assert _normalized_route("/api/v1/frame/benchmarks/opensees") != "/other"
 
 

@@ -37,6 +37,7 @@ HEAVY_PATHS = frozenset(
         "/api/v1/piping/designs/run",
         "/api/v1/frame/designs/run",
         "/api/v1/frame/rhino/adapt",
+        "/api/v1/frame/rhino/roundtrip",
         "/api/v1/frame/cad/run",
         "/api/v1/frame/surrogate/predict",
         "/api/v1/solid/designs/run",

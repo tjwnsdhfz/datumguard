@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from typing import Any, Literal
+from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator
 
@@ -67,6 +68,32 @@ class FrameSupport(StrictModel):
     rz: bool = False
 
 
+class FrameSourceObject(StrictModel):
+    """Stable mapping from a normalized frame entity back to its Rhino object."""
+
+    entity_type: Literal["member", "support", "load"]
+    entity_id: str = Field(min_length=1, max_length=80)
+    source_object_id: UUID
+
+
+class FrameSourceProvenance(StrictModel):
+    source_system: Literal["rhino_grasshopper"] = "rhino_grasshopper"
+    source_document_id: str = Field(min_length=1, max_length=200)
+    exchange_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    objects: list[FrameSourceObject] = Field(min_length=1, max_length=480)
+    complete: bool
+
+    @model_validator(mode="after")
+    def validate_source_mapping(self) -> FrameSourceProvenance:
+        identities = [(item.entity_type, item.entity_id) for item in self.objects]
+        if len(identities) != len(set(identities)):
+            raise ValueError("frame provenance entity mappings must be unique")
+        source_ids = [item.source_object_id for item in self.objects]
+        if len(source_ids) != len(set(source_ids)):
+            raise ValueError("Rhino source object identifiers must be unique")
+        return self
+
+
 class FrameAnalysisLimits(StrictModel):
     max_displacement_mm: float = Field(gt=0, allow_inf_nan=False)
     allowable_stress_mpa: float = Field(gt=0, allow_inf_nan=False)
@@ -114,6 +141,7 @@ class StructuralFrameContract(StrictModel):
     limits: FrameAnalysisLimits
     free_parameters: list[FrameFreeParameter] = Field(default_factory=list, max_length=50)
     metadata: ContractMetadata
+    provenance: FrameSourceProvenance | None = None
     contract_hash: str | None = Field(default=None, max_length=80)
     intent_text: str | None = Field(default=None, max_length=2000)
 
@@ -126,6 +154,20 @@ class StructuralFrameContract(StrictModel):
         identifiers.extend(item.id for item in self.free_parameters)
         if len(identifiers) != len(set(identifiers)):
             raise ValueError("all structural frame entity identifiers must be unique")
+        if self.provenance is not None:
+            expected = {
+                *(("member", item.id) for item in self.members),
+                *(("support", item.id) for item in self.supports),
+                *(("load", item.id) for item in self.loads),
+            }
+            actual = {(item.entity_type, item.entity_id) for item in self.provenance.objects}
+            missing = sorted(expected - actual)
+            unexpected = sorted(actual - expected)
+            if unexpected or (self.provenance.complete and missing):
+                raise ValueError(
+                    "frame provenance contains invalid or incomplete entity mappings; "
+                    f"missing={missing}, unexpected={unexpected}"
+                )
         return self
 
 
@@ -204,6 +246,8 @@ __all__ = [
     "FrameNode",
     "FrameNodeResult",
     "FrameRunResponse",
+    "FrameSourceObject",
+    "FrameSourceProvenance",
     "FrameSupport",
     "StructuralFrameContract",
 ]

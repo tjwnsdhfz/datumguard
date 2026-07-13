@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import io
 import json
 from pathlib import Path
@@ -10,16 +11,20 @@ import pytest
 from ezdxf import units
 from ezdxf.document import Drawing
 from ezdxf.entities.line import Line
+from ezdxf.entities.text import Text
 from ezdxf.filemanagement import read
 
 from datumguard.frame_dxf import (
+    FRAME_CONTRACT_RECORD_KEY,
     FRAME_DXF_DATUM,
     FRAME_DXF_LAYERS,
     FRAME_XDATA_APP_ID,
     generate_frame_dxf,
     verify_frame_dxf,
 )
+from datumguard.frame_models import StructuralFrameContract
 from datumguard.frame_rhino_adapter import adapt_rhino_frame_exchange
+from datumguard.frame_service import validate_frame_contract
 from datumguard.models import RunStatus
 
 FIXTURE = Path("fixtures/examples/frame_rhino_exchange.json")
@@ -85,6 +90,10 @@ def test_independent_reopen_verifier_approves_exact_artifact(contract: Any) -> N
     assert result.status is RunStatus.PASSED
     assert result.summary["approved"] is True
     assert result.summary["max_deviation_mm"] == 0.0
+    assert result.summary["contract_record_verified"] is True
+    assert FRAME_CONTRACT_RECORD_KEY in read(
+        io.StringIO(dxf_bytes.decode("utf-8"))
+    ).rootdict
     assert not result.violations
     assert all(item.passed for item in result.measurements)
 
@@ -200,3 +209,81 @@ def test_wrong_dxf_version_is_rejected(contract: Any) -> None:
     assert result.status is RunStatus.FAILED
     assert "DG_FRAME_DXF_VERSION_INVALID" in codes(result)
     assert source.dxfversion == "AC1027"
+
+
+def test_unexpected_modelspace_layer_is_rejected(contract: Any) -> None:
+    document = read(io.StringIO(generate_frame_dxf(contract).decode("utf-8")))
+    document.layers.add("TAMPER")
+    document.modelspace().add_line((0.0, 0.0), (1.0, 1.0), dxfattribs={"layer": "TAMPER"})
+
+    result = verify_frame_dxf(contract, serialize(document))
+
+    assert result.status is RunStatus.FAILED
+    assert "DG_FRAME_DXF_LAYER_UNEXPECTED" in codes(result)
+
+
+def test_screening_annotation_text_is_exact(contract: Any) -> None:
+    document = read(io.StringIO(generate_frame_dxf(contract).decode("utf-8")))
+    metadata = next(
+        entity
+        for entity in document.modelspace()
+        if isinstance(entity, Text) and entity.dxf.layer == "DG-META"
+    )
+    metadata.dxf.text = "APPROVED FOR CONSTRUCTION"
+
+    result = verify_frame_dxf(contract, serialize(document))
+
+    assert result.status is RunStatus.FAILED
+    assert "DG_FRAME_DXF_METADATA_TEXT_MISMATCH" in codes(result)
+
+
+def test_load_change_cannot_be_hidden_by_rewriting_only_xdata_hash(contract: Any) -> None:
+    document = read(io.StringIO(generate_frame_dxf(contract).decode("utf-8")))
+    payload = copy.deepcopy(contract.model_dump(mode="json"))
+    payload["contract_hash"] = None
+    payload["loads"][0]["fy_n"] *= 2.0
+    tampered = StructuralFrameContract.model_validate(payload)
+    validation = validate_frame_contract(tampered)
+    assert validation.normalized_contract is not None
+
+    for entity in document.modelspace():
+        tags = entity.get_xdata(FRAME_XDATA_APP_ID)
+        entity.set_xdata(
+            FRAME_XDATA_APP_ID,
+            [
+                (tag.code, f"contract_hash={validation.contract_hash}")
+                if tag.code == 1000 and str(tag.value).startswith("contract_hash=")
+                else (tag.code, tag.value)
+                for tag in tags
+            ],
+        )
+
+    result = verify_frame_dxf(validation.normalized_contract, serialize(document))
+
+    assert result.status is RunStatus.FAILED
+    assert result.summary["contract_record_verified"] is False
+    assert "DG_FRAME_DXF_CONTRACT_RECORD_INVALID" in codes(result) or (
+        "DG_FRAME_DXF_CONTRACT_RECORD_MISMATCH" in codes(result)
+    )
+    assert "DG_FRAME_DXF_SEMANTIC_MISMATCH" in codes(result)
+
+
+def test_paperspace_construction_approval_text_is_rejected(contract: Any) -> None:
+    document = read(io.StringIO(generate_frame_dxf(contract).decode("utf-8")))
+    document.paperspace().add_text("APPROVED FOR CONSTRUCTION")
+
+    result = verify_frame_dxf(contract, serialize(document))
+
+    assert result.status is RunStatus.FAILED
+    assert "DG_FRAME_DXF_PAPERSPACE_CONTENT_FORBIDDEN" in codes(result)
+
+
+def test_user_block_definitions_are_rejected(contract: Any) -> None:
+    document = read(io.StringIO(generate_frame_dxf(contract).decode("utf-8")))
+    block = document.blocks.new("HIDDEN-APPROVAL")
+    block.add_text("APPROVED FOR CONSTRUCTION")
+
+    result = verify_frame_dxf(contract, serialize(document))
+
+    assert result.status is RunStatus.FAILED
+    assert "DG_FRAME_DXF_USER_BLOCK_FORBIDDEN" in codes(result)

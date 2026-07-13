@@ -24,7 +24,7 @@ def test_frame_cad_assurance_requires_exact_and_dxf_pass() -> None:
     assert response.dxf_base64 is not None
     assert base64.b64decode(response.dxf_base64).startswith(b"  0\nSECTION")
     assert response.verification is not None
-    assert response.verification["status"] == "passed"
+    assert response.verification.status is RunStatus.PASSED
     assert response.summary["dxf_reopened"] is True
     assert response.summary["download_eligible"] is True
     assert response.summary["safety_certification"] is False
@@ -37,7 +37,7 @@ def test_frame_cad_assurance_blocks_download_when_exact_screening_fails() -> Non
     assert response.status is RunStatus.FAILED
     assert response.dxf_base64 is None
     assert response.verification is not None
-    assert response.verification["status"] == "passed"
+    assert response.verification.status is RunStatus.PASSED
     assert response.summary["exact_solver_passed"] is False
     assert response.summary["download_eligible"] is False
     assert response.summary["construction_approval"] is False

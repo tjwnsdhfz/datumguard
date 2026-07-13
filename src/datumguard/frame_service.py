@@ -44,6 +44,19 @@ def _quantize(value: Any) -> Any:
         items = [_quantize(item) for item in value]
         if all(isinstance(item, dict) and "id" in item for item in items):
             return sorted(items, key=lambda item: str(item["id"]))
+        if all(
+            isinstance(item, dict)
+            and {"entity_type", "entity_id", "source_object_id"} <= set(item)
+            for item in items
+        ):
+            return sorted(
+                items,
+                key=lambda item: (
+                    str(item["entity_type"]),
+                    str(item["entity_id"]),
+                    str(item["source_object_id"]),
+                ),
+            )
         return items
     if isinstance(value, tuple):
         return [_quantize(item) for item in value]
@@ -54,6 +67,11 @@ def _quantize(value: Any) -> Any:
 
 def _compute_contract_hash(contract: StructuralFrameContract) -> str:
     data = contract.model_dump(mode="json", exclude={"contract_hash", "intent_text"})
+    # ``provenance`` was added after the v0.3 contract. Omitting only its absent value
+    # preserves every pre-existing frame hash while binding imported Rhino identities
+    # into the hash whenever a source mapping is present.
+    if data.get("provenance") is None:
+        data.pop("provenance", None)
     payload = json.dumps(
         _quantize(data),
         ensure_ascii=False,
