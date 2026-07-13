@@ -167,3 +167,65 @@ html[data-architecture-capture="true"] .arch-evidence-grid{margin-top:16px}
     white-space:normal
   }
 }
+
+/* CAD drafting usability layer — real layer, coordinate, OSNAP, and command controls. */
+.arch-workspace{grid-template-columns:252px minmax(560px,1fr) 302px}
+.arch-panel-title{padding:13px 15px 11px}
+.arch-properties-title small{margin-top:4px;color:#818188;font:500 8px "DM Mono",monospace}
+.arch-layer-manager{border-bottom:1px solid #d7d7dc;background:#f6f6f7}
+.arch-layer-heading{display:flex;min-height:34px;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid #dfdfe4;color:#5d5d64}
+.arch-layer-heading span,.arch-layer-heading small{font:700 8px "DM Mono",monospace;letter-spacing:.12em}
+.arch-layer-manager>button{display:grid;width:100%;min-height:42px;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:9px;padding:6px 12px;border:0;border-bottom:1px solid #e6e6ea;background:#fff;color:#232329;text-align:left}
+.arch-layer-manager>button:last-child{border-bottom:0}
+.arch-layer-manager>button:hover{background:#f0f4f7}
+.arch-layer-manager>button.hidden{color:#92929a;background:#f6f6f7}
+.arch-layer-manager>button>i{width:8px;height:8px;border-radius:50%;background:#9aa2aa;box-shadow:0 0 0 1px #6d747b}
+.arch-layer-manager>button>i.layer-walls{background:#f5f5f5}.arch-layer-manager>button>i.layer-openings{background:#48c9ff}.arch-layer-manager>button>i.layer-columns{background:#ffd43b}.arch-layer-manager>button>i.layer-rooms{background:#68f0c5}
+.arch-layer-manager>button>span{display:flex;min-width:0;flex-direction:column;gap:2px}
+.arch-layer-manager code{font:700 9px "DM Mono",monospace;color:inherit}.arch-layer-manager small{overflow:hidden;color:#85858d;font-size:8px;text-overflow:ellipsis;white-space:nowrap}
+.arch-layer-manager b{font:700 8px "DM Mono",monospace;color:#087a55}.arch-layer-manager .hidden b{color:#92929a}
+.arch-presets{padding:9px}.arch-presets button{min-height:52px}.arch-tree{padding-top:4px}
+
+.arch-canvas-shell{background:#20272e}
+.arch-canvas{background:#20272e}
+.arch-canvas-status{top:10px;color:#aeb9c3;text-shadow:0 1px 1px #111;letter-spacing:.08em}
+.arch-canvas-status b{color:#f2f5f7}
+.arch-grid-line{stroke:#71808e}.arch-grid-label{fill:#c2cbd2}
+.arch-wall{stroke:#f0f3f5}.arch-wall.interior{stroke:#dce2e7}.arch-wall.partition{stroke:#aeb8c0}
+.selected .arch-wall{stroke:#38c7ff}
+.arch-handle{fill:#20272e;stroke:#38c7ff}
+.arch-opening{stroke:#20272e}.arch-opening-center{stroke:#ff735e}.arch-opening.window+.arch-opening-center{stroke:#45c9ff}
+.arch-column{fill:#f5d348;stroke:#fff1a2}.arch-column.selected{fill:#38c7ff;stroke:#c7f1ff}
+.arch-snap-target{stroke:#59e0b4}.arch-room circle{fill:#59e0b4}.arch-room text{fill:#d7e0e6}
+.arch-datum{stroke:#62c5ff}.arch-datum text{fill:#62c5ff}
+.arch-crosshair{pointer-events:none;stroke:#d9e4eb;stroke-width:10;vector-effect:non-scaling-stroke}.arch-crosshair rect{fill:none;stroke:#70e6bd;stroke-width:16}
+
+.arch-command-line{position:absolute;z-index:5;right:0;bottom:28px;left:0;display:grid;min-height:38px;grid-template-columns:auto auto minmax(180px,.8fr) minmax(180px,1.2fr) auto;align-items:center;gap:8px;padding:5px 9px;border-top:1px solid #56626d;background:rgba(16,21,26,.96);color:#e8edf0;font:500 9px "DM Mono",monospace}
+.arch-command-line label{color:#72e5bd;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.arch-command-line>span{color:#72e5bd}
+.arch-command-line input{width:100%;min-height:28px;padding:4px 8px;border:1px solid #66737e;background:#242d35;color:#fff;font:500 10px "DM Mono",monospace}
+.arch-command-line input::placeholder{color:#8e9aa4}.arch-command-line small{overflow:hidden;color:#aeb9c3;text-overflow:ellipsis;white-space:nowrap}
+.arch-command-line:focus-within{background:#11171c}.arch-command-line:focus-within input{border-color:#72e5bd;outline:none}
+.arch-command-line button{min-height:28px;padding:0 10px;border:1px solid #72e5bd;background:transparent;color:#72e5bd;font:700 8px "DM Mono",monospace;letter-spacing:.08em}.arch-command-line button:hover{background:#72e5bd;color:#10151a}
+.arch-statusbar{position:absolute;z-index:5;right:0;bottom:0;left:0;display:flex;height:28px;align-items:center;justify-content:flex-end;border-top:1px solid #7d8992;background:#d8dde1;color:#1f272d;font:700 8px "DM Mono",monospace}
+.arch-statusbar>*{display:flex;height:28px;align-items:center;padding:0 9px;border-left:1px solid #b5bdc3;white-space:nowrap}
+.arch-statusbar .arch-coordinate{margin-right:auto;border-left:0;letter-spacing:.04em}
+.arch-statusbar button{min-height:27px;border:0;border-left:1px solid #b5bdc3;background:transparent;color:#4b555d;font:700 8px "DM Mono",monospace;cursor:pointer}
+.arch-statusbar button:hover{background:#eef2f4}.arch-statusbar button.active{background:#1677a8;color:#fff}
+.arch-statusbar strong{background:#242d35;color:#fff;letter-spacing:.08em}
+.arch-scale{display:none}
+.arch-mobile-note{bottom:72px}
+
+@media(max-width:1180px){
+  .arch-workspace{grid-template-columns:220px minmax(480px,1fr) 270px}
+  .arch-command-line{grid-template-columns:auto auto 1fr auto}.arch-command-line small{display:none}
+  .arch-statusbar span:nth-of-type(2),.arch-statusbar span:nth-of-type(3){display:none}
+}
+@media(max-width:900px){
+  .arch-commandbar{display:none}
+  .arch-layer-manager{display:grid;grid-template-columns:1fr 1fr}.arch-layer-heading{grid-column:1/-1}.arch-layer-manager>button{border-right:1px solid #e6e6ea}
+  .arch-command-line{grid-template-columns:auto auto 1fr auto}.arch-statusbar{justify-content:flex-start}.arch-statusbar .arch-coordinate{flex:1;margin-right:0;overflow:hidden}
+}
+@media(max-width:600px){
+  .arch-layer-manager{grid-template-columns:1fr}.arch-layer-heading{grid-column:auto}.arch-command-line{display:none}.arch-statusbar{height:30px}.arch-statusbar>*{height:30px;padding:0 7px}.arch-statusbar span:nth-of-type(4){display:none}.arch-mobile-note{bottom:38px;left:12px}
+}

@@ -156,6 +156,38 @@ test.describe("interactive architecture demo", () => {
     await expect(page.getByTestId("architecture-demo")).toHaveAttribute("data-history-depth", "50");
   });
 
+  test("provides working CAD layers, OSNAP status, coordinates, and command input", async ({ page }) => {
+    await page.goto("/");
+    await page.getByTestId("architecture-preset-studio").click();
+
+    const canvas = page.getByTestId("architecture-canvas");
+    await expect(canvas.locator(".arch-room")).toHaveCount(4);
+    await page.getByTestId("architecture-layer-rooms").click();
+    await expect(page.getByTestId("architecture-layer-rooms")).toHaveAttribute("aria-pressed", "false");
+    await expect(canvas.locator(".arch-room")).toHaveCount(0);
+    await page.getByTestId("architecture-layer-rooms").click();
+    await expect(canvas.locator(".arch-room")).toHaveCount(4);
+
+    const osnap = page.getByTestId("architecture-osnap");
+    await expect(osnap).toHaveAttribute("aria-pressed", "true");
+    await osnap.click();
+    await expect(osnap).toHaveAttribute("aria-pressed", "false");
+
+    const fitted = await canvas.getAttribute("viewBox");
+    await page.getByTestId("architecture-zoom-in").click();
+    await expect(canvas).not.toHaveAttribute("viewBox", fitted || "");
+    const command = page.getByTestId("architecture-command");
+    await command.fill("FIT");
+    await page.getByTestId("architecture-command-run").click();
+    await expect(canvas).toHaveAttribute("viewBox", fitted || "");
+    await expect(page.getByTestId("architecture-command-feedback")).toContainText("FIT · 명령 완료");
+
+    const box = await canvas.boundingBox();
+    expect(box).not.toBeNull();
+    if (box) await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.4);
+    await expect(page.getByTestId("architecture-coordinate")).not.toContainText("X 0 · Y 0");
+  });
+
   test("polls through a cold start and recovers without reloading", async ({ page }) => {
     let readinessCalls = 0;
     await page.route("**/api/v1/ready", async (route) => {

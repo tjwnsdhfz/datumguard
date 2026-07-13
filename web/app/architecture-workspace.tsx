@@ -112,6 +112,15 @@ type DragState = {
 };
 
 type ViewBox = { x: number; y: number; width: number; height: number };
+type LayerKey = "grids" | "walls" | "openings" | "columns" | "rooms";
+
+const LAYER_LABELS: Record<LayerKey, { code: string; label: string }> = {
+  grids: { code: "A-GRID", label: "Grid axes" },
+  walls: { code: "A-WALL", label: "Walls" },
+  openings: { code: "A-DOOR", label: "Doors + windows" },
+  columns: { code: "S-COLS", label: "Columns" },
+  rooms: { code: "A-ROOM", label: "Room tags" },
+};
 
 const PLAN_HEIGHT = 8000;
 const FIT_VIEW: ViewBox = { x: -1100, y: -1100, width: 14200, height: 10200 };
@@ -344,6 +353,11 @@ export default function ArchitectureWorkspace() {
   const [drag, setDrag] = useState<DragState | null>(null);
   const [spaceDown, setSpaceDown] = useState(false);
   const [snapState, setSnapState] = useState<"idle" | "snapped">("idle");
+  const [objectSnap, setObjectSnap] = useState(true);
+  const [cursorPoint, setCursorPoint] = useState<Point>([0, 0]);
+  const [layers, setLayers] = useState<Record<LayerKey, boolean>>({ grids: true, walls: true, openings: true, columns: true, rooms: true });
+  const [command, setCommand] = useState("");
+  const [commandFeedback, setCommandFeedback] = useState("Ready · 객체를 선택하거나 명령을 입력하세요.");
   const [verification, setVerification] = useState<VerificationState>("idle");
   const [result, setResult] = useState<ArchitectureResult | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -353,6 +367,7 @@ export default function ArchitectureWorkspace() {
   const health = readiness.state;
   const healthAttempts = readiness.attempts;
   const svgRef = useRef<SVGSVGElement>(null);
+  const commandRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadDraft<ArchitectureDraft>(DRAFT_KEY)
@@ -381,6 +396,16 @@ export default function ArchitectureWorkspace() {
 
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTyping = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.tagName === "SELECT";
+      if (!isTyping && event.key === "/") {
+        event.preventDefault();
+        commandRef.current?.focus();
+      }
+      if (!isTyping && event.key === "Escape") {
+        setTool("select");
+        setCommandFeedback("SELECT · 선택 도구로 돌아왔습니다.");
+      }
       if (event.code === "Space" && !event.repeat) setSpaceDown(true);
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
@@ -463,15 +488,16 @@ export default function ArchitectureWorkspace() {
   };
 
   const pointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
-    if (!drag) return;
     const current = pointFromEvent(event);
+    setCursorPoint(current);
+    if (!drag) return;
     if (drag.kind === "pan") {
       const dx = current[0] - drag.origin[0];
       const dy = current[1] - drag.origin[1];
       setViewBox({ ...drag.viewBox, x: drag.viewBox.x - dx, y: drag.viewBox.y + dy });
       return;
     }
-    const step = event.shiftKey ? 10 : draft.snap;
+    const step = event.shiftKey ? 10 : objectSnap ? draft.snap : 1;
     const dx = current[0] - drag.origin[0];
     const dy = current[1] - drag.origin[1];
     const next = cloneDraft(drag.draft);
@@ -540,6 +566,39 @@ export default function ArchitectureWorkspace() {
     });
   };
 
+  const toggleLayer = (key: LayerKey) => {
+    setLayers((current) => ({ ...current, [key]: !current[key] }));
+    setCommandFeedback(`${LAYER_LABELS[key].code} · ${layers[key] ? "OFF" : "ON"}`);
+  };
+
+  const runCommand = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const normalized = command.trim().toUpperCase().replace(/\s+/g, " ");
+    if (!normalized) return;
+    const commands: Record<string, () => void> = {
+      FIT: () => setViewBox(FIT_VIEW),
+      Z: () => setViewBox(FIT_VIEW),
+      "ZOOM EXTENTS": () => setViewBox(FIT_VIEW),
+      "ZOOM IN": () => zoom(0.82),
+      "ZOOM OUT": () => zoom(1.22),
+      UNDO: undo,
+      U: undo,
+      REDO: redo,
+      SELECT: () => setTool("select"),
+      PAN: () => setTool("pan"),
+      GRID: () => toggleLayer("grids"),
+      SNAP: () => setObjectSnap((value) => !value),
+    };
+    const action = commands[normalized];
+    if (action) {
+      action();
+      setCommandFeedback(`${normalized} · 명령 완료`);
+    } else {
+      setCommandFeedback(`${normalized} · 지원 명령: FIT, ZOOM IN/OUT, UNDO, REDO, SELECT, PAN, GRID, SNAP`);
+    }
+    setCommand("");
+  };
+
   const runVerification = async () => {
     if (health !== "ready") {
       setMessage("검증 엔진 준비 중입니다. 연결이 완료되면 다시 실행해 주세요.");
@@ -580,6 +639,8 @@ export default function ArchitectureWorkspace() {
   const selectedColumn = draft.columns.find((item) => item.id === selectedId);
   const selectedOpening = draft.openings.find((item) => item.id === selectedId);
   const selectedGrid = draft.grids.find((item) => item.id === selectedId);
+  const selectionType = selectedWall ? "Wall" : selectedColumn ? "Column" : selectedOpening ? "Opening" : selectedGrid ? "Grid" : "None";
+  const zoomPercent = Math.round((FIT_VIEW.width / viewBox.width) * 100);
 
   const updateNumber = (field: string, value: number) => {
     const next = cloneDraft(draft);
@@ -629,18 +690,19 @@ export default function ArchitectureWorkspace() {
         aria-label={`${draft.projectName} 건축 평면 CAD 캔버스. 데스크톱에서는 객체를 드래그하고, 모든 화면에서 정확한 수치 입력을 사용할 수 있습니다.`}
       >
         <defs>
-          <pattern id="arch-minor-grid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M100 0H0V100" fill="none" stroke="#e8eeeb" strokeWidth="4" /></pattern>
-          <pattern id="arch-major-grid" width="1000" height="1000" patternUnits="userSpaceOnUse"><rect width="1000" height="1000" fill="url(#arch-minor-grid)" /><path d="M1000 0H0V1000" fill="none" stroke="#d3dfda" strokeWidth="8" /></pattern>
+          <pattern id="arch-minor-grid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M100 0H0V100" fill="none" stroke="#313b44" strokeWidth="4" /></pattern>
+          <pattern id="arch-major-grid" width="1000" height="1000" patternUnits="userSpaceOnUse"><rect width="1000" height="1000" fill="url(#arch-minor-grid)" /><path d="M1000 0H0V1000" fill="none" stroke="#46525e" strokeWidth="8" /></pattern>
         </defs>
-        <rect x={-2000} y={-2000} width={16000} height={12000} fill="url(#arch-major-grid)" />
-        {draft.grids.map((grid) => (
+        <rect x={-2000} y={-2000} width={16000} height={12000} fill="#20272e" />
+        {layers.grids && <rect x={-2000} y={-2000} width={16000} height={12000} fill="url(#arch-major-grid)" />}
+        {layers.grids && draft.grids.map((grid) => (
           <g key={grid.id} data-testid={grid.id === "grid-x-c" ? "architecture-draggable-grid" : undefined} data-snap-state={grid.id === "grid-x-c" ? snapState : undefined} onPointerDown={(event) => beginDrag(event, "grid", grid.id)} className={selectedId === grid.id ? "selected" : ""}>
             <line className="arch-grid-line hit" x1={grid.start[0]} y1={y(grid.start[1])} x2={grid.end[0]} y2={y(grid.end[1])} />
             <line className="arch-grid-line" x1={grid.start[0]} y1={y(grid.start[1])} x2={grid.end[0]} y2={y(grid.end[1])} />
             <text className="arch-grid-label" x={grid.axis === "x" ? grid.start[0] : grid.end[0] + 180} y={grid.axis === "x" ? y(grid.end[1]) - 120 : y(grid.end[1]) + 40}>{grid.label}</text>
           </g>
         ))}
-        {draft.walls.map((wall) => {
+        {layers.walls && draft.walls.map((wall) => {
           const horizontal = Math.abs(wall.end[0] - wall.start[0]) >= Math.abs(wall.end[1] - wall.start[1]);
           const hitX = horizontal ? Math.min(wall.start[0], wall.end[0]) : wall.start[0] - 200;
           const hitY = horizontal ? y(wall.start[1]) - 200 : Math.min(y(wall.start[1]), y(wall.end[1]));
@@ -652,11 +714,11 @@ export default function ArchitectureWorkspace() {
             {selectedId === wall.id && <><circle data-testid={wall.id === "wall-service" ? "architecture-wall-start-handle" : undefined} className="arch-handle" cx={wall.start[0]} cy={y(wall.start[1])} r="120" onPointerDown={(event) => beginDrag(event, "wall-start", wall.id)} /><circle data-testid={wall.id === "wall-service" ? "architecture-wall-end-handle" : undefined} className="arch-handle" cx={wall.end[0]} cy={y(wall.end[1])} r="120" onPointerDown={(event) => beginDrag(event, "wall-end", wall.id)} /></>}
           </g>;
         })}
-        {draft.openings.map((opening) => {
+        {layers.openings && draft.openings.map((opening) => {
           const [start, end] = openingEndpoints(opening, wallById(draft, opening.wall_id));
           return <g key={opening.id} data-testid={opening.id === "door-entry" ? "architecture-draggable-opening" : undefined} data-snap-state={opening.id === "door-entry" ? snapState : undefined} className={selectedId === opening.id ? "selected" : ""} onPointerDown={(event) => beginDrag(event, "opening", opening.id)}><line className={`arch-opening ${opening.type}`} x1={start[0]} y1={y(start[1])} x2={end[0]} y2={y(end[1])} strokeWidth={wallById(draft, opening.wall_id).thickness + 45} /><line className="arch-opening-center" x1={start[0]} y1={y(start[1])} x2={end[0]} y2={y(end[1])} /></g>;
         })}
-        {draft.columns.map((column) => (
+        {layers.columns && draft.columns.map((column) => (
           <rect
             key={column.id}
             data-testid={column.id === "column-a" ? "architecture-draggable-column" : undefined}
@@ -670,8 +732,9 @@ export default function ArchitectureWorkspace() {
           />
         ))}
         <circle data-testid="architecture-snap-target-center" className="arch-snap-target" cx="8000" cy={y(4000)} r="180" />
-        {draft.roomSeeds.map((room) => <g key={room.id} className="arch-room"><circle cx={room.point[0]} cy={y(room.point[1])} r="40" /><text x={room.point[0]} y={y(room.point[1]) - 120} textAnchor="middle">{room.name}</text></g>)}
+        {layers.rooms && draft.roomSeeds.map((room) => <g key={room.id} className="arch-room"><circle cx={room.point[0]} cy={y(room.point[1])} r="40" /><text x={room.point[0]} y={y(room.point[1]) - 120} textAnchor="middle">{room.name}</text></g>)}
         <g className="arch-datum"><line x1="0" y1={y(0)} x2="900" y2={y(0)} /><line x1="0" y1={y(0)} x2="0" y2={y(900)} /><text x="950" y={y(0) + 40}>X</text><text x="-40" y={y(950)}>Y</text></g>
+        <g className="arch-crosshair" aria-hidden="true"><line x1={cursorPoint[0] - 520} y1={y(cursorPoint[1])} x2={cursorPoint[0] + 520} y2={y(cursorPoint[1])} /><line x1={cursorPoint[0]} y1={y(cursorPoint[1]) - 520} x2={cursorPoint[0]} y2={y(cursorPoint[1]) + 520} /><rect x={cursorPoint[0] - 50} y={y(cursorPoint[1]) - 50} width="100" height="100" /></g>
       </svg>
     );
   })();
@@ -696,14 +759,18 @@ export default function ArchitectureWorkspace() {
       <section className="arch-commandbar" id="architecture-workspace-content" tabIndex={-1} aria-label="Architecture CAD tools">
         <div className="arch-tools" role="group" aria-label="Canvas tool">{(["select", "pan", "wall", "column", "door", "window"] as Tool[]).map((item) => <button key={item} type="button" className={tool === item ? "active" : ""} aria-pressed={tool === item} onClick={() => setTool(item)}><ArchitectureIcon name={item} /><span>{item}</span></button>)}</div>
         <div className="arch-history" role="group" aria-label="History and view"><button data-testid="architecture-undo" type="button" onClick={undo} disabled={!history.length} aria-label="Undo"><ArchitectureIcon name="undo" /><span>Undo</span></button><button data-testid="architecture-redo" type="button" onClick={redo} disabled={!future.length} aria-label="Redo"><ArchitectureIcon name="redo" /><span>Redo</span></button><button data-testid="architecture-zoom-in" type="button" onClick={() => zoom(0.82)} aria-label="Zoom in"><ArchitectureIcon name="zoom-in" /></button><button data-testid="architecture-zoom-out" type="button" onClick={() => zoom(1.22)} aria-label="Zoom out"><ArchitectureIcon name="zoom-out" /></button><button data-testid="architecture-fit" type="button" onClick={() => setViewBox(FIT_VIEW)}><ArchitectureIcon name="fit" /><span>Fit</span></button></div>
-        <label className="arch-snap">Snap <select value={draft.snap} onChange={(event) => commit({ ...draft, snap: Number(event.target.value) })}><option value={100}>100 mm</option><option value={50}>50 mm</option><option value={10}>10 mm</option></select><small>Shift = 10mm</small></label>
+        <label className="arch-snap">Grid step <select value={draft.snap} onChange={(event) => commit({ ...draft, snap: Number(event.target.value) })}><option value={100}>100 mm</option><option value={50}>50 mm</option><option value={10}>10 mm</option></select><small>Shift = 10mm</small></label>
       </section>
 
       <LocalDraftNotice error={storageError} onDismiss={() => setStorageError(null)} />
 
       <section className="arch-workspace">
         <aside className="arch-left-panel">
-          <div className="arch-panel-title"><span>MODEL</span><strong>Level 01</strong></div>
+          <div className="arch-panel-title"><span>DRAWING EXPLORER</span><strong>Level 01 · Model</strong></div>
+          <section className="arch-layer-manager" aria-label="Layer visibility">
+            <div className="arch-layer-heading"><span>LAYERS</span><small>{Object.values(layers).filter(Boolean).length}/5 ON</small></div>
+            {(Object.keys(LAYER_LABELS) as LayerKey[]).map((key) => <button data-testid={`architecture-layer-${key}`} key={key} type="button" className={layers[key] ? "visible" : "hidden"} aria-pressed={layers[key]} onClick={() => toggleLayer(key)}><i className={`layer-${key}`} aria-hidden="true" /><span><code>{LAYER_LABELS[key].code}</code><small>{LAYER_LABELS[key].label}</small></span><b>{layers[key] ? "ON" : "OFF"}</b></button>)}
+          </section>
           <div className="arch-presets">
             <button data-testid="architecture-preset-studio" type="button" className={draft.presetId === "architecture-studio" ? "active" : ""} onClick={() => { commit(cloneDraft(STUDIO_PRESET)); setSelectedId("column-a"); setSnapState("idle"); setViewBox(FIT_VIEW); }}><ArchitectureIcon name="check" /><span><strong>12 × 8 m / 4-room studio</strong><small>Closed, resolved, verifiable</small></span></button>
             <button data-testid="architecture-preset-invalid" type="button" className={draft.presetId === "architecture-open-loop" ? "active invalid" : "invalid"} onClick={() => { commit(openLoopPreset()); setSelectedId("wall-north"); setSnapState("idle"); setViewBox(FIT_VIEW); }}><ArchitectureIcon name="alert" /><span><strong>300 mm open loop</strong><small>Required exterior closure fails</small></span></button>
@@ -718,14 +785,26 @@ export default function ArchitectureWorkspace() {
         </aside>
 
         <div className="arch-canvas-shell">
-          <div className="arch-canvas-status"><span><b>PLAN</b> 1:100</span><span>{draft.snap}mm snap · {tool} tool</span></div>
+          <div className="arch-canvas-status"><span><b>TOP / WCS</b> · MODEL</span><span>{selectionType === "None" ? "No selection" : `${selectionType} · ${selectedId}`}</span></div>
           {canvas}
-          <div className="arch-scale"><span>0</span><i /><span>4m</span><i /><span>8m</span></div>
+          <form className="arch-command-line" onSubmit={runCommand} aria-label="CAD command line">
+            <label htmlFor="architecture-command">Command</label>
+            <span>&gt;_</span>
+            <input ref={commandRef} id="architecture-command" data-testid="architecture-command" value={command} onChange={(event) => setCommand(event.target.value)} placeholder="명령 입력 · / 로 포커스 · FIT, ZOOM, UNDO, PAN…" autoComplete="off" />
+            <small data-testid="architecture-command-feedback" aria-live="polite">{commandFeedback}</small>
+            <button data-testid="architecture-command-run" type="submit">RUN</button>
+          </form>
+          <div className="arch-statusbar" aria-label="Drawing status">
+            <span data-testid="architecture-coordinate" className="arch-coordinate">X {cursorPoint[0].toFixed(0)} · Y {cursorPoint[1].toFixed(0)} · Z 0</span>
+            <button type="button" className={layers.grids ? "active" : ""} aria-pressed={layers.grids} onClick={() => toggleLayer("grids")}>GRID</button>
+            <button data-testid="architecture-osnap" type="button" className={objectSnap ? "active" : ""} aria-pressed={objectSnap} onClick={() => { setObjectSnap((value) => !value); setCommandFeedback(`OSNAP · ${objectSnap ? "OFF" : "ON"}`); }}>OSNAP</button>
+            <span>STEP {draft.snap}</span><span>1:100</span><span>{zoomPercent}%</span><strong>MODEL</strong>
+          </div>
           <p className="arch-mobile-note">정밀 drag 편집은 900px 이상 화면에서 제공됩니다. 수치 입력과 검증은 모바일에서도 가능합니다.</p>
         </div>
 
         <aside className="arch-right-panel">
-          <div className="arch-panel-title"><span>PROPERTIES</span><strong>{selectedId || "No selection"}</strong></div>
+          <div className="arch-panel-title arch-properties-title"><span>PROPERTIES · {selectionType.toUpperCase()}</span><strong>{selectedId || "No selection"}</strong><small>{selectedId ? "1 object selected" : "캔버스 또는 트리에서 객체 선택"}</small></div>
           <div className="arch-inspector">
             {selectedColumn && <><InspectorRow label="Center X" value={selectedColumn.center[0]} onChange={(value) => updateNumber("x", value)} /><InspectorRow label="Center Y" value={selectedColumn.center[1]} onChange={(value) => updateNumber("y", value)} /><InspectorRow label="Width" value={selectedColumn.width} onChange={(value) => updateNumber("width", value)} /><InspectorRow label="Depth" value={selectedColumn.depth} onChange={(value) => updateNumber("depth", value)} /></>}
             {selectedWall && <><InspectorRow label="Start X" value={selectedWall.start[0]} onChange={(value) => updateNumber("x1", value)} /><InspectorRow label="Start Y" value={selectedWall.start[1]} onChange={(value) => updateNumber("y1", value)} /><InspectorRow label="End X" value={selectedWall.end[0]} onChange={(value) => updateNumber("x2", value)} /><InspectorRow label="End Y" value={selectedWall.end[1]} onChange={(value) => updateNumber("y2", value)} /><InspectorRow label="Thickness" value={selectedWall.thickness} onChange={(value) => updateNumber("thickness", value)} /></>}
