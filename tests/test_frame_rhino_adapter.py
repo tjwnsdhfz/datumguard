@@ -8,10 +8,9 @@ from typing import Any
 
 import pytest
 
-from datumguard.frame_rhino_adapter import (
-    RhinoFrameExchange,
-    adapt_rhino_frame_exchange,
-)
+from datumguard.frame_models import StructuralFrameContract
+from datumguard.frame_rhino_adapter import RhinoFrameExchange, adapt_rhino_frame_exchange
+from datumguard.frame_service import validate_frame_contract
 from datumguard.models import ContractStatus
 
 FIXTURE = Path("fixtures/examples/frame_rhino_exchange.json")
@@ -100,6 +99,89 @@ def test_nonfinite_section_value_is_rejected_before_normalization(
     assert result.status is ContractStatus.INFEASIBLE
     assert result.structural_contract is None
     assert violation_codes(result) == {"DG_FRAME_RHINO_SCHEMA_INVALID"}
+
+
+def test_duplicate_source_object_ids_are_rejected_as_ambiguous_provenance(
+    exchange_payload: dict[str, Any],
+) -> None:
+    exchange_payload["supports"][0]["source_object_id"] = exchange_payload["members"][0][
+        "source_object_id"
+    ]
+
+    result = adapt_rhino_frame_exchange(exchange_payload)
+
+    assert result.status is ContractStatus.INFEASIBLE
+    assert result.structural_contract is None
+    assert violation_codes(result) == {"DG_FRAME_RHINO_SCHEMA_INVALID"}
+
+
+def test_source_object_ids_must_be_canonical_uuid_values(
+    exchange_payload: dict[str, Any],
+) -> None:
+    exchange_payload["members"][0]["source_object_id"] = "rhino-object-not-a-guid"
+
+    result = adapt_rhino_frame_exchange(exchange_payload, provenance_bound=True)
+
+    assert result.status is ContractStatus.INFEASIBLE
+    assert violation_codes(result) == {"DG_FRAME_RHINO_SCHEMA_INVALID"}
+
+
+def test_legacy_adapt_identity_remains_v03_compatible(
+    exchange_payload: dict[str, Any],
+) -> None:
+    result = adapt_rhino_frame_exchange(exchange_payload)
+
+    assert result.exchange_hash == (
+        "sha256:5f950c7e568280ff2aa13582aaedc17f383da3ea64af7c7192c7301f3c389583"
+    )
+    assert result.contract_hash == (
+        "sha256:b56bff083fed574bdadba166950a827b1ea0ebd6ed601dbf7c0890ecef8f984d"
+    )
+    assert result.structural_contract is not None
+    assert result.structural_contract.provenance is None
+
+
+def test_provenance_bound_exchange_hash_preserves_subgrid_datum_changes(
+    exchange_payload: dict[str, Any],
+) -> None:
+    first_payload = copy.deepcopy(exchange_payload)
+    second_payload = copy.deepcopy(exchange_payload)
+    for payload, angle in (
+        (first_payload, math.radians(30.0)),
+        (second_payload, math.radians(30.0) + 0.0001),
+    ):
+        payload["document"]["datum"].update(
+            {
+                "x_axis": [math.cos(angle), math.sin(angle), 0.0],
+                "y_axis": [-math.sin(angle), math.cos(angle), 0.0],
+                "z_axis": [0.0, 0.0, 1.0],
+            }
+        )
+
+    legacy_first = adapt_rhino_frame_exchange(first_payload)
+    legacy_second = adapt_rhino_frame_exchange(second_payload)
+    exact_first = adapt_rhino_frame_exchange(first_payload, provenance_bound=True)
+    exact_second = adapt_rhino_frame_exchange(second_payload, provenance_bound=True)
+
+    assert legacy_first.exchange_hash == legacy_second.exchange_hash
+    assert exact_first.exchange_hash != exact_second.exchange_hash
+    assert exact_first.structural_contract is not None
+    assert exact_second.structural_contract is not None
+
+
+def test_provenance_object_order_does_not_change_contract_hash(
+    exchange_payload: dict[str, Any],
+) -> None:
+    result = adapt_rhino_frame_exchange(exchange_payload, provenance_bound=True)
+    assert result.structural_contract is not None
+    payload = result.structural_contract.model_dump(mode="json")
+    payload["contract_hash"] = None
+    payload["provenance"]["objects"].reverse()
+    reordered = StructuralFrameContract.model_validate(payload)
+
+    reordered_validation = validate_frame_contract(reordered)
+
+    assert reordered_validation.contract_hash == result.contract_hash
 
 
 @pytest.mark.parametrize("datum", [None, {}])

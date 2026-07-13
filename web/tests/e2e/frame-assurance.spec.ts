@@ -15,13 +15,19 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByTestId("frame-assurance-lab")).toBeVisible();
 });
 
-test("imports a Rhino exchange without guessing units or datum", async ({ page }) => {
+test("runs the provenance-bound Rhino exchange through the verified evidence bundle", async ({ page }) => {
   const adapterCard = page.getByTestId("frame-rhino-adapter");
   await adapterCard.locator('input[type="file"]').setInputFiles(rhinoFixture);
 
-  await expect(adapterCard).toHaveAttribute("data-state", "passed", { timeout: 15_000 });
-  await expect(adapterCard).toContainText("NORMALIZED");
-  await expect(adapterCard).toContainText("mm", { ignoreCase: true });
+  await expect(adapterCard).toHaveAttribute("data-state", "passed", { timeout: 30_000 });
+  await expect(adapterCard).toContainText("BUNDLE SEALED");
+  await expect(adapterCard).toContainText("6 mapped · complete");
+  await expect(adapterCard).toContainText("reopened + matched");
+  await expect(adapterCard).toContainText("geometry_evidence");
+  const downloadPromise = page.waitForEvent("download");
+  await adapterCard.getByTestId("frame-rhino-bundle-download").click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("frameguard-rhino-evidence.zip");
 });
 
 test("writes, reopens, verifies, and downloads the exact frame DXF", async ({ page }) => {

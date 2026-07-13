@@ -63,6 +63,17 @@ end force·combined stress를 계산하고, 별도 reader가 serialized R2013 DX
 `0.001 mm` gate로 검증합니다. 둘 중 하나라도 실패하면 공식 screening PASS와 DXF download를
 차단합니다. 상세 교환 계약은 [Rhino/GH + DXF Guide](docs/frameguard-rhino.md)에 있습니다.
 
+[![실제 Rhino 8 portal frame source와 GUID/DXF reopen gate](docs/evidence/frameguard-rhino-roundtrip-rhino.png)](docs/frameguard-rhino.md#2026-07-13-실제-cordyceps-round-trip-evidence)
+
+실제 Rhino 8 + Grasshopper + Cordyceps 실행에서 **6개 Rhino GUID → contract entity → DXF
+XDATA** provenance를 보존하고, DXF 내부의 전체 semantic contract를 독립 재개봉해
+`0.0 mm` endpoint 편차로 통과시켰습니다. 원본
+[Grasshopper document](docs/evidence/frameguard-rhino-roundtrip.gh),
+[exchange JSON](docs/evidence/frameguard-rhino-exchange.json),
+[verification result](docs/evidence/frameguard-rhino-roundtrip-result.json),
+[evidence ZIP](docs/evidence/frameguard-rhino-roundtrip.zip)을 그대로 재현할 수 있습니다.
+이 bundle의 역할은 `geometry_evidence`이며 안전 인증이나 시공 승인이 아닙니다.
+
 독립 검증 evidence로 genuine `openseespy==3.8.0.0` 해석과 6개 사례를 비교해 **6/6 parity
 PASSED**를 기록했습니다. solver-labeled 90-case topology holdout에서는 3-seed PyG ensemble의
 GraphSAGE가 displacement MAE `0.6274 mm`/R² `0.8049`, utilization MAE `0.03718`/R² `0.7327`,

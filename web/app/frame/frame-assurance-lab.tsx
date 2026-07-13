@@ -14,12 +14,31 @@ type FrameAssuranceLabProps = {
 
 type LabState = "idle" | "running" | "passed" | "review" | "failed";
 
-type RhinoAdapterResponse = {
+type RhinoRoundTripResponse = {
   status?: string;
   exchange_hash?: string;
   contract_hash?: string | null;
-  structural_contract?: { nodes?: unknown[]; members?: unknown[] } | null;
+  artifact_hash?: string | null;
+  bundle_hash?: string | null;
+  manifest_hash?: string | null;
+  bundle_base64?: string | null;
+  normalized_contract?: {
+    nodes?: unknown[];
+    members?: unknown[];
+    provenance?: { complete?: boolean; objects?: unknown[] } | null;
+  } | null;
+  verification?: {
+    status?: string;
+    summary?: { provenance_verified?: boolean; contract_record_verified?: boolean };
+  } | null;
+  manifest?: {
+    screening_gate_status?: string;
+    artifact_role?: string;
+    screening_only?: boolean;
+    safety_certification?: boolean;
+  } | null;
   violations?: Array<{ code?: string; message?: string }>;
+  error?: { message?: string } | null;
 };
 
 type CadResponse = {
@@ -106,7 +125,7 @@ export default function FrameAssuranceLab({ contract }: FrameAssuranceLabProps) 
   const fileInput = useRef<HTMLInputElement>(null);
   const contractRevision = useRef(0);
   const [rhinoState, setRhinoState] = useState<LabState>("idle");
-  const [rhinoResult, setRhinoResult] = useState<RhinoAdapterResponse | null>(null);
+  const [rhinoResult, setRhinoResult] = useState<RhinoRoundTripResponse | null>(null);
   const [rhinoError, setRhinoError] = useState<string | null>(null);
   const [cadState, setCadState] = useState<LabState>("idle");
   const [cadResult, setCadResult] = useState<CadResponse | null>(null);
@@ -159,15 +178,15 @@ export default function FrameAssuranceLab({ contract }: FrameAssuranceLabProps) 
     try {
       if (file.size > 2_000_000) throw new Error("Rhino exchange JSON must be 2 MB or smaller.");
       const parsed = JSON.parse(await file.text()) as JsonObject;
-      const response = await fetch(`${API_URL}/api/v1/frame/rhino/adapt`, {
+      const response = await fetch(`${API_URL}/api/v1/frame/rhino/roundtrip`, {
         method: "POST",
         headers: { Accept: "application/json", "Content-Type": "application/json" },
         body: JSON.stringify(parsed),
         cache: "no-store",
       });
-      const payload = await jsonResponse<RhinoAdapterResponse>(response);
+      const payload = await jsonResponse<RhinoRoundTripResponse>(response);
       setRhinoResult(payload);
-      setRhinoState(payload.status === "ready" ? "passed" : "review");
+      setRhinoState(payload.status === "passed" && payload.bundle_base64 ? "passed" : "review");
     } catch (reason) {
       setRhinoError(reason instanceof Error ? reason.message : "Rhino exchange import failed.");
       setRhinoState("failed");
@@ -234,6 +253,19 @@ export default function FrameAssuranceLab({ contract }: FrameAssuranceLabProps) 
     URL.revokeObjectURL(url);
   }
 
+  function downloadRhinoBundle() {
+    if (!rhinoResult?.bundle_base64) return;
+    const blob = new Blob([decodeBase64(rhinoResult.bundle_base64)], {
+      type: "application/zip",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "frameguard-rhino-evidence.zip";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   const parityStatus = parity?.status?.toUpperCase() ?? "LOADING";
   const gnnStatus = gnnBenchmark?.status?.toUpperCase() ?? "LOADING";
 
@@ -257,15 +289,18 @@ export default function FrameAssuranceLab({ contract }: FrameAssuranceLabProps) 
           data-state={rhinoState}
         >
           <div className={styles.labModuleHead}>
-            <span>01 / source adapter</span>
-            <b>{rhinoState === "passed" ? "NORMALIZED" : rhinoState === "running" ? "READING" : rhinoState === "review" ? "CONFIRM" : rhinoState === "failed" ? "FAILED" : "WAITING"}</b>
+            <span>01 / source-to-evidence chain</span>
+            <b>{rhinoState === "passed" ? "BUNDLE SEALED" : rhinoState === "running" ? "VERIFYING" : rhinoState === "review" ? "BLOCKED" : rhinoState === "failed" ? "FAILED" : "WAITING"}</b>
           </div>
-          <h3>Rhino + Grasshopper exchange</h3>
-          <p>Straight centerlines and object user strings become a millimetre contract without guessing units or datum.</p>
+          <h3>Rhino → contract → screening → DXF evidence</h3>
+          <p>One request binds real Rhino GUIDs to the exact source exchange, normalized contract, solver result, reopened DXF, and deterministic evidence ZIP.</p>
           <dl className={styles.labFacts}>
             <div><dt>Exchange</dt><dd>{compactHash(rhinoResult?.exchange_hash)}</dd></div>
             <div><dt>Contract</dt><dd>{compactHash(rhinoResult?.contract_hash)}</dd></div>
-            <div><dt>Entities</dt><dd>{rhinoResult?.structural_contract ? `${rhinoResult.structural_contract.nodes?.length ?? 0} N / ${rhinoResult.structural_contract.members?.length ?? 0} M · mm` : "not loaded"}</dd></div>
+            <div><dt>DXF artifact</dt><dd>{compactHash(rhinoResult?.artifact_hash)}</dd></div>
+            <div><dt>Source GUIDs</dt><dd>{rhinoResult?.normalized_contract?.provenance ? `${rhinoResult.normalized_contract.provenance.objects?.length ?? 0} mapped · ${rhinoResult.normalized_contract.provenance.complete ? "complete" : "partial"}` : "not loaded"}</dd></div>
+            <div><dt>Semantic record</dt><dd>{rhinoResult?.verification?.summary?.contract_record_verified ? "reopened + matched" : "not verified"}</dd></div>
+            <div><dt>Role</dt><dd>{rhinoResult?.manifest?.artifact_role ?? "screening evidence"}</dd></div>
           </dl>
           {rhinoError && <p className={styles.labError} role="alert">{rhinoError}</p>}
           {rhinoResult?.violations?.length ? <p className={styles.labWarning}>{rhinoResult.violations[0].code}: {rhinoResult.violations[0].message}</p> : null}
@@ -280,9 +315,21 @@ export default function FrameAssuranceLab({ contract }: FrameAssuranceLabProps) 
               event.currentTarget.value = "";
             }}
           />
-          <button type="button" className={styles.labAction} onClick={() => fileInput.current?.click()} disabled={rhinoState === "running"}>
-            {rhinoState === "running" ? "Reading exchange…" : "Import Rhino exchange JSON"}
-          </button>
+          <div className={styles.labActions}>
+            <button type="button" className={styles.labAction} onClick={() => fileInput.current?.click()} disabled={rhinoState === "running"}>
+              {rhinoState === "running" ? "Running evidence chain…" : "Run Rhino evidence round-trip"}
+            </button>
+            <button
+              type="button"
+              className={styles.labTextAction}
+              data-testid="frame-rhino-bundle-download"
+              onClick={downloadRhinoBundle}
+              disabled={!rhinoResult?.bundle_base64 || rhinoState !== "passed"}
+            >
+              Download evidence ZIP
+            </button>
+          </div>
+          <small className={styles.labBoundary}>screening_only=true · safety_certification=false</small>
         </article>
 
         <article
@@ -291,11 +338,11 @@ export default function FrameAssuranceLab({ contract }: FrameAssuranceLabProps) 
           data-state={cadState}
         >
           <div className={styles.labModuleHead}>
-            <span>02 / serialized geometry</span>
+            <span>02 / current demo preset only</span>
             <b>{cadState === "passed" ? "0.001 MM VERIFIED" : cadState === "running" ? "REOPENING" : cadState === "review" ? "BLOCKED" : cadState === "failed" ? "FAILED" : "READY"}</b>
           </div>
-          <h3>DXF write → reopen → remeasure</h3>
-          <p>The verifier checks R2013/mm, datum metadata, XDATA identity, centerline endpoints, duplicates, and tampering.</p>
+          <h3>Preset contract DXF assurance</h3>
+          <p>This separate control runs the frame currently shown in the demo editor. It does not reuse or imply the imported Rhino source chain.</p>
           <dl className={styles.labFacts}>
             <div><dt>Contract</dt><dd>{compactHash(cadResult?.contract_hash)}</dd></div>
             <div><dt>Artifact</dt><dd>{compactHash(cadResult?.artifact_hash)}</dd></div>

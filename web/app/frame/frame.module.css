@@ -1316,6 +1316,15 @@
   border-left: 0;
 }
 
+.labSource .labFacts div:nth-child(3n + 1) {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.labSource .labFacts div:nth-child(n + 4) {
+  padding-top: 18px;
+}
+
 .labFacts dt {
   color: #76817d;
   font: 500 8px "DM Mono", monospace;

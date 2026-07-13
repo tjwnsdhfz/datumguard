@@ -8,6 +8,7 @@ from pydantic import Field
 
 from .frame_dxf import (
     FrameDxfGenerationError,
+    FrameDxfVerificationResult,
     generate_frame_dxf,
     verify_frame_dxf,
 )
@@ -21,7 +22,7 @@ class FrameCadRunResponse(StrictModel):
     contract_hash: str
     artifact_hash: str | None = None
     dxf_base64: str | None = None
-    verification: dict[str, Any] | None = None
+    verification: FrameDxfVerificationResult | None = None
     analysis: FrameRunResponse | None = None
     violations: list[Violation] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)
@@ -116,7 +117,7 @@ def run_frame_cad_assurance(contract: StructuralFrameContract) -> FrameCadRunRes
         contract_hash=validation.contract_hash,
         artifact_hash=verification.artifact_hash,
         dxf_base64=(base64.b64encode(dxf_bytes).decode("ascii") if passed else None),
-        verification=verification.as_dict(),
+        verification=verification,
         analysis=analysis,
         violations=violations,
         evidence=evidence,

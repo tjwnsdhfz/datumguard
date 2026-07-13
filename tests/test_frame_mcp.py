@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
+from datumguard.frame_rhino_adapter import RhinoFrameExchange
 from datumguard.mcp_server import (
     design_contract_validate,
     frame_analyze,
@@ -14,6 +15,7 @@ from datumguard.mcp_server import (
     frame_opensees_parity_evidence,
     frame_repair_propose,
     frame_rhino_adapt,
+    frame_rhino_roundtrip,
     frame_surrogate_predict,
     mcp,
 )
@@ -42,6 +44,7 @@ def test_mcp_lists_frameguard_tools() -> None:
         "frame_analyze",
         "frame_repair_propose",
         "frame_rhino_adapt",
+        "frame_rhino_roundtrip",
         "frame_dxf_generate_verify",
         "frame_surrogate_predict",
         "frame_opensees_parity_evidence",
@@ -104,6 +107,14 @@ def test_mcp_frame_rhino_dxf_and_research_tools_are_fail_closed() -> None:
     adapted = frame_rhino_adapt(exchange)
     assert adapted["status"] == "ready"
     assert adapted["structural_contract"]["units"] == "mm"
+
+    roundtrip = frame_rhino_roundtrip(RhinoFrameExchange.model_validate(exchange)).model_dump(
+        mode="json"
+    )
+    assert roundtrip["status"] == "passed"
+    assert roundtrip["bundle_base64"]
+    assert roundtrip["manifest"]["exchange_hash"] == roundtrip["exchange_hash"]
+    assert roundtrip["summary"]["safety_certification"] is False
 
     cad = frame_dxf_generate_verify(_fixture("frame_pipe_rack.json"))
     assert cad["status"] == "passed"

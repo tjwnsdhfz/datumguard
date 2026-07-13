@@ -27,6 +27,7 @@ from .frame_research_evidence import (
     load_opensees_parity_report,
 )
 from .frame_rhino_adapter import RhinoFrameExchange, adapt_rhino_frame_exchange
+from .frame_roundtrip_service import FrameRhinoRoundTripResponse, run_frame_rhino_roundtrip
 from .frame_service import run_frame_design, validate_frame_contract
 from .frame_surrogate import predict_frame_surrogate
 from .models import DesignContract, RepairProposal, StrictModel, Violation
@@ -388,6 +389,15 @@ def frame_contract_validate(contract: StructuralFrameContract) -> dict[str, Any]
 def frame_rhino_adapt(exchange: RhinoFrameExchange) -> dict[str, Any]:
     """Normalize explicit Rhino units and datum into a structural frame contract."""
     return adapt_rhino_frame_exchange(exchange).model_dump(mode="json")
+
+
+@app.post(
+    "/api/v1/frame/rhino/roundtrip",
+    response_model=FrameRhinoRoundTripResponse,
+)
+def frame_rhino_roundtrip(exchange: RhinoFrameExchange) -> FrameRhinoRoundTripResponse:
+    """Run a provenance-bound Rhino-to-DXF screening round trip in one request."""
+    return run_frame_rhino_roundtrip(exchange)
 
 
 @app.post("/api/v1/drawings/generate")

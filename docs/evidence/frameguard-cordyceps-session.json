@@ -1,0 +1,66 @@
+{
+  "canvas_capture": {
+    "filePath": "frameguard-rhino-roundtrip-grasshopper.png",
+    "height": 75,
+    "hint": "Use Read tool to view image",
+    "success": true,
+    "width": 700
+  },
+  "cordyceps_health_after": {
+    "activeDocument": "frameguard-cordyceps-active*",
+    "commandCount": 19,
+    "server": "Cordyceps MCP",
+    "status": "ok",
+    "toolCount": 7,
+    "transport": "streamable-http",
+    "uptimeSeconds": 11
+  },
+  "cordyceps_health_before": {
+    "activeDocument": "frameguard-cordyceps-active",
+    "commandCount": 0,
+    "server": "Cordyceps MCP",
+    "status": "ok",
+    "toolCount": 7,
+    "transport": "streamable-http",
+    "uptimeSeconds": 7
+  },
+  "datumguard": {
+    "artifact_hash": "sha256:a9ce6ad6556a2d59c09945deaefef1965b430110a9d55d5d67e2775b6a3d718c",
+    "bundle_hash": "sha256:55c414f1e5775ab49d275c5c1ffd0aa4a5705529020c3482c9b165ed5985b65c",
+    "contract_hash": "sha256:30b10a354b388e877acd0e42c6dd5e3b8e667c76f0b9b249d28293fb78950188",
+    "contract_record_verified": true,
+    "exchange_hash": "sha256:f82b99229d326f35298b0b06ee6eab010fe32403ab636e3cd479e009d49e4970",
+    "provenance_verified": true,
+    "status": "passed"
+  },
+  "grasshopper_component_id": "ccbbcced-511e-49fe-9105-bd47e080024d",
+  "grasshopper_output_status": "READY: 3 members / 2 supports / 1 loads; DatumGuard verification pending",
+  "grasshopper_status": {
+    "components": [
+      {
+        "id": "ccbbcced-511e-49fe-9105-bd47e080024d",
+        "message": "",
+        "name": "DatumGuard_Rhino_Exchange",
+        "status": "OK",
+        "type": "Python 3 Script"
+      }
+    ],
+    "success": true,
+    "summary": {
+      "disconnected": 0,
+      "error": 0,
+      "ok": 1,
+      "total": 1,
+      "warning": 0
+    }
+  },
+  "rhino_scene_creation": "Grasshopper Python3 component via Cordyceps",
+  "viewport_capture": {
+    "filePath": "frameguard-rhino-roundtrip-rhino.png",
+    "height": 900,
+    "hint": "Use Read tool to view image",
+    "success": true,
+    "viewName": "Top",
+    "width": 1440
+  }
+}

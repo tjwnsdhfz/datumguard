@@ -81,6 +81,8 @@ def _quantize(value: Any) -> Any:
 
 def _canonical_hash(contract: StructuralFrameContract) -> str:
     data = contract.model_dump(mode="json", exclude={"contract_hash", "intent_text"})
+    if data.get("provenance") is None:
+        data.pop("provenance", None)
     encoded = json.dumps(
         _quantize(data), ensure_ascii=False, separators=(",", ":"), sort_keys=True
     ).encode("utf-8")

@@ -5,6 +5,7 @@ import json
 import math
 from collections.abc import Iterable
 from typing import Any, Literal, cast
+from uuid import UUID
 
 from pydantic import Field, ValidationError, field_validator, model_validator
 
@@ -16,6 +17,7 @@ from .frame_models import (
     FrameSupport,
     StructuralFrameContract,
 )
+from .frame_provenance import build_source_provenance
 from .frame_service import validate_frame_contract
 from .models import ContractMetadata, ContractStatus, Evidence, StrictModel, Violation
 
@@ -78,7 +80,7 @@ class RhinoCenterlineMember(StrictModel):
     end: Vector3
     section_id: str = Field(min_length=1, max_length=80)
     locked: bool = True
-    source_object_id: str | None = Field(default=None, max_length=200)
+    source_object_id: UUID | None = None
 
     _validate_start = field_validator("start")(_finite_vector)
     _validate_end = field_validator("end")(_finite_vector)
@@ -90,7 +92,7 @@ class RhinoSupportPoint(StrictModel):
     ux: bool = False
     uy: bool = False
     rz: bool = False
-    source_object_id: str | None = Field(default=None, max_length=200)
+    source_object_id: UUID | None = None
 
     _validate_point = field_validator("point")(_finite_vector)
 
@@ -101,7 +103,7 @@ class RhinoLoadPoint(StrictModel):
     fx_n: float = 0.0
     fy_n: float = 0.0
     mz_n_document_unit: float = 0.0
-    source_object_id: str | None = Field(default=None, max_length=200)
+    source_object_id: UUID | None = None
 
     _validate_point = field_validator("point")(_finite_vector)
 
@@ -152,6 +154,17 @@ class RhinoFrameExchange(StrictModel):
         )
         if missing:
             raise ValueError(f"members reference unknown sections: {', '.join(missing)}")
+        source_ids = [
+            item.source_object_id for item in self.members if item.source_object_id is not None
+        ]
+        source_ids.extend(
+            item.source_object_id for item in self.supports if item.source_object_id is not None
+        )
+        source_ids.extend(
+            item.source_object_id for item in self.loads if item.source_object_id is not None
+        )
+        if len(source_ids) != len(set(source_ids)):
+            raise ValueError("Rhino source object identifiers must be unique")
         return self
 
 
@@ -243,6 +256,39 @@ def _exchange_hash(payload: RhinoFrameExchange | dict[str, Any]) -> str:
     else:
         value = payload
     return f"sha256:{hashlib.sha256(_canonical_json(value)).hexdigest()}"
+
+
+def _exact_canonical_value(value: Any) -> Any:
+    """Canonicalize source exchange identity without applying the 0.001 mm grid.
+
+    The exchange hash represents the exact declared Rhino payload after schema defaults,
+    while the downstream structural contract intentionally keeps its 0.001 mm hash grid.
+    Datum axes, source-unit values, and load magnitudes therefore cannot collide merely
+    because their difference is smaller than the normalized contract grid.
+    """
+
+    if isinstance(value, float):
+        return value if math.isfinite(value) else f"nonfinite:{value}"
+    if isinstance(value, tuple):
+        return [_exact_canonical_value(item) for item in value]
+    if isinstance(value, list):
+        items = [_exact_canonical_value(item) for item in value]
+        if all(isinstance(item, dict) and "id" in item for item in items):
+            return sorted(items, key=lambda item: str(item["id"]))
+        return items
+    if isinstance(value, dict):
+        return {key: _exact_canonical_value(value[key]) for key in sorted(value)}
+    return value
+
+
+def _exact_exchange_hash(exchange: RhinoFrameExchange) -> str:
+    payload = json.dumps(
+        _exact_canonical_value(exchange.model_dump(mode="json")),
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return f"sha256:{hashlib.sha256(payload).hexdigest()}"
 
 
 def _validate_datum(datum: RhinoDatum) -> None:
@@ -447,6 +493,8 @@ def _iter_exchange_points(exchange: RhinoFrameExchange) -> Iterable[tuple[str, V
 
 def adapt_rhino_frame_exchange(
     payload: RhinoFrameExchange | dict[str, Any],
+    *,
+    provenance_bound: bool = False,
 ) -> RhinoAdapterResult:
     """Validate and deterministically normalize Rhino/Grasshopper data into FrameGuard.
 
@@ -463,6 +511,9 @@ def adapt_rhino_frame_exchange(
             exchange_hash=exchange_hash,
             violations=_validation_violations(exc),
         )
+    # The legacy adapter retains its v0.3 quantized identity. The new one-step round-trip
+    # opts into an exact source identity so sub-grid source changes remain detectable.
+    exchange_hash = _exact_exchange_hash(exchange) if provenance_bound else _exchange_hash(exchange)
 
     unit_key = exchange.document.units.strip().lower()
     if unit_key not in _UNIT_TO_MM:
@@ -563,6 +614,7 @@ def adapt_rhino_frame_exchange(
                 )
             )
 
+        provenance = build_source_provenance(exchange, exchange_hash) if provenance_bound else None
         contract = StructuralFrameContract(
             nodes=[
                 FrameNode(id=node_id, point=point, locked=True)
@@ -580,6 +632,7 @@ def adapt_rhino_frame_exchange(
                 revision=exchange.metadata.revision,
                 notes=exchange.metadata.notes,
             ),
+            provenance=provenance,
         )
         validation = validate_frame_contract(contract)
         normalized = validation.normalized_contract
@@ -604,6 +657,15 @@ def adapt_rhino_frame_exchange(
                         "node_merge_tolerance_mm": tolerance_mm,
                         "datum_inferred": False,
                         "unit_inferred": False,
+                        "exchange_hash": exchange_hash,
+                        "source_document_id": exchange.document.document_id,
+                        "source_object_count": (
+                            len(provenance.objects) if provenance is not None else 0
+                        ),
+                        "provenance_complete": (
+                            provenance.complete if provenance is not None else False
+                        ),
+                        "provenance_bound": provenance_bound,
                     },
                 ),
                 *validation.evidence,

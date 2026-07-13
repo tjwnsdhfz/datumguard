@@ -24,7 +24,8 @@ from .frame_research_evidence import (
     FrameResearchEvidenceError,
     load_opensees_parity_report,
 )
-from .frame_rhino_adapter import adapt_rhino_frame_exchange
+from .frame_rhino_adapter import RhinoFrameExchange, adapt_rhino_frame_exchange
+from .frame_roundtrip_service import FrameRhinoRoundTripResponse, run_frame_rhino_roundtrip
 from .frame_service import propose_frame_repair, run_frame_design, validate_frame_contract
 from .frame_solver import FrameSolverError, solve_frame
 from .frame_surrogate import predict_frame_surrogate
@@ -480,6 +481,17 @@ def frame_analyze(
 )
 def frame_rhino_adapt(exchange: dict[str, Any]) -> dict[str, Any]:
     return adapt_rhino_frame_exchange(exchange).model_dump(mode="json")
+
+
+@mcp.tool(
+    description=(
+        "Normalize a Rhino/Grasshopper frame exchange, preserve source object IDs, run "
+        "deterministic screening, serialize and independently reopen DXF, and return a "
+        "bundle only when every identity and verification gate passes."
+    )
+)
+def frame_rhino_roundtrip(exchange: RhinoFrameExchange) -> FrameRhinoRoundTripResponse:
+    return run_frame_rhino_roundtrip(exchange)
 
 
 @mcp.tool(

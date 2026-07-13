@@ -1,0 +1,293 @@
+{
+  "artifact_hash": "sha256:a9ce6ad6556a2d59c09945deaefef1965b430110a9d55d5d67e2775b6a3d718c",
+  "artifacts": {
+    "bundle": {
+      "name": "frameguard-rhino-roundtrip.zip",
+      "sha256": "sha256:55c414f1e5775ab49d275c5c1ffd0aa4a5705529020c3482c9b165ed5985b65c"
+    },
+    "dxf": {
+      "name": "frameguard-rhino-roundtrip.dxf",
+      "sha256": "sha256:a9ce6ad6556a2d59c09945deaefef1965b430110a9d55d5d67e2775b6a3d718c"
+    },
+    "exchange": "frameguard-rhino-exchange.json"
+  },
+  "bundle_hash": "sha256:55c414f1e5775ab49d275c5c1ffd0aa4a5705529020c3482c9b165ed5985b65c",
+  "contract_hash": "sha256:30b10a354b388e877acd0e42c6dd5e3b8e667c76f0b9b249d28293fb78950188",
+  "exchange_hash": "sha256:f82b99229d326f35298b0b06ee6eab010fe32403ab636e3cd479e009d49e4970",
+  "manifest": {
+    "artifact_hash": "sha256:a9ce6ad6556a2d59c09945deaefef1965b430110a9d55d5d67e2775b6a3d718c",
+    "artifact_role": "geometry_evidence",
+    "bundle_kind": "frameguard_rhino_roundtrip",
+    "construction_approval": false,
+    "contract_hash": "sha256:30b10a354b388e877acd0e42c6dd5e3b8e667c76f0b9b249d28293fb78950188",
+    "design_kind": "structural_frame",
+    "exchange_hash": "sha256:f82b99229d326f35298b0b06ee6eab010fe32403ab636e3cd479e009d49e4970",
+    "files": [
+      {
+        "name": "frameguard-screening.dxf",
+        "sha256": "sha256:a9ce6ad6556a2d59c09945deaefef1965b430110a9d55d5d67e2775b6a3d718c",
+        "size_bytes": 25426
+      },
+      {
+        "name": "frameguard-screening.json",
+        "sha256": "sha256:b8a430623621968cf598a581a6a7830c30f4c5d876a6c8fdaf5a3d4cca514d75",
+        "size_bytes": 10508
+      },
+      {
+        "name": "frameguard-source-exchange.json",
+        "sha256": "sha256:24c4554fce3d240ced062cfad3e17cc4248a09b379fdcae1b77b83c8256b3835",
+        "size_bytes": 2575
+      },
+      {
+        "name": "frameguard-structural-contract.json",
+        "sha256": "sha256:366ccfa0bee41db2c3d62da3a18db1ca4b2a2212762fe167e67f7e0a80868b42",
+        "size_bytes": 3624
+      },
+      {
+        "name": "frameguard-verification.json",
+        "sha256": "sha256:d794459ee9c276d292c7c86ad981cdc4531fb80fd5e2f8d8eed9598f0098c94f",
+        "size_bytes": 3429
+      },
+      {
+        "name": "preview.svg",
+        "sha256": "sha256:b007e18c10328f6119746ed424f269fd276cba624dfa0f7dfca5321005a64328",
+        "size_bytes": 2766
+      }
+    ],
+    "provenance": {
+      "complete": true,
+      "exchange_hash": "sha256:f82b99229d326f35298b0b06ee6eab010fe32403ab636e3cd479e009d49e4970",
+      "objects": [
+        {
+          "entity_id": "beam-top",
+          "entity_type": "member",
+          "source_object_id": "93df44d7-c546-4ce1-a8e8-ec38d7084a94"
+        },
+        {
+          "entity_id": "column-left",
+          "entity_type": "member",
+          "source_object_id": "e4583b0b-761e-44c2-8731-e1e0ec478c02"
+        },
+        {
+          "entity_id": "column-right",
+          "entity_type": "member",
+          "source_object_id": "441ba744-fd41-40fe-ba8f-0637f311ac5f"
+        },
+        {
+          "entity_id": "roof-load",
+          "entity_type": "load",
+          "source_object_id": "cf7281d9-7cdc-4f52-b504-f67982eb8dc7"
+        },
+        {
+          "entity_id": "support-left",
+          "entity_type": "support",
+          "source_object_id": "b9ff5b61-11a1-42c9-89f1-c9a043134482"
+        },
+        {
+          "entity_id": "support-right",
+          "entity_type": "support",
+          "source_object_id": "05164334-078e-431b-a0f3-bee321dbe653"
+        }
+      ],
+      "source_document_id": "268435457",
+      "source_system": "rhino_grasshopper"
+    },
+    "safety_certification": false,
+    "schema_version": "1.0.0",
+    "screening_gate_status": "passed",
+    "screening_only": true
+  },
+  "manifest_hash": "sha256:a10095426680fe4e5a8dc4a43f9d75640992a43bee1d0812947ab244cdf88864",
+  "safety_boundary": {
+    "construction_approval": false,
+    "safety_certification": false,
+    "screening_only": true
+  },
+  "schema_version": "1.0.0",
+  "source_guid_mapping": [
+    {
+      "entity_id": "roof-load",
+      "entity_type": "load",
+      "source_object_id": "cf7281d9-7cdc-4f52-b504-f67982eb8dc7"
+    },
+    {
+      "entity_id": "beam-top",
+      "entity_type": "member",
+      "source_object_id": "93df44d7-c546-4ce1-a8e8-ec38d7084a94"
+    },
+    {
+      "entity_id": "column-left",
+      "entity_type": "member",
+      "source_object_id": "e4583b0b-761e-44c2-8731-e1e0ec478c02"
+    },
+    {
+      "entity_id": "column-right",
+      "entity_type": "member",
+      "source_object_id": "441ba744-fd41-40fe-ba8f-0637f311ac5f"
+    },
+    {
+      "entity_id": "support-left",
+      "entity_type": "support",
+      "source_object_id": "b9ff5b61-11a1-42c9-89f1-c9a043134482"
+    },
+    {
+      "entity_id": "support-right",
+      "entity_type": "support",
+      "source_object_id": "05164334-078e-431b-a0f3-bee321dbe653"
+    }
+  ],
+  "status": "passed",
+  "summary": {
+    "bundle_created": true,
+    "construction_approval": false,
+    "contract_validated": true,
+    "coordinate_tolerance_mm": 0.001,
+    "download_eligible": true,
+    "dxf_reopened": true,
+    "dxf_verified": true,
+    "dxf_written": true,
+    "exact_solver_passed": true,
+    "exchange_normalized": true,
+    "provenance_complete": true,
+    "provenance_verified": true,
+    "safety_certification": false,
+    "screening_only": true,
+    "screening_pass": true
+  },
+  "verification": {
+    "artifact_hash": "sha256:a9ce6ad6556a2d59c09945deaefef1965b430110a9d55d5d67e2775b6a3d718c",
+    "contract_hash": "sha256:30b10a354b388e877acd0e42c6dd5e3b8e667c76f0b9b249d28293fb78950188",
+    "evidence": [
+      {
+        "details": {
+          "approved": true,
+          "contract_record_hash": "sha256:7dbefcb2c5df78c13929cd599c47462a696e736955c13987e0a93011ecf6deb4",
+          "contract_record_verified": true,
+          "coordinate_tolerance_mm": 0.001,
+          "dxf_version": "AC1027",
+          "insunits": 4,
+          "max_deviation_mm": 0.0,
+          "official_pass": true,
+          "provenance_required": true,
+          "provenance_verified": true,
+          "xdata_app_id": "DATUMGUARD"
+        },
+        "locator": null,
+        "source": "ezdxf_reopen",
+        "type": "independent_dxf_verification"
+      }
+    ],
+    "measurements": [
+      {
+        "actual": 0.0,
+        "deviation": 0.0,
+        "dimension_id": "beam-top",
+        "evidence": {
+          "handle": "35",
+          "layer": "S-FRAME"
+        },
+        "measurement_id": "frame-dxf-beam-top-endpoints",
+        "passed": true,
+        "target": 0.0,
+        "tolerance_lower": 0.0,
+        "tolerance_upper": 0.001,
+        "unit": "mm"
+      },
+      {
+        "actual": 0.0,
+        "deviation": 0.0,
+        "dimension_id": "column-left",
+        "evidence": {
+          "handle": "36",
+          "layer": "S-FRAME"
+        },
+        "measurement_id": "frame-dxf-column-left-endpoints",
+        "passed": true,
+        "target": 0.0,
+        "tolerance_lower": 0.0,
+        "tolerance_upper": 0.001,
+        "unit": "mm"
+      },
+      {
+        "actual": 0.0,
+        "deviation": 0.0,
+        "dimension_id": "column-right",
+        "evidence": {
+          "handle": "37",
+          "layer": "S-FRAME"
+        },
+        "measurement_id": "frame-dxf-column-right-endpoints",
+        "passed": true,
+        "target": 0.0,
+        "tolerance_lower": 0.0,
+        "tolerance_upper": 0.001,
+        "unit": "mm"
+      },
+      {
+        "actual": 0.0,
+        "deviation": 0.0,
+        "dimension_id": "support-left",
+        "evidence": {
+          "handle": "38",
+          "layer": "S-SUPP"
+        },
+        "measurement_id": "frame-dxf-support-left-point",
+        "passed": true,
+        "target": 0.0,
+        "tolerance_lower": 0.0,
+        "tolerance_upper": 0.001,
+        "unit": "mm"
+      },
+      {
+        "actual": 0.0,
+        "deviation": 0.0,
+        "dimension_id": "support-right",
+        "evidence": {
+          "handle": "39",
+          "layer": "S-SUPP"
+        },
+        "measurement_id": "frame-dxf-support-right-point",
+        "passed": true,
+        "target": 0.0,
+        "tolerance_lower": 0.0,
+        "tolerance_upper": 0.001,
+        "unit": "mm"
+      },
+      {
+        "actual": 0.0,
+        "deviation": 0.0,
+        "dimension_id": "roof-load",
+        "evidence": {
+          "handle": "3A",
+          "layer": "S-LOAD"
+        },
+        "measurement_id": "frame-dxf-roof-load-point",
+        "passed": true,
+        "target": 0.0,
+        "tolerance_lower": 0.0,
+        "tolerance_upper": 0.001,
+        "unit": "mm"
+      }
+    ],
+    "status": "passed",
+    "summary": {
+      "approved": true,
+      "contract_record_hash": "sha256:7dbefcb2c5df78c13929cd599c47462a696e736955c13987e0a93011ecf6deb4",
+      "contract_record_verified": true,
+      "layers": [
+        "S-FRAME",
+        "S-SUPP",
+        "S-LOAD",
+        "DG-META"
+      ],
+      "load_count": 1,
+      "max_deviation_mm": 0.0,
+      "member_count": 3,
+      "provenance_required": true,
+      "provenance_verified": true,
+      "support_count": 2
+    },
+    "violations": []
+  },
+  "violations": []
+}
