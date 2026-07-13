@@ -45,8 +45,7 @@ def _quantize(value: Any) -> Any:
         if all(isinstance(item, dict) and "id" in item for item in items):
             return sorted(items, key=lambda item: str(item["id"]))
         if all(
-            isinstance(item, dict)
-            and {"entity_type", "entity_id", "source_object_id"} <= set(item)
+            isinstance(item, dict) and {"entity_type", "entity_id", "source_object_id"} <= set(item)
             for item in items
         ):
             return sorted(

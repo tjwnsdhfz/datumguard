@@ -62,8 +62,7 @@ def _canonical_semantic_value(value: Any) -> Any:
         if all(isinstance(item, dict) and "id" in item for item in items):
             return sorted(items, key=lambda item: str(item["id"]))
         if all(
-            isinstance(item, dict)
-            and {"entity_type", "entity_id", "source_object_id"} <= set(item)
+            isinstance(item, dict) and {"entity_type", "entity_id", "source_object_id"} <= set(item)
             for item in items
         ):
             return sorted(
@@ -679,9 +678,7 @@ def verify_frame_dxf(
                         "record_contract_hash": record_contract.contract_hash,
                         "canonical_record_hash": record_validation.contract_hash,
                         "expected_contract_hash": expected_hash,
-                        "violation_codes": [
-                            item.code for item in record_validation.violations
-                        ],
+                        "violation_codes": [item.code for item in record_validation.violations],
                     },
                 )
             )

@@ -18,16 +18,22 @@ def _exchange_objects(
     exchange: RhinoFrameExchange,
 ) -> Iterable[tuple[Literal["member", "support", "load"], str, str | None]]:
     for member in exchange.members:
-        yield "member", member.id, (
-            str(member.source_object_id) if member.source_object_id is not None else None
+        yield (
+            "member",
+            member.id,
+            (str(member.source_object_id) if member.source_object_id is not None else None),
         )
     for support in exchange.supports:
-        yield "support", support.id, (
-            str(support.source_object_id) if support.source_object_id is not None else None
+        yield (
+            "support",
+            support.id,
+            (str(support.source_object_id) if support.source_object_id is not None else None),
         )
     for load in exchange.loads:
-        yield "load", load.id, (
-            str(load.source_object_id) if load.source_object_id is not None else None
+        yield (
+            "load",
+            load.id,
+            (str(load.source_object_id) if load.source_object_id is not None else None),
         )
 
 

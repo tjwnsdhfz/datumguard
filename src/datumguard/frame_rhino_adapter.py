@@ -513,9 +513,7 @@ def adapt_rhino_frame_exchange(
         )
     # The legacy adapter retains its v0.3 quantized identity. The new one-step round-trip
     # opts into an exact source identity so sub-grid source changes remain detectable.
-    exchange_hash = (
-        _exact_exchange_hash(exchange) if provenance_bound else _exchange_hash(exchange)
-    )
+    exchange_hash = _exact_exchange_hash(exchange) if provenance_bound else _exchange_hash(exchange)
 
     unit_key = exchange.document.units.strip().lower()
     if unit_key not in _UNIT_TO_MM:
@@ -616,9 +614,7 @@ def adapt_rhino_frame_exchange(
                 )
             )
 
-        provenance = (
-            build_source_provenance(exchange, exchange_hash) if provenance_bound else None
-        )
+        provenance = build_source_provenance(exchange, exchange_hash) if provenance_bound else None
         contract = StructuralFrameContract(
             nodes=[
                 FrameNode(id=node_id, point=point, locked=True)

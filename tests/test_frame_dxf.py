@@ -91,9 +91,7 @@ def test_independent_reopen_verifier_approves_exact_artifact(contract: Any) -> N
     assert result.summary["approved"] is True
     assert result.summary["max_deviation_mm"] == 0.0
     assert result.summary["contract_record_verified"] is True
-    assert FRAME_CONTRACT_RECORD_KEY in read(
-        io.StringIO(dxf_bytes.decode("utf-8"))
-    ).rootdict
+    assert FRAME_CONTRACT_RECORD_KEY in read(io.StringIO(dxf_bytes.decode("utf-8"))).rootdict
     assert not result.violations
     assert all(item.passed for item in result.measurements)
 

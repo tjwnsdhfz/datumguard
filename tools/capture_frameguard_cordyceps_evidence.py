@@ -135,10 +135,7 @@ def main() -> None:
     )
     component_id = str(component["id"])
     component_code = (
-        ROOT
-        / "integrations"
-        / "grasshopper"
-        / "frameguard_cordyceps_exchange_component.py"
+        ROOT / "integrations" / "grasshopper" / "frameguard_cordyceps_exchange_component.py"
     ).read_text(encoding="utf-8")
     call(
         "gh_script",
@@ -189,10 +186,14 @@ def main() -> None:
     dxf_path.write_bytes(dxf_bytes)
     bundle_path.write_bytes(bundle_bytes)
 
-    source_objects = result.normalized_contract.provenance.objects if (
-        result.normalized_contract is not None
-        and result.normalized_contract.provenance is not None
-    ) else []
+    source_objects = (
+        result.normalized_contract.provenance.objects
+        if (
+            result.normalized_contract is not None
+            and result.normalized_contract.provenance is not None
+        )
+        else []
+    )
     result_record = {
         "schema_version": "1.0.0",
         "status": result.status.value,
@@ -340,9 +341,7 @@ def main() -> None:
             "contract_hash": result.contract_hash,
             "artifact_hash": result.artifact_hash,
             "bundle_hash": result.bundle_hash,
-            "contract_record_verified": result.verification.summary.get(
-                "contract_record_verified"
-            ),
+            "contract_record_verified": result.verification.summary.get("contract_record_verified"),
             "provenance_verified": result.verification.summary.get("provenance_verified"),
         },
     }

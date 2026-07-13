@@ -350,13 +350,12 @@ def test_openapi_exposes_one_step_roundtrip_without_changing_existing_routes() -
     assert "/api/v1/frame/rhino/roundtrip" in paths
     assert "/api/v1/frame/rhino/adapt" in paths
     assert "/api/v1/frame/cad/run" in paths
-    response_schema = paths["/api/v1/frame/rhino/roundtrip"]["post"]["responses"]["200"][
-        "content"
-    ]["application/json"]["schema"]
+    response_schema = paths["/api/v1/frame/rhino/roundtrip"]["post"]["responses"]["200"]["content"][
+        "application/json"
+    ]["schema"]
     assert response_schema["$ref"].endswith("/FrameRhinoRoundTripResponse")
     response_component = openapi["components"]["schemas"]["FrameRhinoRoundTripResponse"]
     verification_refs = response_component["properties"]["verification"]["anyOf"]
     assert any(
-        item.get("$ref", "").endswith("/FrameDxfVerificationResult")
-        for item in verification_refs
+        item.get("$ref", "").endswith("/FrameDxfVerificationResult") for item in verification_refs
     )
