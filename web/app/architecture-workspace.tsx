@@ -900,7 +900,8 @@ export default function ArchitectureWorkspace() {
 
       <section className="arch-commandbar" id="architecture-workspace-content" tabIndex={-1} aria-label="Architecture CAD tools">
         <div className="arch-tools" role="group" aria-label="Canvas tool">
-          {TOOL_BUTTONS.map((item) => (
+          <span className="arch-tool-group-label">EDIT</span>
+          {TOOL_BUTTONS.filter((item) => item.supported).map((item) => (
             <button
               key={item.id}
               type="button"
@@ -915,6 +916,20 @@ export default function ArchitectureWorkspace() {
               <span>{item.label}</span>
             </button>
           ))}
+          <span className="arch-tool-group-label future">NEXT</span>
+          {TOOL_BUTTONS.filter((item) => !item.supported).map((item) => (
+            <button
+              aria-label={`${item.label}. 객체 추가는 후속 범위입니다.`}
+              className="future"
+              disabled
+              key={item.id}
+              title="객체 추가는 후속 범위입니다. 현재 preset 객체의 정확한 편집과 검증을 지원합니다."
+              type="button"
+            >
+              <ArchitectureIcon name={item.id} />
+              <span>{item.label}</span>
+            </button>
+          ))}
         </div>
         <div className="arch-history" role="group" aria-label="History and view"><button data-testid="architecture-undo" type="button" onClick={undo} disabled={!history.length || verification === "running" || blockedInputs.size > 0} aria-label="Undo"><ArchitectureIcon name="undo" /><span>Undo</span></button><button data-testid="architecture-redo" type="button" onClick={redo} disabled={!future.length || verification === "running" || blockedInputs.size > 0} aria-label="Redo"><ArchitectureIcon name="redo" /><span>Redo</span></button><button data-testid="architecture-zoom-in" type="button" onClick={() => zoom(0.82)} aria-label="Zoom in"><ArchitectureIcon name="zoom-in" /></button><button data-testid="architecture-zoom-out" type="button" onClick={() => zoom(1.22)} aria-label="Zoom out"><ArchitectureIcon name="zoom-out" /></button><button data-testid="architecture-fit" type="button" onClick={() => setViewBox(FIT_VIEW)}><ArchitectureIcon name="fit" /><span>Fit</span></button></div>
         <label className="arch-snap">Snap <select data-testid="architecture-snap-select" value={draft.snap} disabled={verification === "running" || blockedInputs.size > 0} onChange={(event) => commit({ ...draft, snap: Number(event.target.value) })}><option value={100}>100 mm</option><option value={50}>50 mm</option><option value={10}>10 mm</option></select><small>Shift = 10mm</small></label>
@@ -924,7 +939,10 @@ export default function ArchitectureWorkspace() {
 
       <section className="arch-scenario-rail" data-testid="architecture-scenario" aria-labelledby="architecture-scenario-title">
         <div className="arch-scenario-intro">
-          <span>QUICK START · 60 SEC</span>
+          <div className="arch-scenario-kicker">
+            <span>QUICK START · 60 SEC</span>
+            <span className={`arch-scenario-engine ${health}`}><ArchitectureIcon name="health" />{healthText}</span>
+          </div>
           <h2 id="architecture-scenario-title">정확한 값을 잠그고, 저장된 DXF를 다시 측정합니다</h2>
           <p>샘플 선택 → mm 값 확인 → 검증·다운로드. 구조·안전·법규 인증은 제공하지 않습니다.</p>
           <div className={`arch-draft-state ${draftRestored ? "restored" : "local"}`} role="status">
@@ -935,14 +953,14 @@ export default function ArchitectureWorkspace() {
 
         <ol className="arch-scenario-steps" aria-label="첫 검증 순서">
           <li data-testid="architecture-scenario-step-sample" data-state="done"><b>1</b><span><strong>샘플 선택</strong><small>{draft.presetId === "architecture-studio" ? "정상 4-room studio" : "300 mm 실패 샘플"}</small></span></li>
-          <li data-testid="architecture-scenario-step-edit" data-state={verification === "idle" ? "current" : "done"}><b>2</b><span><strong>정확한 값 확인</strong><small>{selectedId || "객체를 선택하세요"}</small></span></li>
-          <li data-testid="architecture-scenario-step-verify" data-state={verification === "passed" ? "done" : verification === "failed" || verification === "error" ? "failed" : verification === "running" ? "current" : "waiting"}><b>3</b><span><strong>DXF 재측정</strong><small>{verification === "passed" ? "PASS · download ready" : verification === "failed" ? "BLOCKED · 수정 필요" : verification === "error" ? "REQUEST ERROR · 다시 시도" : verification === "running" ? "independent reader" : "실행 대기"}</small></span></li>
+          <li aria-current={verification === "idle" ? "step" : undefined} data-testid="architecture-scenario-step-edit" data-state={verification === "idle" ? "current" : "done"}><b>2</b><span><strong>정확한 값 확인</strong><small>{selectedId || "객체를 선택하세요"}</small></span></li>
+          <li aria-current={verification === "running" || verification === "failed" || verification === "error" ? "step" : undefined} data-testid="architecture-scenario-step-verify" data-state={verification === "passed" ? "done" : verification === "failed" || verification === "error" ? "failed" : verification === "running" ? "current" : "waiting"}><b>3</b><span><strong>DXF 재측정</strong><small>{verification === "passed" ? "PASS · download ready" : verification === "failed" ? "BLOCKED · 수정 필요" : verification === "error" ? "REQUEST ERROR · 다시 시도" : verification === "running" ? "independent reader" : "실행 대기"}</small></span></li>
         </ol>
 
         <div className="arch-scenario-actions">
           <div role="group" aria-label="데모 시나리오">
-            <button data-testid="architecture-scenario-valid" type="button" disabled={verification === "running"} onClick={loadStudioSample}>정상 검증</button>
-            <button data-testid="architecture-scenario-failure" type="button" disabled={verification === "running"} onClick={loadFailureSample}>실패 복구</button>
+            <button aria-pressed={draft.presetId === "architecture-studio"} data-testid="architecture-scenario-valid" type="button" disabled={verification === "running"} onClick={loadStudioSample}>정상 검증</button>
+            <button aria-pressed={draft.presetId === "architecture-open-loop"} data-testid="architecture-scenario-failure" type="button" disabled={verification === "running"} onClick={loadFailureSample}>실패 복구</button>
             <button data-testid="architecture-scenario-exact" type="button" disabled={verification === "running"} onClick={startExactEditScenario}>정확한 mm 편집</button>
           </div>
           <button data-testid="architecture-run-verification" data-scenario-primary="true" className="arch-scenario-primary" type="button" disabled={primaryDisabled} onClick={handlePrimaryAction}>

@@ -291,6 +291,10 @@ test.describe("interactive architecture demo", () => {
     await expect(page.getByTestId("verification-summary")).toContainText(/96(?:\.0)?\s*m²/i);
     await expect(page.getByTestId("verification-summary")).toContainText(/4/);
     await expect(page.getByTestId("architecture-download")).toBeEnabled();
+    const verificationSectionBox = await page.locator("#verification").boundingBox();
+    expect(verificationSectionBox, "verification section must be rendered below sticky chrome").not.toBeNull();
+    expect(verificationSectionBox?.y).toBeGreaterThanOrEqual(120);
+    expect(verificationSectionBox?.y).toBeLessThanOrEqual(130);
 
     const pendingInput = page.getByTestId("architecture-inspector-center-x");
     await pendingInput.fill("4001");
@@ -381,6 +385,28 @@ test.describe("interactive architecture demo", () => {
     await expect(page.getByTestId("architecture-demo")).toHaveAttribute("data-verification-status", "passed", { timeout: 15_000 });
     await expect(page.getByTestId("architecture-download")).toBeEnabled();
     await expect(page.getByTestId("architecture-mobile-action")).toContainText("검증 번들 다운로드");
+    await expectNoHorizontalPageOverflow(page);
+  });
+
+  test("keeps the plan and one fixed verification action in the first mobile viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await waitForArchitectureReady(page);
+
+    await expect(page.getByRole("region", { name: "Architecture CAD tools" })).toBeHidden();
+    await expect(page.getByTestId("architecture-scenario")).toBeInViewport();
+    await expect(page.getByTestId("architecture-canvas")).toBeInViewport();
+    await expect(page.getByTestId("architecture-run-verification")).toBeHidden();
+
+    const mobileAction = page.getByTestId("architecture-mobile-action");
+    await expect(mobileAction).toBeVisible();
+    await expect(mobileAction).toHaveCSS("position", "fixed");
+    await expect(mobileAction).toHaveCSS("bottom", "0px");
+    await mobileAction.getByRole("button", { name: "샘플 도면 검증하기", exact: true }).click();
+
+    await expect(page.getByTestId("architecture-demo")).toHaveAttribute("data-verification-status", "passed", { timeout: 15_000 });
+    await expect(mobileAction).toContainText("검증 완료");
+    await expect(mobileAction.getByRole("button", { name: "검증 번들 다운로드 (.zip)", exact: true })).toBeEnabled();
     await expectNoHorizontalPageOverflow(page);
   });
 });
