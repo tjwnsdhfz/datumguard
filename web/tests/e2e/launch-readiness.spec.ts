@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const PRODUCTION_ORIGIN = "https://datumguard-tjwnsdhfz.vercel.app";
-const RELEASE_VERSION = "0.3.0";
+const RELEASE_VERSION = "0.4.0";
 
 async function expectNoHorizontalPageOverflow(page: Page, context: string) {
   const metrics = await page.evaluate(() => ({

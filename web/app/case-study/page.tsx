@@ -5,7 +5,7 @@ import styles from "./case-study.module.css";
 
 const repositoryUrl =
   process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/tjwnsdhfz/datumguard";
-const releaseUrl = `${repositoryUrl.replace(/\/$/, "")}/releases/tag/v0.3.0`;
+const releaseUrl = `${repositoryUrl.replace(/\/$/, "")}/releases/tag/v0.4.0`;
 
 const pipeline = [
   ["01", "LOCK", "datum·단위·치수·공차를 versioned contract로 고정"],
@@ -51,7 +51,7 @@ export default function CaseStudyPage() {
         tabIndex={-1}
       >
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>PUBLIC ENGINEERING CASE STUDY · V0.3.0 PRODUCTION · FRAMEGUARD + OPENBIM RESEARCH</p>
+          <p className={styles.eyebrow}>PUBLIC ENGINEERING CASE STUDY · V0.4.0 PRODUCTION · RHINO ROUND-TRIP + DXF COMPLETENESS</p>
           <h1 id="case-study-title">
             CAD COMMAND SUCCESS
             <br />
@@ -80,9 +80,9 @@ export default function CaseStudyPage() {
 
       <section className={styles.proofStrip} aria-label="Verified project evidence">
         <div><strong>0.001 mm</strong><span>comparison grid</span></div>
-        <div><strong>376</strong><span>pytest release gate</span></div>
-        <div><strong>35</strong><span>Playwright release gate</span></div>
-        <div><strong>7</strong><span>v0.3.0 public workspaces</span></div>
+        <div><strong>413</strong><span>pytest release gate</span></div>
+        <div><strong>41</strong><span>Playwright release gate</span></div>
+        <div><strong>7</strong><span>v0.4.0 public workspaces</span></div>
         <div><strong>0</strong><span>unverified official CAD bundles</span></div>
       </section>
 
@@ -163,6 +163,21 @@ export default function CaseStudyPage() {
             <strong>외벽 endpoint를 300 mm 이격</strong>
             <p>독립 verifier가 열린 외벽 loop를 찾고 공식 bundle 생성을 차단합니다.</p>
             <code>DG_ARCH_EXTERIOR_OPEN · bundle: null</code>
+          </article>
+        </div>
+
+        <div className={styles.passFailGrid}>
+          <article className={styles.passCard}>
+            <span>REAL RHINO ROUND-TRIP</span>
+            <strong>6 Rhino GUIDs → contract entities → DXF XDATA</strong>
+            <p>Rhino 8·Grasshopper·Cordyceps에서 추출한 실제 source identity와 전체 semantic contract를 DXF 재개봉 뒤 다시 확인했습니다.</p>
+            <code>endpoint deviation: 0.0 mm · artifact_role: geometry_evidence</code>
+          </article>
+          <article className={styles.failCard}>
+            <span>DXF COMPLETENESS GATE</span>
+            <strong>지원하지 않는 내용은 동일 형상으로 판정하지 않음</strong>
+            <p>XREF, proxy, underlay, raster, OLE, WIPEOUT과 과도한 block expansion은 원본 hash를 보존한 채 equality claim과 preview expansion을 차단합니다.</p>
+            <code>MEASURED · RENDER_ONLY · UNSUPPORTED · comparison_complete=false</code>
           </article>
         </div>
 
@@ -305,7 +320,7 @@ export default function CaseStudyPage() {
         </div>
         <div className={styles.releaseGrid}>
           <a className={styles.releaseCard} href={releaseUrl} target="_blank" rel="noreferrer">
-            <span>TEST</span><strong>376 pytest + 35 Playwright</strong><p>Open the v0.3.0 release evidence ↗</p>
+            <span>TEST</span><strong>413 pytest + 41 Playwright</strong><p>Open the v0.4.0 release evidence ↗</p>
           </a>
           <article><span>RESEARCH</span><strong>OpenSees 6/6 + PyG 90 cases</strong><p>screening and research evidence, never certification</p></article>
           <article><span>CI</span><strong>Type · lint · build · containers</strong><p>SBOM, CodeQL, audit, Trivy 포함</p></article>

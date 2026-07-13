@@ -8,8 +8,8 @@ authors:
   - alias: tjwnsdhfz
 repository-code: "https://github.com/tjwnsdhfz/datumguard"
 url: "https://datumguard-tjwnsdhfz.vercel.app"
-version: 0.3.0
-date-released: 2026-07-12
+version: 0.4.0
+date-released: 2026-07-13
 license: MIT
 abstract: >-
   Contract-first CAD generation and independent DXF, STEP, and IFC artifact

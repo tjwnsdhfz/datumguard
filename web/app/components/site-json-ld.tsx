@@ -25,8 +25,8 @@ const structuredData = {
       name: "DatumGuard",
       applicationCategory: "DesignApplication",
       operatingSystem: "Web",
-      softwareVersion: "0.3.0",
-      datePublished: "2026-07-12",
+      softwareVersion: "0.4.0",
+      datePublished: "2026-07-13",
       description:
         "DatumGuard locks structured design requirements, independently reopens and remeasures serialized CAD artifacts, and blocks official export when verification fails.",
       isAccessibleForFree: true,
@@ -36,13 +36,14 @@ const structuredData = {
         priceCurrency: "USD",
       },
       license: "https://spdx.org/licenses/MIT.html",
-      releaseNotes: `${REPOSITORY_URL}/releases/tag/v0.3.0`,
+      releaseNotes: `${REPOSITORY_URL}/releases/tag/v0.4.0`,
       author: { "@id": PERSON_ID },
       featureList: [
         "Structured design contracts",
         "Independent DXF and STEP artifact remeasurement",
         "Fail-closed verified-only export",
         "Limited 2D linear-elastic structural frame screening",
+        "Versioned DXF entity support and fail-closed completeness gating",
       ],
       disambiguatingDescription:
         "Engineering verification research software. It does not certify structural safety or replace review by a responsible engineer.",

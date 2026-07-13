@@ -38,7 +38,7 @@ def test_health(monkeypatch) -> None:
     response = client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
-    assert response.json()["version"] == "0.3.0"
+    assert response.json()["version"] == "0.4.0"
     assert response.json()["release_sha"] == expected_sha
 
     monkeypatch.setenv("DATUMGUARD_RELEASE_SHA", "not-a-commit")
@@ -50,7 +50,7 @@ def test_liveness_readiness_and_metrics_are_public() -> None:
     assert client.get("/api/v1/live").status_code == 200
     ready = client.get("/api/v1/ready")
     assert ready.status_code == 200
-    assert ready.json()["version"] == "0.3.0"
+    assert ready.json()["version"] == "0.4.0"
     assert ready.json()["release_sha"] == "unknown"
     assert ready.json()["queue"]["active"] == 0
 

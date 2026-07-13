@@ -13,7 +13,7 @@ DatumGuard는 요구사항을 versioned contract로 잠그고 저장된 DXF·STE
 검증된 파일만 내보내는 오픈소스 Engineering Design Assurance 도구입니다.
 **Fail-closed verification for AI-assisted CAD workflows.**
 
-**[검증된 Frame 실행 →](https://datumguard-tjwnsdhfz.vercel.app/frame)** · **[60초 Case Study →](https://datumguard-tjwnsdhfz.vercel.app/case-study)** · [v0.3.0 release evidence →](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.3.0) · [Benchmark 재현 →](docs/frameguard-gnn.md#8-재현-명령)
+**[검증된 Frame 실행 →](https://datumguard-tjwnsdhfz.vercel.app/frame)** · **[60초 Case Study →](https://datumguard-tjwnsdhfz.vercel.app/case-study)** · [v0.4.0 release evidence →](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.4.0) · [Benchmark 재현 →](docs/frameguard-gnn.md#8-재현-명령)
 
 > **Safety boundary:** FrameGuard는 제한된 2D 선형 탄성 frame의 초기 screening이며 구조 안전 인증이나 전문 구조 검토를 대체하지 않습니다. `/openbim`은 `research_validation_only=true`, `approval_eligible=false`인 합성 연구 preview입니다.
 
@@ -23,7 +23,7 @@ DatumGuard는 요구사항을 versioned contract로 잠그고 저장된 DXF·STE
 |---|---|
 | **문제** | 자연어·폼에서 CAD가 생성되어도 저장 파일의 실제 치수, datum, 공차가 요구조건과 같다는 보장은 없습니다. |
 | **방법** | 요구를 versioned contract로 고정하고, writer와 분리된 reader가 serialized DXF 또는 STEP을 다시 열어 측정합니다. 모든 필수 검사가 통과할 때만 bundle을 활성화합니다. |
-| **증거** | [v0.3.0 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.3.0)는 376 pytest, 35 Playwright, 15-page build, container/SBOM와 security gate를 통과합니다. Render 완료 후 strict smoke는 공개 route와 canary뿐 아니라 API health의 `release_sha`가 배포 commit과 같은지도 확인하며, 정확한 run·deployment ID는 release notes에 고정합니다. |
+| **증거** | [v0.4.0 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.4.0)는 413 pytest, 41 Playwright, 15-page build, container/SBOM와 security gate를 통과합니다. 실제 Rhino 8·Grasshopper source에서 6개 GUID의 provenance를 DXF XDATA까지 보존했고, DXF completeness gate는 지원하지 않는 내용을 동일 형상으로 주장하지 않습니다. 정확한 run·deployment ID는 release notes에 고정합니다. |
 | **한계** | 구조·안전·법규·산업표준 적합성이나 범용 3D를 인증하지 않습니다. FrameGuard는 제한된 2D 선형 탄성 frame의 초기 screening이며 전문 구조 검토를 대체하지 않습니다. 3D는 세 가지 제한형 solid family의 STEP 기하 검증만 local/CI에서 지원하며, 공개 Render Free API에서는 비활성입니다. OpenBIM 결과도 합성 연구 evidence일 뿐 제작·시공 승인이 아닙니다. 100개 golden contract + 자연어 50개 benchmark는 계획 단계입니다. |
 
 | 결과 | 재현 fixture | 승인 게이트 |
@@ -45,7 +45,7 @@ DatumGuard는 요구사항을 versioned contract로 잠그고 저장된 DXF·STE
 |---|---|---|
 | Architecture | `/` | wall 폐합·연결, opening, grid/column, room area |
 | Plant / Semiconductor Piping | `/piping` | route 연결·직교성, valve/support 위치, equipment clearance |
-| Structural Frame Screening — v0.3.0 production | `/frame` | Rhino/GH exchange→2D exact solver→DXF 재개봉 gate→surrogate triage |
+| Structural Frame Screening — v0.4.0 production | `/frame` | Rhino/GH source GUID→2D exact solver→DXF semantic 재개봉 gate→surrogate triage |
 | Mechanical / Ship Plate | `/plate` | hole/slot/cutout, edge distance, ligament, overlap |
 | 3D Solid Part — local/CI, hosted run disabled | `/solid` | 세 family의 OpenCascade B-rep, bbox, topology, hole/bore diameter와 axis |
 | Existing CAD Artifact | `/intake` | DXF support matrix·completeness gate, STEP·IFC 구조 감사와 revision compare |
@@ -83,11 +83,10 @@ pipe-rack family의 연구 결과이며 안전 인증이 아닙니다. surrogate
 [OpenSees parity](docs/frameguard-opensees.md), [PyG benchmark와 uncertainty gate](docs/frameguard-gnn.md),
 [ridge historical baseline](docs/frameguard-surrogate.md)에 원본 수치와 한계를 공개합니다.
 
-> `/frame`과 FrameGuard assurance API/MCP는 v0.3.0 production에 배포되었습니다. GitHub
-> [CI run 29194952632](https://github.com/tjwnsdhfz/datumguard/actions/runs/29194952632),
-> [research run 29194964854](https://github.com/tjwnsdhfz/datumguard/actions/runs/29194964854),
-> [strict deployment smoke 29195107475](https://github.com/tjwnsdhfz/datumguard/actions/runs/29195107475)가
-> 통과했으며, 결과는 여전히 구조 안전 인증이 아닌 초기 screening입니다.
+> `/frame`과 FrameGuard assurance API/MCP는 v0.4.0 production 범위입니다. v0.4.0은 실제
+> Rhino/Grasshopper round-trip evidence와 one-step `frame_rhino_roundtrip` API/MCP를 더했으며,
+> 결과는 여전히 구조 안전 인증이 아닌 초기 screening입니다. 정확한 CI·배포·strict smoke ID는
+> [release evidence](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.4.0)에 고정합니다.
 
 ### OpenBIM Evidence Guard research preview
 
@@ -202,7 +201,7 @@ docker compose up --build
 `research_validation_only=true`인 합성 연구 evidence만 공개한다. `/frame` 역시 제한된 2D 선형 탄성
 screening이며 두 경로 모두 제작·시공·구조 안전 승인을 발행하지 않는다.
 
-현재 공개 기준은 [v0.3.0 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.3.0)입니다. Vercel 선행 smoke는 새 web과 기존 API의 하위 호환성을 확인하고, Render 완료 이벤트가 실행하는 최종 smoke는 API `version`, `release_sha`, capability, Architecture·FrameGuard canary, Artifact Lab audit, Solid `503` fail-closed와 CORS를 같은 배포 revision에서 검사합니다. 도메인 evidence에서 Architecture는 96m²와 4개 room seed, Piping은 12.0m route와 1,975mm minimum clearance, Plate는 전체 치수 편차 0.000000mm를 보고합니다. 이전 `v0.2.1`은 [rollback baseline](docs/operations/rollback-baseline.md)으로 유지합니다.
+현재 공개 기준은 [v0.4.0 release](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.4.0)입니다. Vercel 선행 smoke는 새 web과 기존 API의 하위 호환성을 확인하고, Render 완료 이벤트가 실행하는 최종 smoke는 API `version`, `release_sha`, capability, Architecture·FrameGuard canary, Artifact Lab audit, Solid `503` fail-closed와 CORS를 같은 배포 revision에서 검사합니다. 도메인 evidence에서 Architecture는 96m²와 4개 room seed, Piping은 12.0m route와 1,975mm minimum clearance, Plate는 전체 치수 편차 0.000000mm를 보고합니다. 이전 `v0.3.0`은 직전 evidence snapshot, `v0.2.1`은 [rollback baseline](docs/operations/rollback-baseline.md)으로 유지합니다.
 
 직접 복제해 배포하려면 공개 저장소 [tjwnsdhfz/datumguard](https://github.com/tjwnsdhfz/datumguard)를 사용합니다. 먼저 Render 버튼으로 backend를 만들고 발급된 API origin을 Vercel 배포 화면의 `NEXT_PUBLIC_DATUMGUARD_API_URL`에 입력합니다.
 
@@ -213,7 +212,7 @@ screening이며 두 경로 모두 제작·시공·구조 안전 승인을 발행
 - Frontend는 Vercel 프로젝트의 Root Directory를 `web/`으로 지정하고, build 전에 `NEXT_PUBLIC_DATUMGUARD_API_URL`을 backend URL로 설정합니다.
 - Backend의 `DATUMGUARD_CORS_ORIGINS`에는 frontend origin을 쉼표로 구분해 설정합니다.
 
-`render.yaml`은 보호된 `main` commit을 backend에 자동 배포합니다. Vercel for GitHub는 Root Directory `web/`에서 PR Preview와 `main` Production을 만들며, v0.3.0 strict smoke는 `/frame` DOM, `structural_frame` domain, deterministic FrameGuard canary와 exact `release_sha`까지 요구합니다. 실제 원격 검증은 [run 29195107475](https://github.com/tjwnsdhfz/datumguard/actions/runs/29195107475)에서 통과했습니다. 정확한 연결 계약은 [GitHub Deployment Guide](docs/github-deployment.md), 환경변수·cold start 순서는 [Deployment Guide](docs/deployment.md)를 따릅니다.
+`render.yaml`은 보호된 `main` commit을 backend에 자동 배포합니다. Vercel for GitHub는 Root Directory `web/`에서 PR Preview와 `main` Production을 만들며, v0.4.0 strict smoke는 `/frame` DOM, `structural_frame` domain, deterministic FrameGuard canary와 exact `release_sha`까지 요구합니다. 최종 원격 run과 deployment ID는 v0.4.0 release notes에 고정합니다. 정확한 연결 계약은 [GitHub Deployment Guide](docs/github-deployment.md), 환경변수·cold start 순서는 [Deployment Guide](docs/deployment.md)를 따릅니다.
 
 배포 후에는 `$WEB_ORIGIN/case-study`, `/`, `/piping`, `/frame`, `/plate`, `/solid`, `/intake`,
 `/openbim`을 함께 확인합니다. Frontend를 build한 뒤
@@ -249,8 +248,9 @@ OpenCascade Solid은 코드·Linux CI·Docker image에서 실제 STEP 생성과 
 - 로컬 MCP: `datumguard-mcp`
 
 MCP는 기존 9개 설계 도구에 `artifact_audit`, `artifact_compare`, `solid_generate_verify`,
-`frame_analyze`, `frame_repair_propose`, `frame_rhino_adapt`, `frame_dxf_generate_verify`,
-`frame_surrogate_predict`, `frame_opensees_parity_evidence`를 더한 **18개 도구**를 제공합니다.
+`frame_analyze`, `frame_repair_propose`, `frame_rhino_adapt`, `frame_rhino_roundtrip`,
+`frame_dxf_generate_verify`, `frame_surrogate_predict`, `frame_opensees_parity_evidence`를 더한
+**19개 도구**를 제공합니다.
 
 MCP contract 분기는 입력의 `design_kind`로 결정합니다.
 
@@ -286,8 +286,8 @@ Set-Location web
 npm run test:e2e
 ```
 
-[v0.3.0 release evidence](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.3.0)는 backend
-**376 passed / 6 optional-runtime skipped**, Chromium Playwright **35 passed**, typecheck·lint·15-page
+[v0.4.0 release evidence](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.4.0)는 backend
+**413 passed / 6 optional-runtime skipped**, Chromium Playwright **41 passed**, typecheck·lint·15-page
 build, 두 container build, CycloneDX SBOM, fixed-critical scan, dependency review, pip audit와 두 CodeQL
 language 결과를 실제 run에 연결합니다. 선택형 research workflow도 genuine OpenSeesPy와 PyG smoke를
 [run 29194964854](https://github.com/tjwnsdhfz/datumguard/actions/runs/29194964854)에서 재실행했습니다.
