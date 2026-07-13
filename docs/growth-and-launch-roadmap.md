@@ -225,6 +225,11 @@ Cordyceps가 연결되지 않으면 먼저 `127.0.0.1:47820` adapter 상태, Rhi
 
 예상: 3~4일
 
+2026-07-13 구현 상태: `support_matrix_version=2026-07-13.1`, entity별
+`MEASURED/RENDER_ONLY/UNSUPPORTED`, `comparison_complete`, XREF·proxy·underlay·image·OLE·wipeout
+차단, block nesting/cycle과 entity/render budget을 구현했다. 원본 SHA-256은 유지하고 불완전 비교는
+`needs_confirmation`과 `same_geometry_multiset=null`로 제한한다.
+
 `/intake`는 이미 외부 DXF/STEP/IFC upload를 지원하므로 새 업로더를 만들지 않는다. 대신 외부 DXF를 얼마나 완전하게 비교했는지를 명시한다.
 
 #### support level

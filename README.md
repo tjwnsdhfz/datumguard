@@ -48,7 +48,7 @@ DatumGuard는 요구사항을 versioned contract로 잠그고 저장된 DXF·STE
 | Structural Frame Screening — v0.3.0 production | `/frame` | Rhino/GH exchange→2D exact solver→DXF 재개봉 gate→surrogate triage |
 | Mechanical / Ship Plate | `/plate` | hole/slot/cutout, edge distance, ligament, overlap |
 | 3D Solid Part — local/CI, hosted run disabled | `/solid` | 세 family의 OpenCascade B-rep, bbox, topology, hole/bore diameter와 axis |
-| Existing CAD Artifact | `/intake` | DXF·STEP·IFC 구조 감사와 revision compare |
+| Existing CAD Artifact | `/intake` | DXF support matrix·completeness gate, STEP·IFC 구조 감사와 revision compare |
 | OpenBIM Evidence — public research UI, hosted run disabled | `/openbim` | IFC4+IDS 정보요구조건, IFC integrity, project AABB clearance, protected revision |
 
 세부 범위와 분야별 비목표는 [Engineering Domains](docs/engineering-domains.md)에 정리되어 있습니다.
