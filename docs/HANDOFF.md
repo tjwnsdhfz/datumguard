@@ -1,162 +1,118 @@
-# DatumGuard v0.3.0 Production Handoff
+# DatumGuard v0.4.0 Production Handoff
 
-## Production 기준점
+## 불변 기준점
 
-- Repository: `https://github.com/tjwnsdhfz/datumguard`
-- Evidence release: [`v0.3.0`](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.3.0); final tag SHA와 release-note deployment ID가 불변 기준
-- Validated FrameGuard feature snapshot: [`472df5fe431277244fc0fcda1ee9aa3b6284ddff`](https://github.com/tjwnsdhfz/datumguard/commit/472df5fe431277244fc0fcda1ee9aa3b6284ddff) on `main`
-- Production web: `https://datumguard-tjwnsdhfz.vercel.app`
-- Production API: `https://datumguard-api.onrender.com`
-- API runtime version: `0.3.0`
-- Runtime provenance: `/api/v1/health.release_sha`; strict production smoke가 위 `main` SHA와 exact-match
-- Vercel production: GitHub deployment `5413026696`
-- Render production: GitHub deployment `5413009032`; Render deploy `dep-d99pkfeq1p3s73d3gjj0`
-- Rollback baseline: [`v0.2.1`](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.2.1), Vercel `5410294611`, Render `5410321107`
+| 항목 | 검증된 기준 |
+|---|---|
+| Repository | <https://github.com/tjwnsdhfz/datumguard> |
+| Evidence release | [`v0.4.0`](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.4.0) |
+| Evidence release source | [`0f9e0b08210aa6bc4fc8cc6bb1d398292b12e832`](https://github.com/tjwnsdhfz/datumguard/commit/0f9e0b08210aa6bc4fc8cc6bb1d398292b12e832) |
+| Production web | <https://datumguard-tjwnsdhfz.vercel.app> |
+| Production API | <https://datumguard-api.onrender.com> |
+| Evidence API provenance | `version=0.4.0`, `release_sha=0f9e0b08210aa6bc4fc8cc6bb1d398292b12e832` |
+| Evidence Vercel deployment | GitHub deployment `5420282596` |
+| Evidence Render deployment | GitHub deployment `5420269040`; Render `dep-d9a8ffe47okc73eilf7g` |
+| Main CI | [run `29229557683`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29229557683) |
+| Security | [run `29229557731`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29229557731) |
+| Strict production smoke | [run `29229800855`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29229800855) |
 
-CAD Artifact Assurance, 제한형 STEP, Product Case Study, FrameGuard, OpenBIM 연구 소스와 웹 경로가
-`main`에 병합·배포되었다. 공개 Render에서는 FrameGuard가 활성이고 OpenBIM·BCF와 Solid 실행은
-fail-closed 상태다. 아래 run과 deployment record는 FrameGuard feature snapshot을 증명하고, 문서 승격
-뒤의 최종 source/deployment ID는 v0.3.0 release notes에 고정한다.
+`v0.4.0` tag는 위 evidence source revision을 가리킨다. Release에는 Rhino round-trip evidence ZIP,
+1280×640 social preview, API/Web CycloneDX SBOM을 첨부했다. Release asset digest와 production
+deployment ID가 공개 검증 기준이며, 이후 `main` 문서-only 변경과 분리해 해석한다. 현재 live revision은
+항상 `/api/v1/health.release_sha`와 최신 성공 `deployment-smoke`에서 다시 확인한다.
 
-## 공개 route와 실제 가용 범위
+## 공개 capability
 
-| Route | 분야 | Production 상태 | artifact/evidence |
+| Route | 분야 | Production 상태 | 공식 경계 |
 |---|---|---|---|
-| `/case-study` | Product Case Study | 활성 | 문제, assurance method, evidence, limits 요약 |
-| `/` | Architecture | 활성 | serialized R2013 DXF 재측정, 4-room/96m² demo |
-| `/piping` | Plant·semiconductor utility | 활성 | route/support/clearance DXF 재측정 |
-| `/frame` | Structural frame screening | 활성 | exact 2D solver, serialized DXF 재개봉, screening evidence |
-| `/plate` | Mechanical·ship plate | 활성 | hole/slot/cutout와 공차 DXF 재측정 |
-| `/solid` | 제한형 3D solid part | UI·schema 공개, hosted run 비활성 | local/CI에서 STEP 생성, 별도 process 재입력, mesh·dimension evidence |
-| `/intake` | Existing CAD artifact | 활성 | 외부 DXF·STEP·IFC immutable audit와 revision compare |
-| `/openbim` | OpenBIM research | 웹 경로 공개, hosted run 비활성 | 합성 IFC4+IDS 연구 UI; production API evidence 생성은 차단 |
+| `/` | Architecture | 활성 | serialized R2013/mm DXF 독립 재측정 뒤에만 bundle 허용 |
+| `/piping` | Plant·semiconductor utility | 활성 | route/support/clearance를 저장 DXF에서 재측정 |
+| `/frame` | Structural frame screening | 활성 | exact 2D solver + DXF gate; 구조 인증 아님 |
+| `/plate` | Mechanical·ship plate | 활성 | hole/slot/cutout와 공차 gate |
+| `/intake` | Existing CAD artifact | 활성 | DXF completeness gate; 항상 `approval_eligible=false` |
+| `/case-study` | Portfolio evidence | 활성 | 문제·방법·수치·한계·재현 경로 |
+| `/solid` | 제한형 3D solid | UI/schema 활성, hosted run 비활성 | local/CI 전용 STEP 재입력; hosted `503` fail-closed |
+| `/openbim` | OpenBIM research | UI 활성, hosted run 비활성 | research only; 제작 승인 아님 |
 
-`/solid`은 mounting plate, angle bracket, flange만 지원한다. 저장 STEP의 B-rep, bbox, topology와
-계약된 cylindrical feature를 검증할 뿐 범용 3D·assembly 또는 구조강도, 압력, 피로, 재료,
-용접, 가공성과 산업표준 적합성을 판정하지 않는다. Render Free에서는
-`DATUMGUARD_ENABLE_SOLID=false`이며 실행 endpoint가 `503 DG_CAPABILITY_DISABLED`를 반환한다.
+Hosted active domain은 Architecture, Piping, Plate, FrameGuard, Artifact Lab이다. Solid와 OpenBIM은
+공개 Render에서 capability flag가 꺼져 있으며 endpoint가 fail-closed한다. API는 stateless·no DB이며,
+외부 artifact 원문을 서버에 장기 보관하지 않는다.
 
-`/intake`는 contract 없는 외부 파일을 검사하므로 `approval_eligible=false`가 고정이며 제작 승인을
-만들지 않는다. `/openbim`도 `research_validation_only=true`, `approval_eligible=false`이며 공개
-Render의 `DATUMGUARD_ENABLE_OPENBIM=false`, `DATUMGUARD_ENABLE_BCF=false` 설정으로 실행을 차단한다.
+## v0.4 핵심 증거
 
-## Backend·API·MCP
+### Rhino/Grasshopper round trip
 
-- Python 3.12, Pydantic, NumPy, ezdxf, Shapely, OR-Tools, CadQuery/OpenCascade, IfcOpenShell
-- CadQuery writer/auditor는 고정 JSON operation만 받는 `cad_worker` subprocess로 격리
-- Hosted active: Architecture, Piping, Plate, FrameGuard, Artifact Lab
-- Local/CI active, hosted disabled: `POST /api/v1/solid/designs/run`
-- Source/CI active, hosted disabled: `POST /api/v1/openbim/evidence/run`
-- Hosted active: `POST /api/v1/artifacts/audit`, `POST /api/v1/artifacts/compare`
-- Hosted schema: `GET /api/v1/schema/solid-part-contract`
-- Hosted `/api/v1/domains`: base 3개 + FrameGuard + Artifact Lab = 5개; Solid·OpenBIM은 fail-closed 상태라 registry에서 제외
-- 기존 MCP 9개 도구 하위 호환 + Artifact/Solid 3개 + FrameGuard 6개 = 18개
-- 파일당 20MB, upload 합계 40MB, request body 48MB, stateless·no persistence
+`frame_rhino_roundtrip`은 contract를 잠근 뒤 Rhino/Grasshopper 교환 artifact를 비교하고 provenance를
+기록한다. 공개 evidence는 Rhino 8.30, Grasshopper, Cordyceps에서 생성한 실제 객체 6개의 GUID를
+포함한다.
 
-## 실제 CAD 상호운용 증거
+- Contract: `sha256:30b10a354b388e877acd0e42c6dd5e3b8e667c76f0b9b249d28293fb78950188`
+- Exchange: `sha256:f82b99229d326f35298b0b06ee6eab010fe32403ab636e3cd479e009d49e4970`
+- Returned artifact: `sha256:a9ce6ad6556a2d59c09945deaefef1965b430110a9d55d5d67e2775b6a3d718c`
+- Evidence ZIP: `sha256:55c414f1e5775ab49d275c5c1ffd0aa4a5705529020c3482c9b165ed5985b65c`
+- Source: [`docs/evidence/frameguard-rhino-roundtrip-result.json`](evidence/frameguard-rhino-roundtrip-result.json)
+- Reproduction: [`docs/frameguard-rhino.md`](frameguard-rhino.md)
 
-2026-07-12 Rhino 8.30에서 검증 mounting plate STEP을 실제 import했다.
+Rhino evidence의 `artifact_role`은 `geometry_evidence`다. 공식 DXF verifier나 전문 구조 검토를
+대체하지 않으며 arbitrary RhinoScript, C#, shell 실행을 API/MCP에 노출하지 않는다.
 
-- OpenCascade official geometry evidence: valid solid 1, bbox `120×80×8mm`, dimensions 15/15 pass
-- Rhino secondary evidence: `Brep` 1, `Millimeters`, bbox `120×80×8mm`
-- Rhino output: 63,911-byte `.3dm`
-- 고정 evidence: `docs/evidence/rhino-step-smoke.json`
-- 재현: Rhino에서 `StartScriptServer` 실행 후
-  `python tools/rhino_step_smoke.py --connect-existing`
+### External DXF completeness gate
 
-Rhino evidence는 STEP 공식 verifier를 대체하지 않으며 hosted API는 arbitrary Rhino/script command를
-노출하지 않는다.
+Artifact Lab은 외부 DXF를 modelspace와 nested block까지 순회해 entity family를 다음처럼 분류한다.
+
+- `MEASURED`: geometry equivalence 계산에 포함
+- `RENDER_ONLY`: 미리보기에는 표시하지만 동일성 판정은 불완전
+- `UNSUPPORTED`: 공식 비교를 즉시 차단
+
+`comparison_complete=false`이면 `same_geometry_multiset=null`이다. XREF, proxy, underlay, raster,
+OLE, wipeout, 순환 block 또는 complexity budget 초과 입력은 PASS로 축약되지 않는다. 원본 bytes와
+SHA-256은 보존하지만 contract 없는 외부 audit은 항상 `approval_eligible=false`다.
 
 ## 검증 결과
 
-v0.3.0 production gate:
-
 - Ruff format/check: pass
 - mypy: pass
-- pytest: **376 passed**
-- web typecheck, lint, build: pass
-- Playwright real API E2E: **Chromium 35 passed**
-- backend/web container build, SBOM 생성, fixed-critical scan: pass
-- CI: [run `29194952632`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29194952632)
+- pytest: **413 passed, 6 skipped**
+- web typecheck, lint, 15-page production build: pass
+- Playwright real API E2E: **41 passed**
+- OpenBIM interoperability: pass
+- backend/web container build: pass
+- CycloneDX SBOM + fixed-critical Trivy scan: pass
+- pip audit + Python/JavaScript/TypeScript CodeQL: pass
+- Production strict smoke: web sentinels, API version/exact SHA, Architecture/Frame/Artifact canary,
+  Solid fail-closed, CORS pass
 
-- Push security: pip audit, Python·JavaScript/TypeScript CodeQL pass — [run `29194952607`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29194952607)
-- Optional research runtime: genuine OpenSeesPy parity와 PyTorch Geometric smoke pass — [run `29194964854`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29194964854)
+SBOM release asset digest:
 
-Production smoke:
+- API: `sha256:3f590c439f1165c22383d7bbe1a5e6a82e8aa6a8cb9b162faf4945a6c0fb4358`
+- Web: `sha256:98959b1ed591ec7c5b476b616e3085266b1bad47aae47fdd9aa5eba122962d96`
 
-- Feature deployment API version `0.3.0`, exact `release_sha=472df5fe...`, `frame=true`, `solid=false`, `artifact=true`: pass
-- `/case-study`, Architecture, Piping, FrameGuard, Plate, Solid UI와 Artifact Lab DOM sentinel: pass
-- Architecture serialized-DXF approval canary: pass
-- FrameGuard deterministic solver canary: pass
-- Artifact Lab DXF audit canary: pass
-- Solid hosted endpoint `503` fail-closed: pass
-- CORS contract: pass
-- Strict smoke: [run `29195107475`](https://github.com/tjwnsdhfz/datumguard/actions/runs/29195107475)
+## 운영 확인과 복구
 
-Vercel `5413026696`과 Render `5413009032`는 모두 같은 production SHA를 가리키며 성공 상태다.
+```bash
+curl --fail https://datumguard-api.onrender.com/api/v1/health
+curl --fail https://datumguard-api.onrender.com/api/v1/live
+curl --fail https://datumguard-api.onrender.com/api/v1/ready
+gh api 'repos/tjwnsdhfz/datumguard/deployments?sha=0f9e0b08210aa6bc4fc8cc6bb1d398292b12e832'
+gh run view 29229800855 --repo tjwnsdhfz/datumguard
+```
 
-## Production FrameGuard assurance
+Wrong PASS, unverified export, hash 불일치 또는 API contract mismatch는 SEV1이다. 우선 Render를 직전
+검증 release로 복구하고, web/API compatibility가 깨졌다면 Vercel도 같은 release로 맞춘다. 상세
+순서는 [`docs/operations/incident-runbook.md`](operations/incident-runbook.md)와
+[`docs/github-deployment.md`](github-deployment.md)를 따른다. 비용 승인 없는 외부 monitor나 유료
+capacity 증설은 적용하지 않았다.
 
-FrameGuard full pipeline은 v0.3.0 production에 배포되었고 `/frame`, `structural_frame` registry와
-deterministic canary가 같은 revision에서 검증됐다.
+## 미완료 launch gate
 
-- Web: `/frame`
-- Exact screening: `datumguard_numpy_2d_frame_v1`; 2D linear-elastic Euler–Bernoulli only
-- CAD input: Rhino/GH straight centerline, support, load, section metadata와 explicit unit/datum
-- CAD gate: serialized R2013/mm DXF를 별도 reader가 `0.001 mm` 기준으로 재개봉
-- OpenSees evidence: genuine `openseespy==3.8.0.0`, engine 3.8, required 6 cases `6/6 PASSED`
-- PyG evidence: 90 cases, train/validation/test `48/12/30`, 4-bay topology holdout, leakage 0
-- GraphSAGE test: displacement MAE/R² `0.627426/0.804861`, utilization `0.0371842/0.732706`
-- GAT test: displacement MAE/R² `0.651228/0.792357`, utilization `0.0294386/0.806528`
-- Surrogate boundary: `PREDICTED` 또는 `REVIEW_REQUIRED`; 항상 `authoritative=false`,
-  `exact_solver_required=true`
-- Packaged evidence: `src/datumguard/data/frame_opensees_parity.json`,
-  `src/datumguard/data/frame_gnn_benchmark.json`
-- Research dependency: 선택형 `frame-research` workflow에만 PyG/OpenSeesPy 설치; base Docker 제외
+아래 항목은 v0.4.0 코드·배포 완료와 별개이며, 완료 전에는 대규모 Show HN/Product Hunt 홍보를 하지 않는다.
 
-이는 제한된 2D 선형 탄성 Euler–Bernoulli frame의 초기 screening이다. OpenSees/PyG는 선택형
-`frame-research` 검증 환경에만 설치되며 production 판정 경로와 base Docker에는 포함되지 않는다.
-구조 안전, 법규 적합성, 접합부·좌굴·동적·비선형 거동 또는 전문 구조 검토를 대체하지 않는다.
+1. 단위 불명, tilted datum, out-of-plane failure를 포함한 추가 Rhino evidence pack
+2. 60~75초 무음 자막 영상과 15초 README GIF
+3. Search Console/sitemap 소유권 확인과 pageview baseline
+4. 외부 uptime/error tracker, 장기 metric retention, 실제 SEV1 rollback drill
+5. 유료 용량 후보에서 동시성·최대 upload 부하 검증
+6. 100개 golden contract + 자연어 50개 benchmark 공개 보고서
 
-## OpenBIM research status in v0.3.0
-
-OpenBIM source와 `/openbim` 웹 경로는 v0.3.0 `main`에 포함됐지만, 공개 Render에서는
-`DATUMGUARD_ENABLE_OPENBIM=false`와 `DATUMGUARD_ENABLE_BCF=false`다. 따라서 hosted evidence API
-실행이나 BCF export가 검증된 production capability라는 뜻은 아니다.
-
-- Web: `/openbim`
-- API: `POST /api/v1/openbim/evidence/run`
-- Domain id: `openbim_evidence`
-- 판정 경계: `research_validation_only=true`, `approval_eligible=false`
-- 입력: baseline IFC 20MiB, candidate IFC 20MiB, IDS 1MiB, 의미 입력 합계 41MiB
-- request middleware body limit: multipart overhead를 포함한 48MiB
-- 격리: heavy-operation queue + native IFC/IDS subprocess + timeout + redacted error
-- 산출물: canonical JSON, escaped HTML, optional BCFZIP, manifest와 source SHA-256
-- kill switch: `DATUMGUARD_ENABLE_OPENBIM`
-- BCF API gate: `DATUMGUARD_ENABLE_BCF=false`가 기본이며 offline 연구 환경에서만 명시적으로 활성화
-- Render production: `DATUMGUARD_ENABLE_OPENBIM=false`, `DATUMGUARD_ENABLE_BCF=false`로 fail-closed
-
-연구 provenance:
-
-- `protocol-v1` → `40f1f7a991e592511033a480c6799516578a45f8`
-- `analysis-v1.0.2` → `9d147e30aa33a7c3571a83174d6b18a557662880`
-- 30 held-out cases, 120 candidate records, 1,200 measured runs, engine error 0
-- corrected Full TP/FP/FN `330/0/0`; clean·authorized FP 0; corrected 신규 issue 0
-- v0.3.0 통합 CI: pytest 376 passed, Chromium Playwright 35 passed, web typecheck·lint·build와 OpenBIM interoperability job pass
-- 최초 raw hash `sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9`
-- detector 재실행 없이 clean analysis tag에서 evaluator field만 재계산
-- 전체 issue source/rule coverage `360/360`, entity coverage `330/360`; primary issue는 모두 `330/330`
-- buildingSMART IFC Validation Service 외부 확인은 아직 미완료
-
-공식 연구 진입점은 [`awards-2026/README.md`](awards-2026/README.md)다. BCF 독립 graphical viewer,
-`bcf-client` license 검토, buildingSMART hosted IFC 결과와 OpenBIM-enabled production
-cold-start·CORS·부하 smoke는 아직 완료되지 않았다. 이 gate 전에는 OpenBIM 실행을 production 완료
-기능으로 표시하지 않는다.
-
-## 다음 release로 넘기는 항목
-
-1. 계획 상태인 100개 golden contract + 자연어 50개 benchmark를 실행하고 결과를 공개한다.
-2. Render Free가 아닌 후보 환경에서 동시성·최대 upload 부하 검증과 rollback drill을 수행한다.
-3. 외부 uptime/error tracking과 장기 metric retention은 비용 승인 뒤 연결한다.
-4. OpenBIM 외부 BCF viewer·buildingSMART hosted validation·license·OpenBIM-enabled production
-   smoke gate를 별도 evidence로 완료한다.
+소프트 런치에 사용할 검증된 문구와 CTA는
+[`docs/launch/v0.4.0-launch-kit.md`](launch/v0.4.0-launch-kit.md)에 고정한다.
