@@ -1,0 +1,195 @@
+name: datumguard-action
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - action.yml
+      - pyproject.toml
+      - uv.lock
+      - src/datumguard/**
+      - tests/test_cli.py
+      - tests/test_action_paths.py
+      - fixtures/examples/**
+      - .github/workflows/action-self-test.yml
+  push:
+    branches: [main]
+    paths:
+      - action.yml
+      - pyproject.toml
+      - uv.lock
+      - src/datumguard/**
+      - tests/test_cli.py
+      - tests/test_action_paths.py
+      - fixtures/examples/**
+      - .github/workflows/action-self-test.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: datumguard-action-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-public-fixtures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: plate
+            contract: fixtures/examples/design_contract.json
+          - name: architecture
+            contract: fixtures/examples/architecture_studio.json
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Verify ${{ matrix.name }} fixture with the public action
+        id: verify
+        uses: ./
+        with:
+          command: verify
+          input: ${{ matrix.contract }}
+          output_directory: datumguard-results/${{ matrix.name }}
+
+      - name: Assert fail-closed PASS
+        shell: bash
+        env:
+          DATUMGUARD_STATUS: ${{ steps.verify.outputs.status }}
+          DATUMGUARD_RESULT: ${{ steps.verify.outputs.result_json }}
+        run: |
+          set -euo pipefail
+          test "${DATUMGUARD_STATUS}" = "passed"
+          test -s "${DATUMGUARD_RESULT}"
+          test -s "$(dirname "${DATUMGUARD_RESULT}")/verified-bundle.zip"
+
+      - name: Upload public synthetic evidence
+        if: always() && steps.verify.outputs.result_json != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: datumguard-action-${{ matrix.name }}-${{ github.run_id }}
+          path: datumguard-results/${{ matrix.name }}/
+          if-no-files-found: warn
+          retention-days: 7
+
+  reject-invalid-fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Create a valid bundle in the reused output directory
+        uses: ./
+        with:
+          command: verify
+          input: fixtures/examples/architecture_studio.json
+          output_directory: datumguard-results/intentional-failure
+
+      - name: Verify the intentional open-loop failure
+        id: reject
+        continue-on-error: true
+        uses: ./
+        with:
+          command: verify
+          input: fixtures/examples/architecture_open_300mm.json
+          output_directory: datumguard-results/intentional-failure
+
+      - name: Assert failure and absence of approved bundle
+        shell: bash
+        env:
+          ACTION_OUTCOME: ${{ steps.reject.outcome }}
+          DATUMGUARD_STATUS: ${{ steps.reject.outputs.status }}
+          DATUMGUARD_RESULT: ${{ steps.reject.outputs.result_json }}
+        run: |
+          set -euo pipefail
+          test "${ACTION_OUTCOME}" = "failure"
+          test "${DATUMGUARD_STATUS}" = "failed_verification"
+          test -s "${DATUMGUARD_RESULT}"
+          test ! -e datumguard-results/intentional-failure/verified-bundle.zip
+
+      - name: Upload sanitized failure evidence
+        if: always() && steps.reject.outputs.result_json != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: datumguard-action-intentional-failure-${{ github.run_id }}
+          path: datumguard-results/intentional-failure/
+          if-no-files-found: warn
+          retention-days: 7
+
+  audit-and-compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Generate a serialized DXF fixture
+        uses: ./
+        with:
+          command: verify
+          input: fixtures/examples/design_contract.json
+          output_directory: datumguard-results/source
+
+      - name: Extract two identical caller-owned CAD revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p cad-inputs
+          unzip -p datumguard-results/source/verified-bundle.zip drawing.dxf \
+            > cad-inputs/baseline.dxf
+          cp cad-inputs/baseline.dxf cad-inputs/candidate.dxf
+
+      - name: Audit the serialized DXF
+        id: audit
+        uses: ./
+        with:
+          command: audit
+          input: cad-inputs/baseline.dxf
+          output_directory: datumguard-results/audit
+
+      - name: Compare identical serialized revisions
+        id: compare
+        uses: ./
+        with:
+          command: compare
+          baseline: cad-inputs/baseline.dxf
+          candidate: cad-inputs/candidate.dxf
+          output_directory: datumguard-results/compare
+
+      - name: Assert informational audit and complete comparison
+        shell: bash
+        env:
+          AUDIT_STATUS: ${{ steps.audit.outputs.status }}
+          COMPARE_STATUS: ${{ steps.compare.outputs.status }}
+          COMPARE_RESULT: ${{ steps.compare.outputs.result_json }}
+        run: |
+          set -euo pipefail
+          test "${AUDIT_STATUS}" = "audited"
+          test "${COMPARE_STATUS}" = "audited"
+          python - "${COMPARE_RESULT}" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          payload = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert payload["same_artifact"] is True
+          assert payload["comparison_complete"] is True
+          PY
+
+      - name: Upload public audit and comparison evidence
+        if: always() && steps.compare.outputs.result_json != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: datumguard-action-audit-compare-${{ github.run_id }}
+          path: |
+            datumguard-results/audit/
+            datumguard-results/compare/
+          if-no-files-found: warn
+          retention-days: 7

@@ -1,0 +1,26 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "DatumGuard Codespaces: Start full demo",
+      "type": "shell",
+      "command": "bash .devcontainer/start-demo.sh",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "DatumGuard Codespaces: Verify architecture sample",
+      "type": "shell",
+      "command": "uv run --frozen datumguard verify fixtures/examples/architecture_studio.json --output datumguard-results/architecture",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}

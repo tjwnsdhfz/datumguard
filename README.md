@@ -17,6 +17,26 @@ DatumGuard는 요구사항을 versioned contract로 잠그고 저장된 DXF·STE
 
 > **Safety boundary:** FrameGuard는 제한된 2D 선형 탄성 frame의 초기 screening이며 구조 안전 인증이나 전문 구조 검토를 대체하지 않습니다. `/openbim`은 `research_validation_only=true`, `approval_eligible=false`인 합성 연구 preview입니다.
 
+## 비용 없는 GitHub-first 사용
+
+DatumGuard의 기본 배포 방향은 **GitHub에 source와 evidence를 공개하고, 연산은 사용자 PC 또는 사용자의
+GitHub runner에서 수행하는 것**입니다. Vercel·Render 공개 화면은 포트폴리오 demo일 뿐, 검증 기능을
+사용하기 위한 필수 유료 인프라가 아닙니다.
+
+| 원하는 경험 | 시작 방법 | 데이터 위치 |
+|---|---|---|
+| 공개 샘플을 CLI로 재현 | `uv run --frozen datumguard verify fixtures/examples/architecture_studio.json --output datumguard-results` | 사용자 PC |
+| GitHub에서 자동 검증 | `v1` release 후 Root [`action.yml`](action.yml)을 fork/사용자 repository에서 실행 | 사용자 GitHub runner |
+| 설치 없이 전체 UI 체험 | 이 변경 merge 후 [Open in GitHub Codespaces](https://codespaces.new/tjwnsdhfz/datumguard?quickstart=1) | 사용자 Codespace |
+| Web·API를 모두 로컬 실행 | `docker compose up --build` | 사용자 PC |
+
+**[GitHub-first 전체 가이드 →](docs/github-first.md)** · [CLI source →](src/datumguard/cli.py) ·
+[Action self-test →](.github/workflows/action-self-test.yml)
+
+> Public repository에 commit한 CAD·contract·Actions log·artifact는 공개 정보입니다. 기밀 CAD는 Local
+> CLI 또는 사용자 소유 Private repository에서 처리하십시오. 개인 GitHub 계정에는 Codespaces·Private
+> Actions 포함 quota가 있을 수 있지만 계정·조직별 billing 정책과 storage 한도를 확인해야 합니다.
+
 ## 60초 요약
 
 | | 핵심 |
@@ -141,11 +161,33 @@ Writer의 메모리 형상은 verifier로 전달되지 않습니다. Verifier는
 
 ## 빠른 시작
 
-요구 사항은 Python 3.12+와 Node.js 20+입니다.
+CAD 파일 생성·검증만 필요하면 Web이나 Node.js 없이 CLI를 실행할 수 있습니다. macOS/Linux 예시는
+다음과 같습니다.
+
+```bash
+python -m pip install uv==0.8.22
+uv sync --frozen
+uv run --frozen datumguard verify fixtures/examples/architecture_studio.json \
+  --output datumguard-results/architecture
+```
+
+Windows PowerShell, 특히 OneDrive 작업공간에서는 다음처럼 copy mode를 사용합니다.
+
+```powershell
+python -m pip install uv==0.8.22
+$env:UV_LINK_MODE = "copy"
+uv sync --frozen --link-mode copy
+uv run --frozen datumguard verify fixtures/examples/architecture_studio.json --output datumguard-results/architecture
+```
+
+기존 `DXF`, `STEP`, `IFC`는 `datumguard audit FILE`, 두 revision은
+`datumguard compare BASELINE CANDIDATE`로 검사합니다. `audited`는 제작 승인 PASS가 아닙니다.
+
+전체 Web workspace를 개발 모드로 실행할 때의 요구 사항은 Python 3.12+와 Node.js 20+입니다.
 
 ```bash
 python -m venv .venv
-# Windows: .venv\Scripts\activate
+# Windows PowerShell: .\.venv\Scripts\Activate.ps1
 # macOS/Linux: source .venv/bin/activate
 pip install -e ".[dev]"
 datumguard-api
