@@ -1,6 +1,6 @@
 {
   "name": "datumguard-web",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,7 +12,8 @@
     "demo:capture": "node scripts/capture-architecture-demo.mjs",
     "demo:capture:piping": "node scripts/capture-piping-demo.mjs",
     "demo:capture:solid": "node scripts/capture-solid-demo.mjs",
-    "demo:capture:frame": "node scripts/capture-frame-demo.mjs"
+    "demo:capture:frame": "node scripts/capture-frame-demo.mjs",
+    "social:render": "node scripts/render-social-preview.mjs"
   },
   "dependencies": {
     "@fontsource/dm-mono": "5.2.7",

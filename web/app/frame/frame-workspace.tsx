@@ -10,7 +10,7 @@ import styles from "./frame.module.css";
 
 const repositoryUrl =
   process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/tjwnsdhfz/datumguard";
-const releaseUrl = `${repositoryUrl.replace(/\/$/, "")}/releases/tag/v0.3.0`;
+const releaseUrl = `${repositoryUrl.replace(/\/$/, "")}/releases/tag/v0.4.0`;
 
 type PresetId = "verified" | "missing-brace";
 type EngineState = "checking" | "offline" | "ready" | "warming";
