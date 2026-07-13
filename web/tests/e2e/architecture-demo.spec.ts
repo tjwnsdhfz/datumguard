@@ -21,6 +21,14 @@ async function dragBy(
   deltaY: number,
   options: { xFraction?: number; yFraction?: number; shift?: boolean } = {},
 ) {
+  await source.evaluate((element) => {
+    const root = document.documentElement;
+    const previousBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = "auto";
+    element.scrollIntoView({ block: "center", inline: "center", behavior: "auto" });
+    root.style.scrollBehavior = previousBehavior;
+  });
+  await expect.poll(async () => (await source.boundingBox())?.y ?? 0).toBeGreaterThan(130);
   const box = await source.boundingBox();
   expect(box, "drag source must be rendered").not.toBeNull();
   if (!box) return;
@@ -49,6 +57,8 @@ async function expectNoHorizontalPageOverflow(page: Page) {
 }
 
 test.describe("interactive architecture demo", () => {
+  test.describe.configure({ timeout: 90_000 });
+
   test("serves the frontend security policy headers", async ({ page }) => {
     const response = await page.goto("/");
     expect(response).not.toBeNull();
@@ -65,6 +75,11 @@ test.describe("interactive architecture demo", () => {
     const demo = page.getByTestId("architecture-demo");
     await expect(demo).toBeVisible();
     await expect(demo).toHaveAttribute("data-verification-status", "idle");
+    await expect(page.getByTestId("architecture-scenario")).toContainText("샘플 선택");
+    await expect(page.getByTestId("architecture-scenario")).toContainText("정확한 값 확인");
+    await expect(page.getByTestId("architecture-scenario")).toContainText("DXF 재측정");
+    await expect(page.getByRole("button", { name: /wall.*후속.*객체 추가는 후속 범위/i })).toBeDisabled();
+    await expect(page.getByRole("button", { name: /column.*후속.*객체 추가는 후속 범위/i })).toBeDisabled();
     await page.getByTestId("architecture-preset-studio").click();
     await expect(page.getByTestId("architecture-canvas")).toHaveAttribute("data-preset-id", "architecture-studio");
     await expect(page.getByRole("button", { name: /entry \/ reception/i })).toBeVisible();
@@ -117,11 +132,12 @@ test.describe("interactive architecture demo", () => {
     await expect(page.getByTestId("architecture-inspector-center-x")).toHaveValue("8000");
 
     await page.getByTestId("architecture-inspector-center-x").fill("8001");
+    await page.getByTestId("architecture-inspector-center-x").press("Enter");
     await expect(page.getByTestId("architecture-inspector-center-x")).toHaveValue("8001");
     await page.getByTestId("architecture-undo").click();
 
     await page.getByRole("button", { name: "wall-service", exact: true }).click();
-    await dragBy(page, page.getByTestId("architecture-draggable-wall"), 42, 0);
+    await dragBy(page, page.getByTestId("architecture-draggable-wall"), 120, 0);
     await expect(page.getByTestId("architecture-draggable-wall")).toHaveAttribute("data-snap-state", "snapped");
     const wallStart = Number(await page.getByTestId("architecture-inspector-start-x").inputValue());
     expect(wallStart).not.toBe(0);
@@ -152,8 +168,55 @@ test.describe("interactive architecture demo", () => {
 
     await page.getByTestId("architecture-preset-studio").click();
     const xInput = page.getByTestId("architecture-inspector-center-x");
-    for (let index = 0; index < 55; index += 1) await xInput.fill(String(4000 + index));
+    for (let index = 0; index < 55; index += 1) {
+      await xInput.fill(String(4000 + index));
+      await xInput.press("Enter");
+    }
     await expect(page.getByTestId("architecture-demo")).toHaveAttribute("data-history-depth", "50");
+  });
+
+  test("buffers exact numeric input, validates it inline, and commits one undo step", async ({ page }) => {
+    await page.goto("/");
+    await waitForArchitectureReady(page);
+    await page.getByTestId("architecture-preset-studio").click();
+
+    const demo = page.getByTestId("architecture-demo");
+    const input = page.getByTestId("architecture-inspector-center-x");
+    const initialDepth = Number(await demo.getAttribute("data-history-depth"));
+
+    await input.fill("");
+    await expect(demo).toHaveAttribute("data-history-depth", String(initialDepth));
+    await expect(page.getByTestId("architecture-run-verification")).toBeDisabled();
+    await input.press("Tab");
+    await expect(input).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByText("유한한 숫자 값을 입력하세요.")).toBeVisible();
+    await expect(page.getByTestId("architecture-snap-select")).toBeDisabled();
+
+    await input.click();
+    await input.press("Escape");
+    await expect(input).toHaveValue("4000");
+    await expect(input).toHaveAttribute("aria-invalid", "false");
+    await expect(page.getByTestId("architecture-run-verification")).toBeEnabled();
+
+    await input.fill("");
+    await input.press("Tab");
+    await page.getByTestId("architecture-preset-studio").click();
+    await expect(page.getByTestId("architecture-inspector-center-x")).toHaveValue("4000");
+    await expect(page.getByTestId("architecture-snap-select")).toBeEnabled();
+    await expect(page.getByTestId("architecture-run-verification")).toBeEnabled();
+    const resetDepth = Number(await demo.getAttribute("data-history-depth"));
+
+    const resetInput = page.getByTestId("architecture-inspector-center-x");
+    await resetInput.fill("4321");
+    await expect(demo).toHaveAttribute("data-history-depth", String(resetDepth));
+    await resetInput.press("Enter");
+    await expect(resetInput).toHaveValue("4321");
+    await expect(demo).toHaveAttribute("data-history-depth", String(resetDepth + 1));
+
+    await resetInput.fill("4322");
+    await resetInput.press("Control+z");
+    await expect(demo).toHaveAttribute("data-history-depth", String(resetDepth + 1));
+    await resetInput.press("Escape");
   });
 
   test("polls through a cold start and recovers without reloading", async ({ page }) => {
@@ -179,6 +242,7 @@ test.describe("interactive architecture demo", () => {
     await page.goto("/");
     await page.getByTestId("architecture-preset-studio").click();
     await page.getByTestId("architecture-inspector-center-x").fill("4321");
+    await page.getByTestId("architecture-inspector-center-x").press("Enter");
     await page.waitForTimeout(450);
     const metadata = await page.evaluate(async () => {
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -198,6 +262,11 @@ test.describe("interactive architecture demo", () => {
     expect(Number(metadata.expiresAt)).toBeGreaterThan(Number(metadata.updatedAt));
     await page.reload();
     await expect(page.getByTestId("architecture-inspector-center-x")).toHaveValue("4321");
+    await expect(page.getByTestId("architecture-restore-studio")).toBeVisible();
+    await page.getByTestId("architecture-restore-studio").click();
+    await expect(page.getByTestId("architecture-inspector-center-x")).toHaveValue("4000");
+    await page.getByTestId("architecture-undo").click();
+    await expect(page.getByTestId("architecture-inspector-center-x")).toHaveValue("4321");
   });
 
   test("verifies the real four-room contract and exposes the exact five-stage evidence", async ({ page }) => {
@@ -212,6 +281,7 @@ test.describe("interactive architecture demo", () => {
     expect(requestBody.walls).toHaveLength(7);
     expect(requestBody.room_seeds).toHaveLength(4);
     await expect(page.getByTestId("architecture-demo")).toHaveAttribute("data-verification-status", "passed", { timeout: 15_000 });
+    await expect(page.getByTestId("architecture-result-heading")).toBeFocused();
     await expect(page.getByTestId("architecture-verified-badge")).toContainText(/verified \/ pass/i);
     for (const label of ["Contract locked", "DXF written", "DXF reopened", "Remeasured", "Approved"]) {
       await expect(page.getByTestId("verification-timeline")).toContainText(label);
@@ -221,6 +291,66 @@ test.describe("interactive architecture demo", () => {
     await expect(page.getByTestId("verification-summary")).toContainText(/96(?:\.0)?\s*m²/i);
     await expect(page.getByTestId("verification-summary")).toContainText(/4/);
     await expect(page.getByTestId("architecture-download")).toBeEnabled();
+    const verificationSection = page.locator("#verification");
+    await expect.poll(
+      async () => {
+        const y = (await verificationSection.boundingBox())?.y;
+        return y != null && y >= 120 && y <= 130;
+      },
+      { message: "verification section must settle below sticky chrome" },
+    ).toBe(true);
+    const verificationSectionBox = await verificationSection.boundingBox();
+    expect(verificationSectionBox, "verification section must be rendered below sticky chrome").not.toBeNull();
+    expect(verificationSectionBox?.y).toBeGreaterThanOrEqual(120);
+
+    const pendingInput = page.getByTestId("architecture-inspector-center-x");
+    await pendingInput.fill("4001");
+    await expect(page.getByTestId("architecture-demo")).toHaveAttribute("data-verification-status", "idle");
+    await expect(page.getByTestId("architecture-download")).toBeDisabled();
+    await pendingInput.press("Escape");
+    await expect(page.getByTestId("architecture-download")).toBeDisabled();
+  });
+
+  test("locks contract-changing controls while independent verification is running", async ({ page }) => {
+    await page.goto("/");
+    await waitForArchitectureReady(page);
+    await page.getByTestId("architecture-preset-studio").click();
+    await page.route("**/api/v1/architecture/designs/run", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+      await route.continue();
+    });
+
+    await page.getByTestId("architecture-run-verification").click();
+    await expect(page.getByTestId("architecture-demo")).toHaveAttribute("data-verification-status", "running");
+    await expect(page.getByTestId("architecture-scenario-valid")).toBeDisabled();
+    await expect(page.getByTestId("architecture-scenario-failure")).toBeDisabled();
+    await expect(page.getByTestId("architecture-preset-studio")).toBeDisabled();
+    await expect(page.getByTestId("architecture-inspector-center-x")).toBeDisabled();
+    await expect(page.getByTestId("architecture-snap-select")).toBeDisabled();
+    await expect(page.getByTestId("architecture-demo")).toHaveAttribute("data-verification-status", "passed", { timeout: 20_000 });
+  });
+
+  test("separates a verification request error from design violations", async ({ page }) => {
+    await page.goto("/");
+    await waitForArchitectureReady(page);
+    await page.route("**/api/v1/architecture/designs/run", async (route) => {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "temporary verification outage" }),
+      });
+    });
+
+    await page.getByTestId("architecture-run-verification").click();
+    await expect(page.getByTestId("architecture-demo")).toHaveAttribute("data-verification-status", "error");
+    await expect(page.getByTestId("architecture-result-heading")).toHaveText("검증 요청 실패");
+    await expect(page.getByTestId("architecture-verified-badge")).toContainText("REQUEST ERROR");
+    await expect(page.locator(".arch-result-announcement")).not.toContainText("0개 위반");
+    await expect(page.getByTestId("architecture-summary-dimensions")).toHaveText("—");
+    await expect(page.getByTestId("architecture-summary-violations")).toHaveText("—");
+    await expect(page.getByTestId("architecture-summary-walls")).toHaveText("—");
+    await expect(page.getByTestId("architecture-summary-rooms")).toHaveText("—");
+    await expect(page.getByTestId("architecture-download")).toBeDisabled();
   });
 
   test("blocks the exact 300 mm open-loop preset", async ({ page }) => {
@@ -230,8 +360,16 @@ test.describe("interactive architecture demo", () => {
     await expect(page.getByTestId("architecture-inspector-end-x")).toHaveValue("300");
     await page.getByTestId("architecture-run-verification").click();
     await expect(page.getByTestId("architecture-demo")).toHaveAttribute("data-verification-status", "failed", { timeout: 15_000 });
+    await expect(page.getByTestId("architecture-result-heading")).toBeFocused();
     await expect(page.getByText("DG_ARCH_EXTERIOR_OPEN")).toBeVisible();
     await expect(page.getByTestId("architecture-download")).toBeDisabled();
+    await page.getByRole("button", { name: "wall-north 객체 선택" }).first().click();
+    await expect(page.getByTestId("architecture-inspector-end-x")).toBeFocused();
+    await expect(page.getByTestId("architecture-inspector-end-x")).toHaveValue("300");
+    await page.getByTestId("architecture-repair-open-loop").click();
+    await expect(page.getByTestId("architecture-demo")).toHaveAttribute("data-verification-status", "passed", { timeout: 15_000 });
+    await expect(page.getByTestId("architecture-inspector-end-x")).toHaveValue("0");
+    await expect(page.getByTestId("architecture-download")).toBeEnabled();
   });
 
   test("keeps exact input, verification, and download usable below 900 px", async ({ page }) => {
@@ -240,13 +378,43 @@ test.describe("interactive architecture demo", () => {
     await waitForArchitectureReady(page);
     await page.getByTestId("architecture-preset-studio").click();
     await expect(page.getByTestId("architecture-canvas")).toHaveCSS("pointer-events", "none");
+    await expect(page.getByTestId("architecture-mobile-action")).toBeVisible();
+    await page.getByTestId("architecture-mobile-object-select").selectOption("wall-north");
+    await expect(page.getByTestId("architecture-inspector-end-x")).toBeVisible();
+    await page.getByTestId("architecture-mobile-object-select").selectOption("column-a");
     const centerX = page.getByTestId("architecture-inspector-center-x");
     await centerX.fill("4001");
+    await centerX.press("Enter");
     await expect(centerX).toHaveValue("4001");
     await centerX.fill("4000");
+    await centerX.press("Enter");
     await page.getByTestId("architecture-run-verification").click();
     await expect(page.getByTestId("architecture-demo")).toHaveAttribute("data-verification-status", "passed", { timeout: 15_000 });
     await expect(page.getByTestId("architecture-download")).toBeEnabled();
+    await expect(page.getByTestId("architecture-mobile-action")).toContainText("검증 번들 다운로드");
+    await expectNoHorizontalPageOverflow(page);
+  });
+
+  test("keeps the plan and one fixed verification action in the first mobile viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await waitForArchitectureReady(page);
+
+    await expect(page.getByRole("region", { name: "Architecture CAD tools" })).toBeHidden();
+    await expect(page.getByTestId("architecture-scenario")).toBeInViewport();
+    await expect(page.getByTestId("architecture-canvas")).toBeInViewport();
+    await expect(page.getByTestId("architecture-run-verification")).toBeHidden();
+
+    const mobileAction = page.getByTestId("architecture-mobile-action");
+    await expect(mobileAction).toBeVisible();
+    await expect(mobileAction).toHaveCSS("position", "fixed");
+    await expect(mobileAction).toHaveCSS("bottom", "0px");
+    await mobileAction.getByRole("button", { name: "샘플 도면 검증하기", exact: true }).click();
+
+    await expect(page.getByTestId("architecture-demo")).toHaveAttribute("data-verification-status", "passed", { timeout: 15_000 });
+    await expect(mobileAction).toContainText("검증 완료");
+    await expect(mobileAction.getByRole("button", { name: "검증 번들 다운로드 (.zip)", exact: true })).toBeEnabled();
+    await expectNoHorizontalPageOverflow(page);
   });
 });
 

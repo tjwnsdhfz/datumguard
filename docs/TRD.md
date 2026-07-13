@@ -510,7 +510,7 @@ API는 stateless이며 요청 본문 또는 같은 요청에서 발급한 짧은
 
 `POST /api/v1/architecture/contracts/validate`는 정규화 계약을, `POST /api/v1/architecture/designs/run`은 preview, timeline, summary와 approval-gated bundle을 반환한다. `GET /api/v1/schema/architectural-plan-contract`와 `/api/v1/architecture/schema`는 동일 JSON Schema를 제공한다.
 
-웹 기본 route `/`는 object tree/native SVG canvas/property inspector의 3-pane layout이다. Desktop은 pointer drag와 100mm snap(Shift 10mm), undo/redo 50단계, pan/zoom/Fit을 제공한다. 900px 미만에서는 drag를 비활성화하지만 exact numeric edit와 검증은 유지한다. Health endpoint는 최대 45초 polling하며 준비 중 상태와 수동 retry를 제공한다. `/plate`는 기존 plate workspace다. 분야별 draft는 서로 다른 IndexedDB key를 사용한다.
+웹 기본 route `/`는 object tree/native SVG canvas/property inspector의 3-pane layout이다. Desktop은 pointer drag와 100mm snap(Shift 10mm), undo/redo 50단계, pan/zoom/Fit을 제공한다. 900px 미만에서는 drag를 비활성화하지만 exact numeric edit와 검증은 유지한다. Health endpoint는 최대 70초 polling하며 준비 중 상태와 수동 retry를 제공한다. `/plate`는 기존 plate workspace다. 분야별 draft는 서로 다른 IndexedDB key를 사용한다.
 
 MCP의 9개 공개 도구명은 바꾸지 않는다. 입력에 `design_kind`가 있으면 architecture application service로 분기하며 validate/generate/verify/repair/compare/export가 동일 envelope을 반환한다. Architecture repair proposal과 apply는 선언된 `columns.<id>.center.0|1` 및 `openings.<id>.offset`만 허용하고, CP-SAT micrometer integer grid에서 min/max/step을 지키며 최대 3회로 제한한다. Wall topology와 locked path는 어떤 proposal에서도 적용하지 않는다.
 

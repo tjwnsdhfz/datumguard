@@ -54,7 +54,7 @@
 .arch-timeline i.fail{box-shadow:0 0 0 3px rgba(198,79,61,.1)}
 .arch-inspector input{min-height:44px}
 .arch-canvas [data-testid]{outline:none}
-.arch-wall-body-hit{fill:transparent;stroke:none;cursor:move}
+.arch-wall-body-hit{fill:rgba(0,0,0,.001);stroke:none;cursor:move;pointer-events:all;touch-action:none}
 
 html[data-architecture-capture="true"],html[data-architecture-capture="true"] body{width:1440px;height:960px;overflow:hidden}
 html[data-architecture-capture="true"] .arch-topbar,html[data-architecture-capture="true"] .arch-commandbar{position:relative;top:auto}
@@ -167,4 +167,310 @@ html[data-architecture-capture="true"] .arch-evidence-grid{margin-top:16px}
     font-size:10px;
     white-space:normal
   }
+}
+
+/* Scenario-led usability layer: onboarding, safe exact input, recovery, and mobile actions. */
+.architecture-app{min-height:100dvh}
+.arch-scenario-rail{
+  display:grid;
+  grid-template-columns:minmax(290px,1.05fr) minmax(390px,1.2fr) minmax(280px,.9fr);
+  gap:22px;
+  align-items:center;
+  padding:15px 24px 16px;
+  border-bottom:1px solid #d7d7dc;
+  background:#fff
+}
+.arch-scenario-intro{min-width:0}
+.arch-scenario-intro>span,.arch-draft-state{
+  font:600 9px "DM Mono",monospace;
+  letter-spacing:.1em;
+  color:#606068
+}
+.arch-scenario-intro h2{
+  margin:5px 0 4px;
+  font-size:15px;
+  line-height:1.35;
+  letter-spacing:-.02em;
+  text-wrap:balance
+}
+.arch-scenario-intro p{max-width:62ch;margin:0;color:#626269;font-size:11px;line-height:1.55;text-wrap:pretty}
+.arch-draft-state{display:flex;align-items:center;gap:8px;margin-top:7px;letter-spacing:0;color:#777780}
+.arch-draft-state.restored{color:#6e4c10}
+.arch-draft-state button{min-height:30px;padding:3px 8px;border:1px solid #b9b9c0;background:#fff;color:#111116;font-size:9px;font-weight:700}
+.arch-scenario-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0;padding:0;list-style:none}
+.arch-scenario-steps li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-items:center;min-width:0;padding:9px;border:1px solid #ddddE2;background:#f7f7f8}
+.arch-scenario-steps li>b{display:grid;width:28px;height:28px;place-items:center;border:1px solid #c6c6cc;background:#fff;font:700 9px "DM Mono",monospace}
+.arch-scenario-steps li>span{display:flex;min-width:0;flex-direction:column}
+.arch-scenario-steps strong{font-size:10px}
+.arch-scenario-steps small{overflow:hidden;margin-top:2px;color:#73737b;font:500 8px "DM Mono",monospace;text-overflow:ellipsis;white-space:nowrap}
+.arch-scenario-steps li[data-state="current"]{border-color:#111116;background:#fff;box-shadow:inset 0 -2px #111116}
+.arch-scenario-steps li[data-state="done"]>b{border-color:#8cbda9;background:#e2f3ec;color:#075f44}
+.arch-scenario-steps li[data-state="failed"]{border-color:#d8a29b;background:#fae8e5;color:#922f25}
+.arch-scenario-actions{display:grid;gap:7px;min-width:0}
+.arch-scenario-actions>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.arch-scenario-actions>div button{min-height:36px;padding:5px 7px;border:1px solid #ceced4;background:#fff;color:#303038;font-size:9px;font-weight:700}
+.arch-scenario-actions>div button:hover{border-color:#111116;background:#f2f2f4}
+.arch-scenario-primary{display:flex;align-items:center;justify-content:center;gap:7px;min-height:46px;padding:8px 12px;border:1px solid #000;border-radius:32px;background:#000;color:#fff;font-size:10px;font-weight:800;letter-spacing:.02em}
+.arch-scenario-primary:hover:not(:disabled){background:#fff;color:#000}
+.arch-scenario-primary:disabled{cursor:not-allowed;opacity:.52}
+.arch-scenario-actions>a{justify-self:center;color:#404047;font-size:10px;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.arch-tools button:disabled{cursor:not-allowed;opacity:.38}
+.arch-tools button:disabled:hover{border-color:#d0d0d6;background:transparent;color:#323238}
+.arch-mobile-object-picker{display:none}
+.arch-inspector:focus-visible{outline:2px solid #111116;outline-offset:-3px}
+.arch-inspector label.invalid input{border-color:#b33a2d;background:#fff5f3;color:#922f25}
+.arch-inspector label>em{grid-column:1/-1;color:#9b3025;font-size:9px;font-style:normal;line-height:1.35}
+.arch-right-actions{padding:0 15px 11px;border-bottom:1px solid #e0e0e8;background:#fff}
+.arch-right-actions .arch-run{width:100%;margin:0}
+.arch-input-pending{margin:7px 0 0;color:#8b5d0f;font-size:9px;line-height:1.4}
+.arch-right-actions .arch-boundary{margin:8px 0 0}
+.arch-flow-details{border-bottom:1px solid #e0e0e8}
+.arch-flow-details summary{min-height:44px;padding:14px 15px;cursor:pointer;color:#4c4c53;font-size:10px;font-weight:700;list-style-position:inside}
+.arch-flow-details summary:hover{background:#f5f5f6;color:#111116}
+.arch-flow-details .arch-contract-card{margin-top:0}
+.arch-mobile-action{display:none}
+.arch-result-head h2:focus-visible{outline:3px solid #111116;outline-offset:5px}
+.arch-result-announcement{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.arch-hashes,.arch-hashes label{min-width:0}
+.arch-hashes code{max-width:100%;overflow-wrap:anywhere;white-space:normal;word-break:break-word}
+.arch-violations article>span{display:flex;min-width:0;flex-wrap:wrap;gap:5px;align-items:center}
+.arch-violations article>span button{min-height:36px;padding:5px 8px;border:1px solid #b8b8bf;background:#fff;color:#202026;font:700 9px "DM Mono",monospace}
+.arch-violations article>span button:hover{border-color:#111116;background:#f2f2f4}
+.arch-recovery{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;max-width:1380px;margin:18px auto 0;padding:16px 18px;border:1px solid #d8a29b;background:#fff7f5}
+.arch-recovery>div{display:flex;min-width:0;flex-direction:column}
+.arch-recovery span{color:#9b3025;font:600 8px "DM Mono",monospace;letter-spacing:.13em}
+.arch-recovery strong{margin-top:4px;font:700 13px "DM Mono",monospace}
+.arch-recovery p{margin:4px 0 0;color:#6f5b57;font-size:10px;line-height:1.5}
+.arch-recovery button{min-height:44px;padding:9px 14px;border:1px solid #9b3025;background:#9b3025;color:#fff;font-size:10px;font-weight:800}
+.arch-recovery button:hover:not(:disabled){background:#fff;color:#9b3025}
+.arch-recovery button:disabled{opacity:.5}
+.arch-download-notice{max-width:1380px;margin:12px auto 0;padding:10px 12px;border-left:3px solid #087a55;background:#eaf5f0;color:#075f44;font-size:10px;line-height:1.5}
+.arch-inspector{min-width:0;margin:0;border:0;border-bottom:1px solid #e2e8e5}
+.arch-inspector legend{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.arch-inspector:disabled input{cursor:wait;opacity:.68}
+.arch-verified.error{background:#fbe6e2;border-color:#e0b0a7;color:#a73e2e}
+.arch-scenario-actions>div button:disabled,.arch-presets button:disabled{cursor:not-allowed;opacity:.5}
+
+html[data-architecture-capture="true"] .arch-scenario-rail{grid-template-columns:1fr 1.35fr minmax(280px,.8fr);gap:12px;min-height:94px;padding:8px 18px}
+html[data-architecture-capture="true"] .arch-scenario-intro h2{margin:3px 0;font-size:12px}
+html[data-architecture-capture="true"] .arch-scenario-intro p,html[data-architecture-capture="true"] .arch-draft-state,html[data-architecture-capture="true"] .arch-scenario-actions>div,html[data-architecture-capture="true"] .arch-scenario-actions>a{display:none}
+html[data-architecture-capture="true"] .arch-scenario-steps li{padding:6px}
+html[data-architecture-capture="true"] .arch-scenario-primary{min-height:42px}
+html[data-architecture-capture="true"] .arch-workspace{height:510px;min-height:510px}
+html[data-architecture-capture="true"] .arch-verification{padding:16px 54px 26px}
+
+@media(max-width:1180px){
+  .arch-scenario-rail{grid-template-columns:minmax(260px,.9fr) minmax(420px,1.25fr);gap:14px;padding-inline:18px}
+  .arch-scenario-actions{grid-column:1/-1;grid-template-columns:1fr minmax(280px,420px) auto;align-items:center}
+  .arch-scenario-actions>a{white-space:nowrap}
+}
+
+@media(max-width:900px){
+  .architecture-app{padding-bottom:78px}
+  .arch-scenario-rail{grid-template-columns:minmax(0,1fr);gap:12px;padding:14px 15px}
+  .arch-scenario-actions{grid-column:auto;grid-template-columns:minmax(0,1fr)}
+  .arch-scenario-actions>a{justify-self:start}
+  .arch-workspace{height:auto}
+  .arch-canvas-shell{height:42vh;min-height:320px}
+  .arch-mobile-object-picker{display:grid;gap:6px;padding:12px 15px;border-bottom:1px solid #e0e0e8;background:#fafafa}
+  .arch-mobile-object-picker>span{font-size:10px;font-weight:700}
+  .arch-mobile-object-picker select{min-height:46px;width:100%;font-size:16px}
+  .arch-right-actions{padding-bottom:12px}
+  .arch-mobile-action{position:fixed;right:0;bottom:0;left:0;z-index:50;display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,auto);gap:10px;align-items:center;padding:10px max(12px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));border-top:1px solid #2e2e34;background:rgba(10,10,12,.96);color:#fff;box-shadow:0 -8px 24px rgba(15,15,18,.16);backdrop-filter:blur(12px)}
+  .arch-mobile-action>span{display:flex;min-width:0;flex-direction:column}
+  .arch-mobile-action b{font-size:11px}
+  .arch-mobile-action small{overflow:hidden;margin-top:2px;color:#b9b9c1;font-size:9px;text-overflow:ellipsis;white-space:nowrap}
+  .arch-mobile-action button{min-height:46px;padding:8px 13px;border:1px solid #fff;background:#fff;color:#111116;font-size:10px;font-weight:800}
+  .arch-mobile-action button:disabled{opacity:.5}
+  .arch-topbar,.arch-topbar nav{min-width:0;max-width:100%}
+  .arch-topbar nav{overflow-x:auto;overscroll-behavior-inline:contain}
+  .arch-evidence-grid,.arch-result-head,.arch-violations,.arch-recovery,.arch-download-notice{min-width:0;max-width:100%}
+  .arch-recovery{grid-template-columns:1fr}
+  .arch-recovery button{width:100%}
+}
+
+@media(max-width:600px){
+  .arch-scenario-intro h2{font-size:14px}
+  .arch-scenario-steps{grid-template-columns:1fr}
+  .arch-scenario-steps li{padding:7px 9px}
+  .arch-scenario-actions>div{grid-template-columns:1fr}
+  .arch-scenario-actions>div button{min-height:42px;text-align:left}
+  .arch-canvas-shell{height:38vh;min-height:290px}
+  .arch-mobile-action{grid-template-columns:minmax(0,.8fr) minmax(150px,1.2fr)}
+  .arch-mobile-action button{padding-inline:8px}
+  .arch-verification{overflow:hidden}
+}
+
+/* Product Design hierarchy pass: preserve Mission Control, clarify the core task. */
+.arch-topbar{min-width:0}
+.arch-brand{min-width:max-content}
+.arch-topbar nav{min-width:0}
+.arch-tool-group-label{
+  display:inline-flex;
+  min-height:44px;
+  align-items:center;
+  padding:0 4px 0 2px;
+  color:#686870;
+  font:700 8px "DM Mono",monospace;
+  letter-spacing:.14em
+}
+.arch-tool-group-label.future{margin-left:6px;padding-left:12px;border-left:1px solid #d0d0d6;color:#94949c}
+.arch-tools button.future{border-style:dashed;background:#f4f4f5;color:#85858d}
+.arch-tools button.future span{color:#777780}
+.arch-scenario-rail{
+  grid-template-columns:minmax(340px,1.08fr) minmax(380px,1.15fr) minmax(310px,.88fr);
+  gap:28px;
+  padding:18px 24px;
+  background:#fbfbfc
+}
+.arch-scenario-kicker{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.arch-scenario-kicker>span:first-child{
+  color:#55555d;
+  font:700 8px "DM Mono",monospace;
+  letter-spacing:.16em
+}
+.arch-scenario-engine{
+  display:inline-flex;
+  min-height:28px;
+  align-items:center;
+  gap:5px;
+  padding:4px 8px;
+  border:1px solid #d0d0d6;
+  background:#fff;
+  color:#65656d;
+  font:700 8px "DM Mono",monospace;
+  letter-spacing:.04em;
+  white-space:nowrap
+}
+.arch-scenario-engine svg{width:13px!important;height:13px!important}
+.arch-scenario-engine.ready{border-color:#93c7b4;background:#e2f3ec;color:#075f44}
+.arch-scenario-engine.failed{border-color:#d8a29b;background:#fae8e5;color:#9b3025}
+.arch-scenario-engine.checking,.arch-scenario-engine.waiting{border-color:#d9c48f;background:#fff7e7;color:#765219}
+.arch-scenario-intro h2{margin-top:8px;font-size:17px;line-height:1.28}
+.arch-scenario-intro p{font-size:10px}
+.arch-scenario-steps{gap:0;border:1px solid #d7d7dc;background:#fff}
+.arch-scenario-steps li{
+  min-height:56px;
+  border:0;
+  border-right:1px solid #e0e0e8;
+  background:#fff;
+  padding:10px
+}
+.arch-scenario-steps li:last-child{border-right:0}
+.arch-scenario-steps li[data-state="current"]{border-color:#111116;background:#111116;color:#fff;box-shadow:none}
+.arch-scenario-steps li[data-state="current"]>b{border-color:#fff;background:#fff;color:#111116}
+.arch-scenario-steps li[data-state="current"] small{color:#c8c8d0}
+.arch-scenario-steps li[data-state="failed"]{border-color:#b33a2d;background:#b33a2d;color:#fff}
+.arch-scenario-steps li[data-state="failed"]>b{border-color:#fff;background:#fff;color:#9b3025}
+.arch-scenario-steps li[data-state="failed"] small{color:#ffe6e1}
+.arch-scenario-actions{gap:9px}
+.arch-scenario-actions>div{gap:0;border:1px solid #cfcfd5;background:#fff}
+.arch-scenario-actions>div button{min-height:38px;border:0;border-right:1px solid #d7d7dc;background:#fff}
+.arch-scenario-actions>div button:last-child{border-right:0}
+.arch-scenario-actions>div button[aria-pressed="true"]{background:#2a2a30;color:#fff}
+.arch-scenario-actions>div button:hover:not(:disabled){background:#111116;color:#fff}
+.arch-scenario-primary{min-height:50px;border-radius:0;font-size:11px;letter-spacing:.04em}
+.arch-scenario-actions>a{font-size:9px;color:#66666e}
+.arch-workspace{
+  height:clamp(580px,calc(100dvh - 280px),760px);
+  min-height:580px
+}
+.arch-panel-title{position:sticky;top:0;z-index:4}
+.arch-inspector label>span,.arch-readonly span{font-size:10px;color:#55555d}
+.arch-inspector input{border-color:#bdbdc4;background:#fff;font-size:12px;font-weight:600}
+.arch-inspector input:focus{border-color:#000;box-shadow:inset 0 -2px #000}
+.arch-verification{
+  min-height:calc(100dvh - 124px);
+  scroll-margin-top:124px;
+  border-top:1px solid #d7d7dc
+}
+.arch-result-head h2{font-size:28px;line-height:1.2}
+.arch-result-head p{font-size:12px;line-height:1.55}
+.arch-result-head>div:first-child>span,.arch-timeline>span,.arch-summary>span,.arch-hashes>span{font-size:9px}
+.arch-evidence-grid{background:#fff}
+.arch-evidence-grid>div{padding:20px}
+.arch-timeline strong{font-size:11px}
+.arch-timeline code{font-size:9px}
+.arch-summary{gap:10px}
+.arch-summary>div{min-height:66px;justify-content:center;border:1px solid #e4e4e8;background:#f6f6f7}
+.arch-summary b{font-size:20px;line-height:1.05}
+.arch-summary small{margin-top:5px;font-size:9px}
+.arch-hashes label{font-size:9px}
+.arch-hashes code{padding:9px;border:1px solid #e0e0e8;background:#f6f6f7;font-size:9px;line-height:1.45}
+.arch-verification.idle .arch-evidence-grid{opacity:.62}
+.arch-verification.passed .arch-summary>div{border-color:#d8e9e2;background:#f1f8f5}
+.arch-verification.failed .arch-summary>div,.arch-verification.error .arch-summary>div{border-color:#efd9d5;background:#fff8f6}
+
+@media(max-width:1180px){
+  .arch-tool-group-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  .arch-scenario-rail{grid-template-columns:minmax(280px,.9fr) minmax(400px,1.25fr);gap:14px;padding-inline:18px}
+  .arch-scenario-actions{grid-column:1/-1;grid-template-columns:1fr minmax(280px,420px) auto;align-items:center}
+}
+
+@media(max-width:900px){
+  .arch-commandbar{display:none}
+  .arch-scenario-rail{grid-template-columns:minmax(0,1fr);gap:12px;padding:15px}
+  .arch-scenario-actions{grid-column:auto;grid-template-columns:minmax(0,1fr)}
+  .arch-workspace{height:auto;min-height:0}
+  .arch-panel-title{position:relative}
+  .arch-verification{min-height:0;scroll-margin-top:104px}
+}
+
+@media(max-width:600px){
+  .arch-topbar{
+    min-height:0;
+    grid-template-columns:minmax(0,1fr);
+    gap:8px;
+    padding:8px 10px 10px
+  }
+  .arch-brand>span{width:32px;height:32px}
+  .arch-brand strong{font-size:13px}
+  .arch-topbar nav{
+    display:flex;
+    width:100%;
+    grid-template-columns:none;
+    justify-self:stretch;
+    gap:4px;
+    overflow-x:auto;
+    overscroll-behavior-inline:contain;
+    scrollbar-width:none
+  }
+  .arch-topbar nav::-webkit-scrollbar{display:none}
+  .arch-topbar nav a{
+    flex:0 0 auto;
+    min-height:38px;
+    justify-content:center;
+    padding:0 10px;
+    font-size:9px;
+    white-space:nowrap
+  }
+  .arch-scenario-rail{gap:10px;padding:14px 12px}
+  .arch-scenario-kicker{align-items:flex-start}
+  .arch-scenario-engine{min-height:26px;padding-inline:6px;font-size:7px}
+  .arch-scenario-intro h2{margin:7px 0 4px;font-size:17px}
+  .arch-scenario-intro p{font-size:10px;line-height:1.45}
+  .arch-draft-state{margin-top:6px;font-size:8px}
+  .arch-scenario-steps{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;border:0;background:transparent}
+  .arch-scenario-steps li,.arch-scenario-steps li:last-child{
+    min-height:52px;
+    grid-template-columns:22px minmax(0,1fr);
+    gap:6px;
+    padding:6px;
+    border:1px solid #d7d7dc
+  }
+  .arch-scenario-steps li>b{width:22px;height:22px}
+  .arch-scenario-steps strong{font-size:9px;line-height:1.25}
+  .arch-scenario-steps small{display:none}
+  .arch-scenario-actions{gap:0}
+  .arch-scenario-actions>div{grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
+  .arch-scenario-actions>div button{min-height:40px;padding:4px;font-size:8px;text-align:center}
+  .arch-scenario-primary,.arch-scenario-actions>a{display:none}
+  .arch-canvas-shell{height:300px;min-height:300px}
+  .arch-mobile-note{left:110px;font-size:8px}
+  .arch-inspector label>span,.arch-readonly span{font-size:10px}
+  .arch-mobile-action{grid-template-columns:minmax(0,1fr) minmax(155px,auto)}
+  .arch-mobile-action button{font-size:9px}
+  .arch-verification{padding-top:30px}
+  .arch-result-head h2{font-size:24px}
+  .arch-evidence-grid>div{padding:16px}
 }

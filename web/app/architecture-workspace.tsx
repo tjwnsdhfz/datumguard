@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import LocalDraftNotice from "@/app/components/local-draft-notice";
 import { WorkspaceNavigation, WorkspaceSkipLink } from "@/app/components/workspace-navigation";
@@ -10,7 +10,20 @@ import { useBackendReadiness } from "@/lib/use-backend-readiness";
 
 type Point = [number, number];
 type Tool = "select" | "pan" | "wall" | "column" | "door" | "window";
-type VerificationState = "idle" | "running" | "passed" | "failed";
+type VerificationState = "idle" | "running" | "passed" | "failed" | "error";
+
+const TOOL_BUTTONS: ReadonlyArray<{
+  id: Tool;
+  label: string;
+  supported: boolean;
+}> = [
+  { id: "select", label: "Select", supported: true },
+  { id: "pan", label: "Pan", supported: true },
+  { id: "wall", label: "Wall · 후속", supported: false },
+  { id: "column", label: "Column · 후속", supported: false },
+  { id: "door", label: "Door · 후속", supported: false },
+  { id: "window", label: "Window · 후속", supported: false },
+];
 
 type GridLine = {
   id: string;
@@ -347,12 +360,40 @@ export default function ArchitectureWorkspace() {
   const [verification, setVerification] = useState<VerificationState>("idle");
   const [result, setResult] = useState<ArchitectureResult | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [blockedInputs, setBlockedInputs] = useState<Set<string>>(() => new Set());
   const readiness = useBackendReadiness("architecture");
   const health = readiness.state;
   const healthAttempts = readiness.attempts;
   const svgRef = useRef<SVGSVGElement>(null);
+  const inspectorRef = useRef<HTMLFieldSetElement>(null);
+  const verificationSectionRef = useRef<HTMLElement>(null);
+  const resultHeadingRef = useRef<HTMLHeadingElement>(null);
+  const userRequestedVerification = useRef(false);
+  const draftRevision = useRef(0);
+  const verificationRequest = useRef(0);
+  const [inspectorEpoch, setInspectorEpoch] = useState(0);
+
+  const setInputBlocked = useCallback((inputId: string, blocked: boolean) => {
+    if (blocked) {
+      draftRevision.current += 1;
+      verificationRequest.current += 1;
+      setVerification("idle");
+      setResult(null);
+      setDownloadNotice(null);
+      setMessage("수치 편집을 완료한 뒤 현재 contract를 다시 검증해 주세요.");
+    }
+    setBlockedInputs((current) => {
+      if (blocked === current.has(inputId)) return current;
+      const next = new Set(current);
+      if (blocked) next.add(inputId);
+      else next.delete(inputId);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     loadDraft<ArchitectureDraft>(DRAFT_KEY)
@@ -362,7 +403,12 @@ export default function ArchitectureWorkspace() {
           saved.walls.some((wall) => wall.id === "wall-service") &&
           saved.roomSeeds.length === 4
         ) {
+          draftRevision.current += 1;
+          verificationRequest.current += 1;
           setDraft(saved);
+          setVerification("idle");
+          setResult(null);
+          setDraftRestored(true);
         }
       })
       .catch((error) => setStorageError(error instanceof Error ? error.message : "로컬 draft를 읽지 못했습니다."))
@@ -381,6 +427,11 @@ export default function ArchitectureWorkspace() {
 
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        target.matches("input, textarea, select, [contenteditable='true']")
+      ) return;
       if (event.code === "Space" && !event.repeat) setSpaceDown(true);
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
@@ -399,33 +450,70 @@ export default function ArchitectureWorkspace() {
     };
   });
 
+  useEffect(() => {
+    if (
+      !userRequestedVerification.current ||
+      (verification !== "passed" && verification !== "failed" && verification !== "error") ||
+      !resultHeadingRef.current
+    ) return;
+
+    userRequestedVerification.current = false;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    verificationSectionRef.current?.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+    resultHeadingRef.current.focus({ preventScroll: true });
+  }, [verification]);
+
   function commit(next: ArchitectureDraft) {
+    draftRevision.current += 1;
+    verificationRequest.current += 1;
     setHistory((items) => [...items, cloneDraft(draft)].slice(-50));
     setFuture([]);
     setDraft(next);
     setVerification("idle");
     setResult(null);
     setMessage(null);
+    setDownloadNotice(null);
   }
 
   function undo() {
+    if (verification === "running" || blockedInputs.size > 0) {
+      setMessage(verification === "running" ? "검증이 끝난 뒤 변경을 되돌려 주세요." : "편집 중인 수치를 먼저 확정하거나 Escape로 취소해 주세요.");
+      return;
+    }
     setHistory((items) => {
       if (!items.length) return items;
       const previous = items[items.length - 1];
+      draftRevision.current += 1;
+      verificationRequest.current += 1;
       setFuture((redoItems) => [cloneDraft(draft), ...redoItems].slice(0, 50));
       setDraft(cloneDraft(previous));
       setVerification("idle");
+      setResult(null);
+      setMessage("이전 변경으로 돌아갔습니다. 현재 contract를 다시 검증해 주세요.");
+      setDownloadNotice(null);
       return items.slice(0, -1);
     });
   }
 
   function redo() {
+    if (verification === "running" || blockedInputs.size > 0) {
+      setMessage(verification === "running" ? "검증이 끝난 뒤 변경을 다시 적용해 주세요." : "편집 중인 수치를 먼저 확정하거나 Escape로 취소해 주세요.");
+      return;
+    }
     setFuture((items) => {
       if (!items.length) return items;
       const next = items[0];
+      draftRevision.current += 1;
+      verificationRequest.current += 1;
       setHistory((past) => [...past, cloneDraft(draft)].slice(-50));
       setDraft(cloneDraft(next));
       setVerification("idle");
+      setResult(null);
+      setMessage("변경을 다시 적용했습니다. 현재 contract를 다시 검증해 주세요.");
+      setDownloadNotice(null);
       return items.slice(1);
     });
   }
@@ -443,7 +531,7 @@ export default function ArchitectureWorkspace() {
     kind: DragState["kind"],
     id: string,
   ) => {
-    if (window.innerWidth < 900) return;
+    if (window.innerWidth < 900 || verification === "running" || blockedInputs.size > 0) return;
     event.preventDefault();
     event.stopPropagation();
     setSelectedId(id);
@@ -521,12 +609,15 @@ export default function ArchitectureWorkspace() {
   const pointerUp = (event: React.PointerEvent<SVGSVGElement>) => {
     if (!drag) return;
     if (drag.kind !== "pan") {
+      draftRevision.current += 1;
+      verificationRequest.current += 1;
       setHistory((items) => [...items, cloneDraft(drag.draft)].slice(-50));
       setFuture([]);
       setSnapState("snapped");
       setVerification("idle");
       setResult(null);
-      setMessage(null);
+      setMessage("좌표 변경이 반영되었습니다. 현재 contract를 다시 검증해 주세요.");
+      setDownloadNotice(null);
     }
     setDrag(null);
     if (svgRef.current?.hasPointerCapture(event.pointerId)) svgRef.current.releasePointerCapture(event.pointerId);
@@ -540,32 +631,42 @@ export default function ArchitectureWorkspace() {
     });
   };
 
-  const runVerification = async () => {
+  const runVerification = async (candidate: ArchitectureDraft = draft) => {
+    if (blockedInputs.size > 0) {
+      setMessage("편집 중인 수치를 Enter 또는 focus 이동으로 확정해 주세요.");
+      return;
+    }
     if (health !== "ready") {
       setMessage("검증 엔진 준비 중입니다. 연결이 완료되면 다시 실행해 주세요.");
       readiness.retry();
       return;
     }
+    userRequestedVerification.current = true;
+    const requestToken = ++verificationRequest.current;
+    const candidateRevision = draftRevision.current;
     setVerification("running");
     setMessage("건축 검증 엔진이 contract를 잠그고 있습니다.");
     setResult(null);
+    setDownloadNotice(null);
     try {
       const payload = await apiPostJson<ArchitectureResult>(
         "/api/v1/architecture/designs/run",
-        architectureContract(draft),
+        architectureContract(candidate),
         { timeoutMs: 60_000 },
       );
+      if (requestToken !== verificationRequest.current || candidateRevision !== draftRevision.current) return;
       setResult(payload);
       setVerification(payload.status === "passed" ? "passed" : "failed");
       setMessage(payload.status === "passed" ? "독립 재측정과 approval gate를 통과했습니다." : payload.error?.message || "검증에 실패했습니다.");
     } catch (error) {
-      setVerification("failed");
+      if (requestToken !== verificationRequest.current || candidateRevision !== draftRevision.current) return;
+      setVerification("error");
       setMessage(apiErrorMessage(error, "건축 검증 요청에 실패했습니다."));
     }
   };
 
   const download = () => {
-    if (!result?.bundle_base64 || result.status !== "passed") return;
+    if (blockedInputs.size > 0 || verification !== "passed" || !result?.bundle_base64 || result.status !== "passed") return;
     const binary = window.atob(result.bundle_base64);
     const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
     const url = URL.createObjectURL(new Blob([bytes], { type: "application/zip" }));
@@ -574,12 +675,85 @@ export default function ArchitectureWorkspace() {
     anchor.download = `datumguard-architecture-${result.contract_hash.slice(7, 19)}.zip`;
     anchor.click();
     URL.revokeObjectURL(url);
+    setDownloadNotice("검증 번들 다운로드를 시작했습니다. ZIP에는 DXF, PDF, SVG, contract, verification, manifest가 포함됩니다.");
+  };
+
+  const loadStudioSample = () => {
+    commit(cloneDraft(STUDIO_PRESET));
+    setInspectorEpoch((current) => current + 1);
+    setBlockedInputs(new Set());
+    setSelectedId("column-a");
+    setSnapState("idle");
+    setViewBox(FIT_VIEW);
+    setDraftRestored(false);
+    setMessage("정상 샘플을 불러왔습니다. 정확한 mm 값을 확인한 뒤 검증을 실행하세요.");
+  };
+
+  const loadFailureSample = () => {
+    commit(openLoopPreset());
+    setInspectorEpoch((current) => current + 1);
+    setBlockedInputs(new Set());
+    setSelectedId("wall-north");
+    setSnapState("idle");
+    setViewBox(FIT_VIEW);
+    setDraftRestored(false);
+    setMessage("wall-north 끝점이 300 mm 열린 실패 샘플입니다. 검증으로 export 차단을 확인하세요.");
+  };
+
+  const focusEntity = (entityId: string, inputTestId?: string) => {
+    setSelectedId(entityId);
+    window.requestAnimationFrame(() => {
+      inspectorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const preferredInput = inputTestId
+        ? document.querySelector<HTMLInputElement>(`[data-testid='${inputTestId}']`)
+        : null;
+      if (preferredInput) preferredInput.focus({ preventScroll: true });
+      else inspectorRef.current?.focus({ preventScroll: true });
+    });
+  };
+
+  const startExactEditScenario = () => {
+    if (draft.presetId !== "architecture-studio") {
+      commit(cloneDraft(STUDIO_PRESET));
+      setInspectorEpoch((current) => current + 1);
+      setBlockedInputs(new Set());
+      setViewBox(FIT_VIEW);
+      setDraftRestored(false);
+    }
+    setMessage("column-a의 Center X를 편집하고 Enter로 확정하세요. 한 번의 확정은 undo 한 단계로 기록됩니다.");
+    focusEntity("column-a", "architecture-inspector-center-x");
+  };
+
+  const canRepairOpenLoop =
+    draft.presetId === "architecture-open-loop" &&
+    Boolean(result?.violations.some((item) => item.code === "DG_ARCH_EXTERIOR_OPEN"));
+
+  const repairOpenLoopAndVerify = async () => {
+    if (blockedInputs.size > 0) {
+      setMessage("편집 중인 수치를 먼저 확정하거나 Escape로 취소해 주세요.");
+      return;
+    }
+    const next = cloneDraft(draft);
+    const northWall = next.walls.find((wall) => wall.id === "wall-north");
+    if (!northWall) return;
+    northWall.end[0] = 0;
+    commit(next);
+    setSelectedId("wall-north");
+    setMessage("wall-north End X를 300 mm에서 0 mm로 복구했습니다. 동일 경로로 다시 검증합니다.");
+    await runVerification(next);
+  };
+
+  const handlePrimaryAction = () => {
+    if (verification === "passed") download();
+    else if (canRepairOpenLoop) void repairOpenLoopAndVerify();
+    else void runVerification();
   };
 
   const selectedWall = draft.walls.find((item) => item.id === selectedId);
   const selectedColumn = draft.columns.find((item) => item.id === selectedId);
   const selectedOpening = draft.openings.find((item) => item.id === selectedId);
   const selectedGrid = draft.grids.find((item) => item.id === selectedId);
+  const selectedRoom = draft.roomSeeds.find((item) => item.id === selectedId);
 
   const updateNumber = (field: string, value: number) => {
     const next = cloneDraft(draft);
@@ -587,6 +761,7 @@ export default function ArchitectureWorkspace() {
     const wall = next.walls.find((item) => item.id === selectedId);
     const opening = next.openings.find((item) => item.id === selectedId);
     const grid = next.grids.find((item) => item.id === selectedId);
+    const room = next.roomSeeds.find((item) => item.id === selectedId);
     if (column) {
       if (field === "x") column.center[0] = value;
       if (field === "y") column.center[1] = value;
@@ -607,8 +782,12 @@ export default function ArchitectureWorkspace() {
         grid.start[1] = value;
         grid.end[1] = value;
       }
+    } else if (room) {
+      if (field === "x") room.point[0] = value;
+      if (field === "y") room.point[1] = value;
     }
     commit(next);
+    setMessage("수치를 확정했습니다. 현재 contract를 다시 검증해 주세요.");
   };
 
   const canvas = (() => {
@@ -625,7 +804,7 @@ export default function ArchitectureWorkspace() {
         onPointerUp={pointerUp}
         onPointerCancel={pointerUp}
         onWheel={(event) => { event.preventDefault(); zoom(event.deltaY > 0 ? 1.12 : 0.88); }}
-        role="application"
+        role="img"
         aria-label={`${draft.projectName} 건축 평면 CAD 캔버스. 데스크톱에서는 객체를 드래그하고, 모든 화면에서 정확한 수치 입력을 사용할 수 있습니다.`}
       >
         <defs>
@@ -682,6 +861,33 @@ export default function ArchitectureWorkspace() {
     : health === "failed"
       ? "검증 엔진에 연결하지 못했습니다"
       : "검증 엔진 준비 중";
+  const primaryLabel = verification === "passed"
+    ? "검증 번들 다운로드 (.zip)"
+    : verification === "running"
+      ? "저장된 DXF를 다시 측정하는 중"
+      : verification === "error"
+        ? "연결 확인 후 다시 검증"
+        : canRepairOpenLoop
+        ? "300 mm 간격 닫고 재검증"
+        : verification === "failed"
+          ? "수정 후 다시 검증"
+          : history.length > 0
+            ? "현재 변경사항 검증하기"
+            : "샘플 도면 검증하기";
+  const primaryDisabled =
+    verification === "running" ||
+    blockedInputs.size > 0 ||
+    (verification === "passed" ? !result?.bundle_base64 : health !== "ready");
+  const selectedIsEditable = Boolean(
+    selectedColumn || selectedWall || selectedOpening || selectedGrid || selectedRoom,
+  );
+  const editableEntityIds = new Set([
+    ...draft.columns.map((item) => item.id),
+    ...draft.walls.map((item) => item.id),
+    ...draft.openings.map((item) => item.id),
+    ...draft.grids.map((item) => item.id),
+    ...draft.roomSeeds.map((item) => item.id),
+  ]);
 
   return (
     <main className="architecture-app" data-testid="architecture-demo" data-verification-status={verification} data-health-status={health} data-history-depth={history.length} data-future-depth={future.length}>
@@ -694,19 +900,84 @@ export default function ArchitectureWorkspace() {
       </header>
 
       <section className="arch-commandbar" id="architecture-workspace-content" tabIndex={-1} aria-label="Architecture CAD tools">
-        <div className="arch-tools" role="group" aria-label="Canvas tool">{(["select", "pan", "wall", "column", "door", "window"] as Tool[]).map((item) => <button key={item} type="button" className={tool === item ? "active" : ""} aria-pressed={tool === item} onClick={() => setTool(item)}><ArchitectureIcon name={item} /><span>{item}</span></button>)}</div>
-        <div className="arch-history" role="group" aria-label="History and view"><button data-testid="architecture-undo" type="button" onClick={undo} disabled={!history.length} aria-label="Undo"><ArchitectureIcon name="undo" /><span>Undo</span></button><button data-testid="architecture-redo" type="button" onClick={redo} disabled={!future.length} aria-label="Redo"><ArchitectureIcon name="redo" /><span>Redo</span></button><button data-testid="architecture-zoom-in" type="button" onClick={() => zoom(0.82)} aria-label="Zoom in"><ArchitectureIcon name="zoom-in" /></button><button data-testid="architecture-zoom-out" type="button" onClick={() => zoom(1.22)} aria-label="Zoom out"><ArchitectureIcon name="zoom-out" /></button><button data-testid="architecture-fit" type="button" onClick={() => setViewBox(FIT_VIEW)}><ArchitectureIcon name="fit" /><span>Fit</span></button></div>
-        <label className="arch-snap">Snap <select value={draft.snap} onChange={(event) => commit({ ...draft, snap: Number(event.target.value) })}><option value={100}>100 mm</option><option value={50}>50 mm</option><option value={10}>10 mm</option></select><small>Shift = 10mm</small></label>
+        <div className="arch-tools" role="group" aria-label="Canvas tool">
+          <span className="arch-tool-group-label">EDIT</span>
+          {TOOL_BUTTONS.filter((item) => item.supported).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={tool === item.id ? "active" : ""}
+              aria-pressed={item.supported ? tool === item.id : undefined}
+              aria-label={item.supported ? item.label : `${item.label}. 객체 추가는 후속 범위입니다.`}
+              title={item.supported ? undefined : "객체 추가는 후속 범위입니다. 현재 preset 객체의 정확한 편집과 검증을 지원합니다."}
+              disabled={!item.supported}
+              onClick={() => setTool(item.id)}
+            >
+              <ArchitectureIcon name={item.id} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+          <span className="arch-tool-group-label future">NEXT</span>
+          {TOOL_BUTTONS.filter((item) => !item.supported).map((item) => (
+            <button
+              aria-label={`${item.label}. 객체 추가는 후속 범위입니다.`}
+              className="future"
+              disabled
+              key={item.id}
+              title="객체 추가는 후속 범위입니다. 현재 preset 객체의 정확한 편집과 검증을 지원합니다."
+              type="button"
+            >
+              <ArchitectureIcon name={item.id} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+        <div className="arch-history" role="group" aria-label="History and view"><button data-testid="architecture-undo" type="button" onClick={undo} disabled={!history.length || verification === "running" || blockedInputs.size > 0} aria-label="Undo"><ArchitectureIcon name="undo" /><span>Undo</span></button><button data-testid="architecture-redo" type="button" onClick={redo} disabled={!future.length || verification === "running" || blockedInputs.size > 0} aria-label="Redo"><ArchitectureIcon name="redo" /><span>Redo</span></button><button data-testid="architecture-zoom-in" type="button" onClick={() => zoom(0.82)} aria-label="Zoom in"><ArchitectureIcon name="zoom-in" /></button><button data-testid="architecture-zoom-out" type="button" onClick={() => zoom(1.22)} aria-label="Zoom out"><ArchitectureIcon name="zoom-out" /></button><button data-testid="architecture-fit" type="button" onClick={() => setViewBox(FIT_VIEW)}><ArchitectureIcon name="fit" /><span>Fit</span></button></div>
+        <label className="arch-snap">Snap <select data-testid="architecture-snap-select" value={draft.snap} disabled={verification === "running" || blockedInputs.size > 0} onChange={(event) => commit({ ...draft, snap: Number(event.target.value) })}><option value={100}>100 mm</option><option value={50}>50 mm</option><option value={10}>10 mm</option></select><small>Shift = 10mm</small></label>
       </section>
 
       <LocalDraftNotice error={storageError} onDismiss={() => setStorageError(null)} />
+
+      <section className="arch-scenario-rail" data-testid="architecture-scenario" aria-labelledby="architecture-scenario-title">
+        <div className="arch-scenario-intro">
+          <div className="arch-scenario-kicker">
+            <span>QUICK START · 60 SEC</span>
+            <span className={`arch-scenario-engine ${health}`}><ArchitectureIcon name="health" />{healthText}</span>
+          </div>
+          <h2 id="architecture-scenario-title">정확한 값을 잠그고, 저장된 DXF를 다시 측정합니다</h2>
+          <p>샘플 선택 → mm 값 확인 → 검증·다운로드. 구조·안전·법규 인증은 제공하지 않습니다.</p>
+          <div className={`arch-draft-state ${draftRestored ? "restored" : "local"}`} role="status">
+            {draftRestored ? "이 브라우저의 이전 draft를 복원했습니다." : "현재 draft는 이 브라우저에만 자동 저장됩니다."}
+            {draftRestored ? <button data-testid="architecture-restore-studio" type="button" disabled={verification === "running"} onClick={loadStudioSample}>정상 샘플로 복원</button> : null}
+          </div>
+        </div>
+
+        <ol className="arch-scenario-steps" aria-label="첫 검증 순서">
+          <li data-testid="architecture-scenario-step-sample" data-state="done"><b>1</b><span><strong>샘플 선택</strong><small>{draft.presetId === "architecture-studio" ? "정상 4-room studio" : "300 mm 실패 샘플"}</small></span></li>
+          <li aria-current={verification === "idle" ? "step" : undefined} data-testid="architecture-scenario-step-edit" data-state={verification === "idle" ? "current" : "done"}><b>2</b><span><strong>정확한 값 확인</strong><small>{selectedId || "객체를 선택하세요"}</small></span></li>
+          <li aria-current={verification === "running" || verification === "failed" || verification === "error" ? "step" : undefined} data-testid="architecture-scenario-step-verify" data-state={verification === "passed" ? "done" : verification === "failed" || verification === "error" ? "failed" : verification === "running" ? "current" : "waiting"}><b>3</b><span><strong>DXF 재측정</strong><small>{verification === "passed" ? "PASS · download ready" : verification === "failed" ? "BLOCKED · 수정 필요" : verification === "error" ? "REQUEST ERROR · 다시 시도" : verification === "running" ? "independent reader" : "실행 대기"}</small></span></li>
+        </ol>
+
+        <div className="arch-scenario-actions">
+          <div role="group" aria-label="데모 시나리오">
+            <button aria-pressed={draft.presetId === "architecture-studio"} data-testid="architecture-scenario-valid" type="button" disabled={verification === "running"} onClick={loadStudioSample}>정상 검증</button>
+            <button aria-pressed={draft.presetId === "architecture-open-loop"} data-testid="architecture-scenario-failure" type="button" disabled={verification === "running"} onClick={loadFailureSample}>실패 복구</button>
+            <button data-testid="architecture-scenario-exact" type="button" disabled={verification === "running"} onClick={startExactEditScenario}>정확한 mm 편집</button>
+          </div>
+          <button data-testid="architecture-run-verification" data-scenario-primary="true" className="arch-scenario-primary" type="button" disabled={primaryDisabled} onClick={handlePrimaryAction}>
+            {verification === "running" ? <span className="spinner" /> : <ArchitectureIcon name={verification === "passed" ? "download" : canRepairOpenLoop ? "check" : "run"} />}
+            {blockedInputs.size > 0 ? "수치 입력을 먼저 확정하세요" : health !== "ready" && verification !== "passed" ? "검증 엔진 준비 중" : primaryLabel}
+          </button>
+          <a href="/case-study">60초 Case Study 읽기</a>
+        </div>
+      </section>
 
       <section className="arch-workspace">
         <aside className="arch-left-panel">
           <div className="arch-panel-title"><span>MODEL</span><strong>Level 01</strong></div>
           <div className="arch-presets">
-            <button data-testid="architecture-preset-studio" type="button" className={draft.presetId === "architecture-studio" ? "active" : ""} onClick={() => { commit(cloneDraft(STUDIO_PRESET)); setSelectedId("column-a"); setSnapState("idle"); setViewBox(FIT_VIEW); }}><ArchitectureIcon name="check" /><span><strong>12 × 8 m / 4-room studio</strong><small>Closed, resolved, verifiable</small></span></button>
-            <button data-testid="architecture-preset-invalid" type="button" className={draft.presetId === "architecture-open-loop" ? "active invalid" : "invalid"} onClick={() => { commit(openLoopPreset()); setSelectedId("wall-north"); setSnapState("idle"); setViewBox(FIT_VIEW); }}><ArchitectureIcon name="alert" /><span><strong>300 mm open loop</strong><small>Required exterior closure fails</small></span></button>
+            <button data-testid="architecture-preset-studio" type="button" disabled={verification === "running"} className={draft.presetId === "architecture-studio" ? "active" : ""} onClick={loadStudioSample}><ArchitectureIcon name="check" /><span><strong>12 × 8 m / 4-room studio</strong><small>Closed, resolved, verifiable</small></span></button>
+            <button data-testid="architecture-preset-invalid" type="button" disabled={verification === "running"} className={draft.presetId === "architecture-open-loop" ? "active invalid" : "invalid"} onClick={loadFailureSample}><ArchitectureIcon name="alert" /><span><strong>300 mm open loop</strong><small>Required exterior closure fails</small></span></button>
           </div>
           <div className="arch-tree">
             <TreeGroup label="Grids" count={draft.grids.length}>{draft.grids.map((item) => <TreeItem key={item.id} label={`${item.label} · ${item.id}`} active={selectedId === item.id} onClick={() => setSelectedId(item.id)} />)}</TreeGroup>
@@ -726,13 +997,30 @@ export default function ArchitectureWorkspace() {
 
         <aside className="arch-right-panel">
           <div className="arch-panel-title"><span>PROPERTIES</span><strong>{selectedId || "No selection"}</strong></div>
-          <div className="arch-inspector">
-            {selectedColumn && <><InspectorRow label="Center X" value={selectedColumn.center[0]} onChange={(value) => updateNumber("x", value)} /><InspectorRow label="Center Y" value={selectedColumn.center[1]} onChange={(value) => updateNumber("y", value)} /><InspectorRow label="Width" value={selectedColumn.width} onChange={(value) => updateNumber("width", value)} /><InspectorRow label="Depth" value={selectedColumn.depth} onChange={(value) => updateNumber("depth", value)} /></>}
-            {selectedWall && <><InspectorRow label="Start X" value={selectedWall.start[0]} onChange={(value) => updateNumber("x1", value)} /><InspectorRow label="Start Y" value={selectedWall.start[1]} onChange={(value) => updateNumber("y1", value)} /><InspectorRow label="End X" value={selectedWall.end[0]} onChange={(value) => updateNumber("x2", value)} /><InspectorRow label="End Y" value={selectedWall.end[1]} onChange={(value) => updateNumber("y2", value)} /><InspectorRow label="Thickness" value={selectedWall.thickness} onChange={(value) => updateNumber("thickness", value)} /></>}
-            {selectedOpening && <><div className="arch-readonly"><span>Host wall</span><code>{selectedOpening.wall_id}</code></div><InspectorRow label="Offset" value={selectedOpening.offset} onChange={(value) => updateNumber("offset", value)} /><InspectorRow label="Width" value={selectedOpening.width} onChange={(value) => updateNumber("width", value)} /></>}
-            {selectedGrid && <InspectorRow label={`${selectedGrid.axis.toUpperCase()} offset`} value={selectedGrid.axis === "x" ? selectedGrid.start[0] : selectedGrid.start[1]} onChange={(value) => updateNumber("offset", value)} />}
-            {!selectedColumn && !selectedWall && !selectedOpening && !selectedGrid && <p className="arch-help">객체를 선택하면 pixel이 아닌 정확한 mm 좌표와 치수를 편집할 수 있습니다.</p>}
-          </div>
+          <label className="arch-mobile-object-picker">
+            <span>편집할 객체</span>
+            <select
+              data-testid="architecture-mobile-object-select"
+              value={selectedIsEditable ? selectedId : ""}
+              onChange={(event) => setSelectedId(event.target.value)}
+            >
+              <option value="" disabled>객체를 선택하세요</option>
+              <optgroup label="Columns">{draft.columns.map((item) => <option key={item.id} value={item.id}>{item.id}</option>)}</optgroup>
+              <optgroup label="Walls">{draft.walls.map((item) => <option key={item.id} value={item.id}>{item.id}</option>)}</optgroup>
+              <optgroup label="Openings">{draft.openings.map((item) => <option key={item.id} value={item.id}>{item.type} · {item.id}</option>)}</optgroup>
+              <optgroup label="Grids">{draft.grids.map((item) => <option key={item.id} value={item.id}>{item.label} · {item.id}</option>)}</optgroup>
+              <optgroup label="Rooms">{draft.roomSeeds.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</optgroup>
+            </select>
+          </label>
+          <fieldset data-testid="architecture-inspector" className="arch-inspector" ref={inspectorRef} tabIndex={-1} key={inspectorEpoch} disabled={verification === "running"}>
+            <legend>정확한 속성 · {selectedId || "선택 없음"}</legend>
+            {selectedColumn && <><InspectorRow label="Center X" value={selectedColumn.center[0]} onChange={(value) => updateNumber("x", value)} onEditStateChange={setInputBlocked} /><InspectorRow label="Center Y" value={selectedColumn.center[1]} onChange={(value) => updateNumber("y", value)} onEditStateChange={setInputBlocked} /><InspectorRow label="Width" value={selectedColumn.width} min={1} onChange={(value) => updateNumber("width", value)} onEditStateChange={setInputBlocked} /><InspectorRow label="Depth" value={selectedColumn.depth} min={1} onChange={(value) => updateNumber("depth", value)} onEditStateChange={setInputBlocked} /></>}
+            {selectedWall && <><InspectorRow label="Start X" value={selectedWall.start[0]} onChange={(value) => updateNumber("x1", value)} onEditStateChange={setInputBlocked} /><InspectorRow label="Start Y" value={selectedWall.start[1]} onChange={(value) => updateNumber("y1", value)} onEditStateChange={setInputBlocked} /><InspectorRow label="End X" value={selectedWall.end[0]} onChange={(value) => updateNumber("x2", value)} onEditStateChange={setInputBlocked} /><InspectorRow label="End Y" value={selectedWall.end[1]} onChange={(value) => updateNumber("y2", value)} onEditStateChange={setInputBlocked} /><InspectorRow label="Thickness" value={selectedWall.thickness} min={1} onChange={(value) => updateNumber("thickness", value)} onEditStateChange={setInputBlocked} /></>}
+            {selectedOpening && <><div className="arch-readonly"><span>Host wall</span><code>{selectedOpening.wall_id}</code></div><InspectorRow label="Offset" value={selectedOpening.offset} min={0} onChange={(value) => updateNumber("offset", value)} onEditStateChange={setInputBlocked} /><InspectorRow label="Width" value={selectedOpening.width} min={1} onChange={(value) => updateNumber("width", value)} onEditStateChange={setInputBlocked} /></>}
+            {selectedGrid && <InspectorRow label={`${selectedGrid.axis.toUpperCase()} offset`} value={selectedGrid.axis === "x" ? selectedGrid.start[0] : selectedGrid.start[1]} onChange={(value) => updateNumber("offset", value)} onEditStateChange={setInputBlocked} />}
+            {selectedRoom && <><InspectorRow label="Room X" value={selectedRoom.point[0]} onChange={(value) => updateNumber("x", value)} onEditStateChange={setInputBlocked} /><InspectorRow label="Room Y" value={selectedRoom.point[1]} onChange={(value) => updateNumber("y", value)} onEditStateChange={setInputBlocked} /></>}
+            {!selectedColumn && !selectedWall && !selectedOpening && !selectedGrid && !selectedRoom && <p className="arch-help">객체를 선택하면 pixel이 아닌 정확한 mm 좌표와 치수를 편집할 수 있습니다.</p>}
+          </fieldset>
 
           <div data-testid="architecture-health" className={`arch-health ${health}`} role="status" aria-live="polite">
             <ArchitectureIcon name="health" />
@@ -740,31 +1028,44 @@ export default function ArchitectureWorkspace() {
             {health === "failed" && <button data-testid="architecture-health-retry" type="button" onClick={readiness.retry}>수동 재시도</button>}
           </div>
 
-          <div className="arch-contract-card" data-testid="architecture-flow">
-            <div data-testid="architecture-stage-contract"><span>01</span><div><strong>Contract locked</strong><small>Datum + exact mm values</small></div></div>
-            <div data-testid="architecture-stage-writer"><span>02</span><div><strong>DXF written</strong><small>R2013 entities + trace IDs</small></div></div>
-            <div data-testid="architecture-stage-reopen"><span>03</span><div><strong>DXF reopened</strong><small>Independent parser, saved bytes</small></div></div>
-            <div data-testid="architecture-stage-remeasure"><span>04</span><div><strong>Remeasured</strong><small>Dimensions + room topology</small></div></div>
-            <div data-testid="architecture-stage-gate"><span>05</span><div><strong>Approved</strong><small>No pass, no official bundle</small></div></div>
+          <div className="arch-right-actions">
+            {blockedInputs.size > 0 ? <p className="arch-input-pending" role="status">Enter 또는 focus 이동으로 현재 수치를 확정하세요.</p> : null}
+            <p className="arch-boundary">NOT A CERTIFICATION · 구조·안전·법규 판정이 아닙니다.</p>
           </div>
 
-          <button data-testid="architecture-run-verification" className="arch-run" type="button" disabled={verification === "running" || health !== "ready"} onClick={runVerification}>{verification === "running" ? <><span className="spinner" /> READING DXF…</> : health === "failed" ? <><ArchitectureIcon name="alert" /> 재연결 필요</> : health !== "ready" ? <><span className="spinner" /> 검증 엔진 준비 중</> : verification === "failed" ? <><ArchitectureIcon name="run" /> RETRY MANUALLY</> : <><ArchitectureIcon name="run" /> GENERATE + VERIFY DXF</>}</button>
-          <p className="arch-boundary">NOT A CERTIFICATION · 구조·안전·법규 판정이 아닙니다.</p>
+          <details className="arch-flow-details">
+            <summary>검증 과정 5단계 보기</summary>
+            <div className="arch-contract-card" data-testid="architecture-flow">
+              <div data-testid="architecture-stage-contract"><span>01</span><div><strong>Contract locked</strong><small>Datum + exact mm values</small></div></div>
+              <div data-testid="architecture-stage-writer"><span>02</span><div><strong>DXF written</strong><small>R2013 entities + trace IDs</small></div></div>
+              <div data-testid="architecture-stage-reopen"><span>03</span><div><strong>DXF reopened</strong><small>Independent parser, saved bytes</small></div></div>
+              <div data-testid="architecture-stage-remeasure"><span>04</span><div><strong>Remeasured</strong><small>Dimensions + room topology</small></div></div>
+              <div data-testid="architecture-stage-gate"><span>05</span><div><strong>Approved</strong><small>No pass, no official bundle</small></div></div>
+            </div>
+          </details>
         </aside>
       </section>
 
-      <section className={`arch-verification ${verification}`} id="verification">
+      <div className={`arch-mobile-action ${verification}`} data-testid="architecture-mobile-action">
+        <span><b>{verification === "passed" ? "검증 완료" : verification === "failed" ? "수정 필요" : verification === "error" ? "연결 실패" : verification === "running" ? "재측정 중" : healthText}</b><small>{blockedInputs.size > 0 ? "수치를 먼저 확정하세요" : selectedId || draft.projectName}</small></span>
+        <button type="button" disabled={primaryDisabled} onClick={handlePrimaryAction}>{primaryLabel}</button>
+      </div>
+
+      <section ref={verificationSectionRef} className={`arch-verification ${verification}`} id="verification" aria-labelledby="architecture-result-heading">
         <div className="arch-result-head">
-          <div><span>INDEPENDENT EVIDENCE</span><h2>{verification === "passed" ? "DXF 재측정 통과" : verification === "failed" ? "공식 export 차단" : verification === "running" ? "도면을 다시 읽는 중" : "검증 대기"}</h2><p>{message || "캔버스 값을 DesignContract로 잠근 뒤 저장된 DXF만 다시 측정합니다."}</p></div>
-          <div data-testid="architecture-verified-badge" className={`arch-verified ${verification}`} role="status" aria-label={`Architecture verification status: ${verification}`}>{verification === "passed" ? <ArchitectureIcon name="check" /> : verification === "failed" ? <ArchitectureIcon name="alert" /> : null}<span>{verification === "passed" ? "VERIFIED / PASS" : verification.toUpperCase()}</span></div>
-          <button data-testid="architecture-download" type="button" className="arch-download" disabled={verification !== "passed" || !result?.bundle_base64} onClick={download}><ArchitectureIcon name="download" /><span>DXF + PDF + JSON</span></button>
+          <div><span>INDEPENDENT EVIDENCE</span><h2 id="architecture-result-heading" data-testid="architecture-result-heading" ref={resultHeadingRef} tabIndex={-1}>{verification === "passed" ? "DXF 재측정 통과" : verification === "failed" ? "공식 export 차단" : verification === "error" ? "검증 요청 실패" : verification === "running" ? "도면을 다시 읽는 중" : "검증 대기"}</h2><p>{message || "캔버스 값을 DesignContract로 잠근 뒤 저장된 DXF만 다시 측정합니다."}</p></div>
+          <div data-testid="architecture-verified-badge" className={`arch-verified ${verification}`} role="status" aria-label={`Architecture verification status: ${verification}`}>{verification === "passed" ? <ArchitectureIcon name="check" /> : verification === "failed" || verification === "error" ? <ArchitectureIcon name="alert" /> : null}<span>{verification === "passed" ? "VERIFIED / PASS" : verification === "error" ? "REQUEST ERROR" : verification.toUpperCase()}</span></div>
+          <button data-testid="architecture-download" type="button" className="arch-download" disabled={verification !== "passed" || !result?.bundle_base64 || blockedInputs.size > 0} onClick={download}><ArchitectureIcon name="download" /><span>검증 번들 다운로드 (.zip)</span></button>
         </div>
+        <p className="arch-result-announcement" role="status" aria-live="polite">{verification === "passed" ? "검증 통과. 공식 번들을 다운로드할 수 있습니다." : verification === "failed" ? `${result?.violations.length || 0}개 위반으로 공식 export가 차단되었습니다.` : verification === "error" ? message || "검증 엔진에 연결하지 못했습니다. 다시 시도해 주세요." : message || "검증 실행을 기다립니다."}</p>
         <div className="arch-evidence-grid">
           <div data-testid="verification-timeline" className="arch-timeline"><span>PIPELINE TIMELINE</span>{presentationTimeline.map((item) => <div data-testid={`architecture-timeline-${item.id}`} key={item.id}><i className={timelineStatusClass(item.status)} aria-hidden="true" /><strong>{item.label}</strong><code>{item.status}</code></div>)}</div>
-          <div data-testid="verification-summary" className="arch-summary"><span>REMEASUREMENT SUMMARY</span><div><b>0.001 mm</b><small>comparison epsilon</small></div><div><b>{result?.measurements.filter((item) => item.passed).length || 0}/{result?.measurements.length || 0}</b><small>dimensions passed</small></div><div><b>{result?.violations.length || 0}</b><small>required violations</small></div><div><b>{String(result?.summary.walls ?? draft.walls.length)}</b><small>walls measured</small></div><div><b>{result?.summary.gross_area_m2 != null ? `${result.summary.gross_area_m2} m²` : "—"}</b><small>gross enclosed area</small></div><div><b>{String(result?.summary.rooms ?? draft.roomSeeds.length)}</b><small>room seeds resolved</small></div></div>
+          <div data-testid="verification-summary" className="arch-summary"><span>REMEASUREMENT SUMMARY</span><div><b>0.001 mm</b><small>comparison epsilon</small></div><div><b data-testid="architecture-summary-dimensions">{result ? `${result.measurements.filter((item) => item.passed).length}/${result.measurements.length}` : "—"}</b><small>dimensions passed</small></div><div><b data-testid="architecture-summary-violations">{result ? result.violations.length : "—"}</b><small>required violations</small></div><div><b data-testid="architecture-summary-walls">{result?.summary.walls ?? "—"}</b><small>walls measured</small></div><div><b>{result?.summary.gross_area_m2 != null ? `${result.summary.gross_area_m2} m²` : "—"}</b><small>gross enclosed area</small></div><div><b data-testid="architecture-summary-rooms">{result?.summary.rooms ?? "—"}</b><small>room seeds resolved</small></div></div>
           <div className="arch-hashes"><span>TRACEABLE HASHES</span><label>Contract<code data-testid="architecture-contract-hash">{result?.contract_hash || "sha256:pending"}</code></label><label>DXF artifact<code data-testid="architecture-artifact-hash">{result?.artifact_hash || "sha256:pending"}</code></label><p>PDF: <b>DO NOT SCALE</b> · 제작 기준은 bundle의 DXF입니다.</p></div>
         </div>
-        {result?.violations.length ? <div className="arch-violations">{result.violations.map((item, index) => <article key={`${item.code}-${index}`}><code>{item.code}</code><strong>{item.message}</strong><span>{item.entity_ids.join(", ")}</span></article>)}</div> : null}
+        {result?.violations.length ? <div className="arch-violations">{result.violations.map((item, index) => <article key={`${item.code}-${index}`}><code>{item.code}</code><strong>{item.message}</strong><span>{item.entity_ids.map((entityId) => editableEntityIds.has(entityId) ? <button key={entityId} type="button" onClick={() => focusEntity(entityId, entityId === "wall-north" ? "architecture-inspector-end-x" : undefined)}>{entityId} 객체 선택</button> : <code key={entityId}>{entityId}</code>)}{item.entity_ids.length === 0 ? "관련 객체 없음" : null}</span></article>)}</div> : null}
+        {canRepairOpenLoop ? <div className="arch-recovery"><div><span>DEMO REPAIR</span><strong>wall-north End X: 300 → 0 mm</strong><p>잠긴 치수를 추정하지 않고, 이 실패 샘플에 명시된 끝점만 복구합니다.</p></div><button data-testid="architecture-repair-open-loop" type="button" disabled={blockedInputs.size > 0 || health !== "ready"} onClick={() => void repairOpenLoopAndVerify()}>300 mm 간격 닫고 재검증</button></div> : null}
+        {downloadNotice ? <p className="arch-download-notice" role="status" aria-live="polite">{downloadNotice}</p> : null}
       </section>
     </main>
   );
@@ -778,7 +1079,86 @@ function TreeItem({ label, active, onClick }: { label: string; active: boolean; 
   return <button type="button" className={active ? "active" : ""} aria-pressed={active} onClick={onClick}><ArchitectureIcon name="tree" /><span>{label}</span></button>;
 }
 
-function InspectorRow({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+function InspectorRow({
+  label,
+  value,
+  min,
+  onChange,
+  onEditStateChange,
+}: {
+  label: string;
+  value: number;
+  min?: number;
+  onChange: (value: number) => void;
+  onEditStateChange: (inputId: string, blocked: boolean) => void;
+}) {
   const testId = `architecture-inspector-${label.toLowerCase().replaceAll(" ", "-")}`;
-  return <label><span>{label}</span><div><input data-testid={testId} type="number" inputMode="decimal" value={value} step="1" onChange={(event) => onChange(Number(event.target.value))} /><small>mm</small></div></label>;
+  const errorId = `${testId}-error`;
+  const [draftValue, setDraftValue] = useState(String(value));
+  const [error, setError] = useState<string | null>(null);
+  const [lastExternalValue, setLastExternalValue] = useState(value);
+
+  if (lastExternalValue !== value) {
+    setLastExternalValue(value);
+    setDraftValue(String(value));
+    setError(null);
+  }
+
+  useEffect(() => () => onEditStateChange(testId, false), [onEditStateChange, testId]);
+
+  const commitValue = () => {
+    const normalized = draftValue.trim();
+    const parsed = Number(normalized);
+    if (!normalized || !Number.isFinite(parsed) || (min != null && parsed < min)) {
+      const nextError = min === 1
+        ? "0보다 큰 유한한 mm 값을 입력하세요."
+        : min === 0
+          ? "0 이상의 유한한 mm 값을 입력하세요."
+          : "유한한 숫자 값을 입력하세요.";
+      setError(nextError);
+      onEditStateChange(testId, true);
+      return;
+    }
+
+    setError(null);
+    setDraftValue(String(parsed));
+    onEditStateChange(testId, false);
+    if (parsed !== value) onChange(parsed);
+  };
+
+  return (
+    <label className={error ? "invalid" : undefined}>
+      <span>{label}</span>
+      <div>
+        <input
+          data-testid={testId}
+          type="number"
+          inputMode="decimal"
+          value={draftValue}
+          min={min}
+          step="1"
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? errorId : undefined}
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            setDraftValue(nextValue);
+            setError(null);
+            onEditStateChange(testId, nextValue !== String(value));
+          }}
+          onBlur={commitValue}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+            if (event.key === "Escape") {
+              event.preventDefault();
+              setDraftValue(String(value));
+              setError(null);
+              onEditStateChange(testId, false);
+            }
+          }}
+        />
+        <small>mm</small>
+      </div>
+      {error ? <em id={errorId}>{error}</em> : null}
+    </label>
+  );
 }
