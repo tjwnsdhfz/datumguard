@@ -265,6 +265,7 @@ export default function OpenBimWorkspace() {
   const controllerRef = useRef<AbortController | null>(null);
 
   const totalBytes = useMemo(() => Object.values(files).reduce((sum, file) => sum + (file?.size || 0), 0), [files]);
+  const readyFileCount = Object.values(files).filter(Boolean).length;
   const readyToRun = Object.values(files).every(Boolean) && Object.values(fileErrors).every((error) => !error) && totalBytes <= MAX_TOTAL_BYTES && consented && !loading;
   const rules = Array.isArray(result?.rule_results) ? result.rule_results : [];
   const issues = Array.isArray(result?.issues) ? result.issues : [];
@@ -389,11 +390,38 @@ export default function OpenBimWorkspace() {
           <p className="ob-kicker">OPENBIM / IFC4 / IDS 1.0 / DETERMINISTIC EVIDENCE</p>
           <h1 id="openbim-title">모델을 보는 대신,<br /><em>변경을 증명합니다.</em></h1>
           <p className="ob-lede">기준 IFC와 후보 IFC를 독립적으로 다시 읽어 요구사항, 모델 무결성, 보호된 변경을 검사합니다. 결과는 해시로 연결된 JSON·HTML과, 선택 시 BCF 증거로 남습니다.</p>
+          <div className="ob-hero-actions" aria-label="OpenBIM 시연 바로가기">
+            <a className="ob-hero-primary" href="#openbim-demo">90초 시연 보기</a>
+            <a className="ob-hero-secondary" href="#openbim-run-heading">직접 검증 실행</a>
+            <small>대표 합성 IFC 1건 · 입력부터 추적 증거까지</small>
+          </div>
         </div>
         <div className="ob-hero-proof" aria-label="검증 범위 요약">
           <div><span>01</span><strong>IDS</strong><small>정보 요구사항</small></div>
           <div><span>02</span><strong>IFC</strong><small>구조·식별자 무결성</small></div>
           <div><span>03</span><strong>REV</strong><small>보호된 변경 추적</small></div>
+        </div>
+      </section>
+
+      <section id="openbim-demo" className="ob-demo" aria-labelledby="openbim-demo-heading">
+        <div className="ob-demo-heading">
+          <div><span>COMPETITION DEMO / 90 SEC</span><h2 id="openbim-demo-heading">세 단계로 검증의 차이를<br />보여줍니다.</h2></div>
+          <p><strong>PUBLIC PREVIEW</strong> 공개 주소에서는 시연 구조와 대표 결과를 확인하고, 실제 IFC 검증은 발표 장비의 로컬 환경에서 재현합니다.</p>
+        </div>
+        <ol className="ob-demo-steps">
+          <li><span>01 / INPUT</span><strong>세 원본을 고정합니다.</strong><p>기준 IFC, 후보 IFC, IDS 요구사항을 하나의 입력 세트로 묶습니다.</p></li>
+          <li><span>02 / VERIFY</span><strong>14개 규칙을 다시 계산합니다.</strong><p>IDS·IFC 무결성·리비전·여유공간을 결정론적으로 검사합니다.</p></li>
+          <li><span>03 / TRACE</span><strong>수정 위치와 증거를 남깁니다.</strong><p>이슈의 entity·field·입력 해시와 JSON·HTML·Manifest를 연결합니다.</p></li>
+        </ol>
+        <div className="ob-demo-result" aria-label="대표 합성 오류 모델 실행 결과">
+          <div><span>REPRESENTATIVE FAULTY IFC</span><strong>검증 실패</strong><small>의도적으로 오류를 주입한 합성 모델 1건</small></div>
+          <dl>
+            <div><dt>RULES</dt><dd>14</dd></div>
+            <div><dt>PASSED</dt><dd>4</dd></div>
+            <div><dt>FAILED</dt><dd>10</dd></div>
+            <div><dt>ISSUES</dt><dd>12</dd></div>
+          </dl>
+          <a href="#openbim-run-heading">입력 화면으로 이동</a>
         </div>
       </section>
 
@@ -436,6 +464,10 @@ export default function OpenBimWorkspace() {
               <input type="checkbox" checked={consented} disabled={loading} onChange={(event) => setConsented(event.target.checked)} />
               <span>이 결과가 <strong>research validation only</strong>이며, 자격 있는 검토자의 판단을 대체하지 않음을 이해했습니다.</span>
             </label>
+            <div className="ob-readiness" data-testid="openbim-readiness" aria-live="polite">
+              <span className={readyFileCount === 3 ? "ready" : ""}><strong>{readyFileCount}/3</strong>FILES READY</span>
+              <span className={consented ? "ready" : ""}><strong>{consented ? "OK" : "—"}</strong>BOUNDARY</span>
+            </div>
             <div className="ob-run-actions">
               <button className="ob-primary-button" data-testid="openbim-run" type="submit" disabled={!readyToRun} aria-describedby="openbim-run-help">
                 {loading ? <><span className="ob-spinner" aria-hidden="true" />증거 생성 중</> : <>OpenBIM 증거 실행<Icon name="arrow" /></>}
@@ -466,6 +498,15 @@ export default function OpenBimWorkspace() {
             <div><span>NEEDS REVIEW</span><strong>{counts.needsReview}</strong><small>판정 불가·모호함</small></div>
             <div><span>ISSUES</span><strong>{issues.length}</strong><small>추적 가능한 항목</small></div>
             <div><span>RUNTIME</span><strong>{totalTiming ? `${Math.round(totalTiming)} ms` : "—"}</strong><small>{Object.keys(result.timings_ms || {}).length}개 단계</small></div>
+          </div>
+
+          <div className={`ob-result-brief ob-result-brief-${status.tone}`} data-testid="openbim-next-action">
+            <span>NEXT REVIEW</span>
+            <div>
+              <strong>{status.tone === "fail" ? `${counts.failed}개 실패 규칙부터 수정 위치를 확인하세요.` : status.tone === "warn" ? "판정 불가 항목을 검토자에게 배정하세요." : "같은 입력 세트로 결과를 보존할 수 있습니다."}</strong>
+              <p>{status.tone === "fail" ? "규칙별 판정에서 원인을 찾고, 검토 항목의 entity·field를 모델에서 수정한 뒤 같은 입력 세트로 재실행합니다." : "입력 해시와 산출물을 함께 저장하면 다음 검토에서도 동일한 증거 체인을 확인할 수 있습니다."}</p>
+            </div>
+            <a href="#openbim-issues-heading">검토 항목 보기</a>
           </div>
 
           <div className="ob-result-grid">

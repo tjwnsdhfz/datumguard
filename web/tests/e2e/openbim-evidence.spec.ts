@@ -33,7 +33,12 @@ test.describe("OpenBIM Evidence Guard", () => {
     await page.goto("/openbim");
 
     await expect(page.getByRole("heading", { level: 1, name: /모델을 보는 대신/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: "90초 시연 보기" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: /세 단계로 검증의 차이/ })).toBeVisible();
+    await expect(page.getByText(/실제 IFC 검증은 발표 장비의 로컬 환경/)).toBeVisible();
+    await expect(page.getByTestId("openbim-readiness")).toContainText("0/3");
     await expect(page.getByRole("navigation", { name: "Engineering workspaces" }).getByRole("link", { name: "OpenBIM" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("navigation", { name: "Engineering workspaces" }).getByRole("link", { name: "Frame" })).toHaveAttribute("href", "/frame");
     await expect(page.getByText("Research validation only", { exact: false }).first()).toBeVisible();
     await expect(page.getByText(/AI 추론이나 자동 수정 없이/)).toBeVisible();
     await expect(page.getByText(/3D viewer 없이/)).toBeVisible();
@@ -104,6 +109,7 @@ test.describe("OpenBIM Evidence Guard", () => {
     await expect(page.getByTestId("openbim-workspace")).toHaveAttribute("data-status", payload.status);
     await expect(page.getByTestId("openbim-results")).toBeVisible();
     await expect(page.getByTestId("openbim-status")).toContainText("검증 실패");
+    await expect(page.getByTestId("openbim-next-action")).toContainText("실패 규칙부터 수정 위치를 확인");
     await expect(page.getByText("IDS-01", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("REV-03", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("GEO-01", { exact: true }).first()).toBeVisible();
