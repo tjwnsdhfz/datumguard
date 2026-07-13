@@ -35,9 +35,15 @@ HEAVY_PATHS = frozenset(
         "/api/v1/designs/run",
         "/api/v1/architecture/designs/run",
         "/api/v1/piping/designs/run",
+        "/api/v1/frame/designs/run",
+        "/api/v1/frame/rhino/adapt",
+        "/api/v1/frame/rhino/roundtrip",
+        "/api/v1/frame/cad/run",
+        "/api/v1/frame/surrogate/predict",
         "/api/v1/solid/designs/run",
         "/api/v1/artifacts/audit",
         "/api/v1/artifacts/compare",
+        "/api/v1/openbim/evidence/run",
         "/api/v1/drawings/generate",
         "/api/v1/drawings/verify",
         "/api/v1/exports",
@@ -57,6 +63,11 @@ _KNOWN_PATHS = HEAVY_PATHS | {
     "/api/v1/contracts/validate",
     "/api/v1/architecture/contracts/validate",
     "/api/v1/piping/contracts/validate",
+    "/api/v1/frame/contracts/validate",
+    "/api/v1/schema/frame-contract",
+    "/api/v1/schema/rhino-frame-exchange",
+    "/api/v1/frame/benchmarks/opensees",
+    "/api/v1/frame/benchmarks/gnn",
     "/api/v1/architecture/schema",
     "/api/v1/piping/schema",
     "/api/v1/repairs/propose",
@@ -470,6 +481,8 @@ class OperationalControls:
         )
         self.solid_enabled = env_flag("DATUMGUARD_ENABLE_SOLID", True)
         self.artifact_lab_enabled = env_flag("DATUMGUARD_ENABLE_ARTIFACT_LAB", True)
+        self.openbim_enabled = env_flag("DATUMGUARD_ENABLE_OPENBIM", True)
+        self.bcf_enabled = env_flag("DATUMGUARD_ENABLE_BCF", False)
         if reset_metrics:
             self.metrics = BoundedMetrics()
 
@@ -520,6 +533,8 @@ class OperationalControls:
             return "solid"
         if path in {"/api/v1/artifacts/audit", "/api/v1/artifacts/compare"}:
             return None if self.artifact_lab_enabled else "artifact_lab"
+        if path == "/api/v1/openbim/evidence/run" and not self.openbim_enabled:
+            return "openbim"
         return None
 
     def metrics_snapshot(self) -> dict[str, Any]:

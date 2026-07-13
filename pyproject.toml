@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "datumguard"
-version = "0.2.1"
+version = "0.4.0"
 description = "Contract-first CAD generation and independent DXF, STEP, and IFC artifact assurance"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -15,6 +15,7 @@ dependencies = [
   "fastapi>=0.115.0",
   "ifcopenshell==0.8.5",
   "mcp>=1.9.0",
+  "numpy>=2.2.0,<3",
   "ortools>=9.11.0",
   "pydantic>=2.9.0",
   "python-multipart>=0.0.20",
@@ -24,8 +25,23 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+ml = [
+  "torch>=2.7.0",
+  "torch-geometric>=2.6.1",
+]
+opensees = [
+  "openseespy==3.8.0.0",
+]
+openbim = [
+  "ifctester==0.8.5",
+]
+bcf = [
+  "bcf-client==0.8.5",
+]
 dev = [
+  "bcf-client==0.8.5",
   "httpx>=0.28.0",
+  "ifctester==0.8.5",
   "mypy>=1.14.0",
   "pip-audit==2.9.0",
   "pytest>=8.3.0",

@@ -1,0 +1,114 @@
+{
+  "case_count": 30,
+  "completed_candidate_runs": 120,
+  "dataset_manifest_hash": "sha256:317a68807ddefd0ca3854261fed28b4e5fd166056a68e0925f255435f8e7c7c8",
+  "engine_errors": 0,
+  "metrics": {
+    "ablations": {
+      "A": {
+        "admissible_secondary": 0,
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 150
+      },
+      "B": {
+        "admissible_secondary": 0,
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 210
+      },
+      "C": {
+        "admissible_secondary": 0,
+        "f1": 0.985185185,
+        "fn": 4,
+        "fp": 4,
+        "precision": 0.985185185,
+        "recall": 0.985185185,
+        "tp": 266
+      },
+      "D": {
+        "admissible_secondary": 0,
+        "f1": 0.987878788,
+        "fn": 4,
+        "fp": 4,
+        "precision": 0.987878788,
+        "recall": 0.987878788,
+        "tp": 326
+      }
+    },
+    "controls": {
+      "authorized_false_positives": 0,
+      "candidate_runs": 120,
+      "clean_false_positives": 0,
+      "corrected_issue_closure_rate": 1.0,
+      "corrected_new_issues": 0,
+      "deterministic_candidate_runs": 120,
+      "engine_errors": 0,
+      "low_level_diagnostic_alerts": 30
+    },
+    "families": {
+      "Geometry": {
+        "f1": 0.933333333,
+        "fn": 4,
+        "fp": 4,
+        "precision": 0.933333333,
+        "recall": 0.933333333,
+        "tp": 56
+      },
+      "IFC Identity": {
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 30
+      },
+      "Information": {
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 150
+      },
+      "Integrity": {
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 30
+      },
+      "Revision": {
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 60
+      }
+    },
+    "family_macro_f1": 0.986666667,
+    "runtime": {
+      "engine_iqr_ms": 189.417,
+      "engine_median_ms": 1272.713,
+      "engine_p95_ms": 1876.2216,
+      "measured_run_count": 1200,
+      "wall_iqr_ms": 314.584075,
+      "wall_median_ms": 1864.64575,
+      "wall_p95_ms": 2811.615785
+    }
+  },
+  "protocol_hash": "sha256:d18cf856bde7879d6887091fb4851502d3979ab998ef6f96d6eb22c86c275b36",
+  "raw_results_hash": "sha256:58dcf7dc75246c9e884f4ad31be8709ff480e58c37a811d569f0fa779f7df1e9",
+  "research_validation_only": true,
+  "schema_version": "openbim-experiment-summary-v1",
+  "split": "evaluation",
+  "status": "completed"
+}

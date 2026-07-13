@@ -31,6 +31,28 @@ type Mesh = {
   source_triangle_count: number;
 };
 
+type DxfCompleteness = {
+  support_matrix_version: string;
+  comparison_complete: boolean;
+  render_eligible: boolean;
+  analysis_truncated: boolean;
+  modelspace_entity_count: number;
+  block_definition_count: number;
+  nested_block_entity_count: number;
+  estimated_expanded_entity_count: number;
+  insert_count: number;
+  max_nesting_depth: number;
+  cyclic_block_references: boolean;
+  xref_names: string[];
+  budget_exceeded: string[];
+  entity_support: Array<{
+    entity_type: string;
+    support_level: "MEASURED" | "RENDER_ONLY" | "UNSUPPORTED";
+    entity_count: number;
+    reason: string;
+  }>;
+};
+
 type AuditResult = {
   status: "audited" | "needs_confirmation" | "failed_verification";
   artifact_hash: string | null;
@@ -44,6 +66,7 @@ type AuditResult = {
   issues: Issue[];
   preview_svg: string | null;
   preview_mesh: Mesh | null;
+  dxf_completeness: DxfCompleteness | null;
   error?: { code: string; message: string } | null;
 };
 
@@ -53,6 +76,8 @@ type ComparisonResult = {
   baseline_hash: string;
   candidate_hash: string;
   same_artifact: boolean;
+  support_matrix_version: string | null;
+  comparison_complete: boolean | null;
   comparison: Record<string, unknown>;
   baseline: AuditResult;
   candidate: AuditResult;
@@ -160,6 +185,34 @@ function AuditEvidence({ result }: { result: AuditResult }) {
         ))}
       </div>
 
+      {result.dxf_completeness && (
+        <section className="lab-completeness" data-testid="dxf-completeness-gate">
+          <div className="lab-panel-label">
+            <span>DXF COMPLETENESS GATE · {result.dxf_completeness.support_matrix_version}</span>
+            <b>{result.dxf_completeness.comparison_complete ? "COMPLETE" : "LIMITED"}</b>
+          </div>
+          <div className="lab-completeness-stats">
+            <article><span>Equality claim</span><strong>{result.dxf_completeness.comparison_complete ? "ALLOWED" : "BLOCKED"}</strong></article>
+            <article><span>Block depth</span><strong>{result.dxf_completeness.max_nesting_depth}</strong></article>
+            <article><span>Expanded estimate</span><strong>{result.dxf_completeness.estimated_expanded_entity_count.toLocaleString()}</strong></article>
+            <article><span>Render gate</span><strong>{result.dxf_completeness.render_eligible ? "OPEN" : "BLOCKED"}</strong></article>
+          </div>
+          <div className="lab-support-matrix" role="table" aria-label="DXF entity support matrix">
+            {result.dxf_completeness.entity_support.map((item) => (
+              <div role="row" key={`${item.entity_type}-${item.support_level}`}>
+                <code role="cell">{item.entity_type}</code>
+                <span role="cell" className={`support-${item.support_level.toLowerCase().replace("_", "-")}`}>{item.support_level}</span>
+                <strong role="cell">{item.entity_count.toLocaleString()}</strong>
+                <small role="cell">{item.reason}</small>
+              </div>
+            ))}
+          </div>
+          {!result.dxf_completeness.comparison_complete && (
+            <p>원본 SHA-256과 측정 가능한 entity evidence는 유지하지만, 전체 geometry가 동일하다고 표시하지 않습니다.</p>
+          )}
+        </section>
+      )}
+
       <div className="lab-preview-grid">
         <div className="lab-preview-panel">
           <div className="lab-panel-label"><span>GEOMETRY PREVIEW</span><b>SECONDARY VISUAL</b></div>
@@ -217,12 +270,18 @@ function ComparisonEvidence({ result }: { result: ComparisonResult }) {
         <article><span>BASELINE</span><code>{result.baseline_hash}</code></article>
         <article><span>CANDIDATE</span><code>{result.candidate_hash}</code></article>
       </div>
+      {result.support_matrix_version && (
+        <div className="lab-comparison-gate" data-testid="dxf-comparison-completeness">
+          <span>DXF SUPPORT MATRIX {result.support_matrix_version}</span>
+          <strong>{result.comparison_complete ? "COMPLETE GEOMETRY COMPARISON" : "PARTIAL · EQUALITY NOT CLAIMED"}</strong>
+        </div>
+      )}
       {geometry && (
         <div className="lab-revision-cards">
           <article><span>Added geometry</span><strong>{String(geometry.added_entity_count ?? 0)}</strong></article>
           <article><span>Removed geometry</span><strong>{String(geometry.removed_entity_count ?? 0)}</strong></article>
           <article><span>Changed handles</span><strong>{String(geometry.changed_handle_count ?? 0)}</strong></article>
-          <article><span>Same multiset</span><strong>{geometry.same_geometry_multiset ? "YES" : "NO"}</strong></article>
+          <article><span>Same multiset</span><strong>{geometry.same_geometry_multiset === null ? "NOT CLAIMED" : geometry.same_geometry_multiset ? "YES" : "NO"}</strong></article>
         </div>
       )}
       {ifcRevision && (

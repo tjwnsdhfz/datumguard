@@ -1,4 +1,4 @@
-const DEFAULT_API_URL = "http://localhost:8000";
+const DEFAULT_API_URL = "http://127.0.0.1:8000";
 
 export const API_URL = (process.env.NEXT_PUBLIC_DATUMGUARD_API_URL || DEFAULT_API_URL).replace(
   /\/$/,
@@ -8,6 +8,7 @@ export const API_URL = (process.env.NEXT_PUBLIC_DATUMGUARD_API_URL || DEFAULT_AP
 export type BackendDomainId =
   | "architecture"
   | "plant_piping"
+  | "structural_frame"
   | "mechanical_ship_plate"
   | "solid_part"
   | "artifact_lab";

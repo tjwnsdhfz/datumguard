@@ -63,6 +63,12 @@ export default defineConfig({
         // verifies production rate-limit behavior independently.
         DATUMGUARD_ANON_HEAVY_RATE_LIMIT_PER_MINUTE:
           process.env.DATUMGUARD_ANON_HEAVY_RATE_LIMIT_PER_MINUTE ?? "10000",
+        DATUMGUARD_ENABLE_OPENBIM:
+          process.env.DATUMGUARD_ENABLE_OPENBIM ?? "true",
+        DATUMGUARD_ENABLE_BCF:
+          process.env.DATUMGUARD_ENABLE_BCF ?? "true",
+        DATUMGUARD_OPENBIM_WORKER_TIMEOUT_SECONDS:
+          process.env.DATUMGUARD_OPENBIM_WORKER_TIMEOUT_SECONDS ?? "90",
       },
     },
     {

@@ -1,0 +1,178 @@
+schema_version: openbim-research-protocol-v1
+protocol_id: virtual-fab-v1
+version: 1.0.0
+status: frozen-for-implementation
+frozen_on: 2026-07-12
+git_tag: protocol-v1
+research_validation_only: true
+
+research_question: >-
+  Can an independently reopened IFC pipeline combining IDS information requirements,
+  IFC integrity, a limited project clearance screen, and a protected revision contract
+  detect controlled synthetic Virtual FAB faults accurately and reproducibly?
+
+assurance_boundary:
+  includes:
+    - Synthetic IFC4 files with at most 48 inspected assets
+    - IDS 1.0 information requirements
+    - Project-specific identity, containment, revision, and orthogonal AABB rules
+  excludes:
+    - Real semiconductor FAB or company data
+    - Structural, safety, code, pressure, fabrication, or construction approval
+    - Exact solid clash, curved pipes, and non-orthogonal tool rotation
+    - Claims of industrial population generalization or productivity improvement
+
+software:
+  python: ">=3.12"
+  ifcopenshell: "0.8.5"
+  ifctester: "0.8.5"
+  bcf_client: "0.8.5 (conditional packaging only)"
+  datumguard_commit: captured-at-experiment-time
+
+dataset:
+  id: virtual-fab-v1
+  ifc_schema: IFC4
+  project_length_unit: METRE
+  generator: tools/generate_virtual_fab_fixtures.py
+  generator_version: 1.0.0
+  fixed_header_timestamp: "2026-07-12T00:00:00"
+  guid_strategy: UUIDv5 compressed to IFC GUID with a fixed namespace
+  layouts:
+    L1:
+      name: Linear Tool Bay
+      inspected_assets: 32
+    L2:
+      name: Branched Utility Rack
+      inspected_assets: 40
+    L3:
+      name: Dense Crossover
+      inspected_assets: 48
+  representative:
+    L1: [20260712]
+  pilot_seeds:
+    L1: [1101, 1102]
+    L2: [1201, 1202]
+    L3: [1301, 1302]
+  evaluation_seeds:
+    L1: [2101, 2102, 2103, 2104, 2105, 2106, 2107, 2108, 2109, 2110]
+    L2: [2201, 2202, 2203, 2204, 2205, 2206, 2207, 2208, 2209, 2210]
+    L3: [2301, 2302, 2303, 2304, 2305, 2306, 2307, 2308, 2309, 2310]
+  minimum_evaluation_cases_per_layout: 4
+  target_evaluation_cases_per_layout: 10
+  variants:
+    - v0_clean
+    - v1_authorized
+    - v1_faulty
+    - v2_corrected
+
+fault_injection:
+  overlap_policy: one mutation target per fault; no target reused within a case
+  truth_source: mutation manifest, never detector output
+  serialize_and_reopen: required
+  events_per_faulty_case: 11
+  faults:
+    I01: {primary_rule: IDS-01, family: Information, mutation: delete AssetTag}
+    I02: {primary_rule: IDS-01, family: Information, mutation: invalidate AssetTag pattern}
+    I03: {primary_rule: IDS-02, family: Information, mutation: use disallowed UtilityType}
+    I04: {primary_rule: IDS-03, family: Information, mutation: delete SystemCode}
+    I05: {primary_rule: IDS-04, family: Information, mutation: remove classification relation}
+    I06: {primary_rule: IFC-03, family: Integrity, mutation: remove spatial containment}
+    G01: {primary_rule: GEO-01, family: Geometry, mutation: move pipe into service envelope}
+    G02: {primary_rule: GEO-01, family: Geometry, mutation: move fitting or valve into envelope}
+    R01: {primary_rule: IFC-02, family: IFC Identity, mutation: duplicate GlobalId}
+    R02: {primary_rule: REV-02, family: Revision, mutation: unapproved GlobalId churn}
+    R03: {primary_rule: REV-03, family: Revision, mutation: unapproved valid locked value change}
+  admissible_cross_scope_alerts:
+    I01: [REV-03]
+    I02: [REV-03]
+    I03: [REV-03]
+    I04: [REV-03]
+    I06: [REV-03]
+    R01: [REV-02]
+  note: >-
+    Admissible secondary alerts are reported separately. They are not required true positives,
+    but a semantically correct cross-scope alert is not counted as a false positive.
+
+revision_contract:
+  identity_key: DG_Identity.AssetKey
+  locked_fields:
+    - DG_Identity.AssetTag
+    - DG_VFabUtility.UtilityType
+    - DG_VFabUtility.SystemCode
+    - container
+  authorized_control:
+    asset_keys: [L1-PS-001, L2-PS-001, L3-PS-001]
+    field: DG_VFabUtility.SystemCode
+    before: SYS-PCW-A
+    after: SYS-PCW-B
+
+geometry_contract:
+  service_depth_m: 0.6
+  epsilon_m: 1.0e-9
+  service_sides: [+X, -X, +Y, -Y]
+  boundary_contact: PASS
+  positive_overlap: FAIL
+  missing_geometry: NOT_EVALUABLE
+  supported_rotations_degrees: [0, 90, 180, 270]
+
+ablation:
+  A: [IDS_REQUIREMENT]
+  B: [IDS_REQUIREMENT, IFC_SCHEMA]
+  C: [IDS_REQUIREMENT, IFC_SCHEMA, PROJECT_GEOMETRY_RULE]
+  D: [IDS_REQUIREMENT, IFC_SCHEMA, PROJECT_GEOMETRY_RULE, PROJECT_REVISION_RULE]
+
+matching:
+  general: [case_id, rule_id, asset_key, field]
+  clearance: [case_id, rule_id, sorted_entity_pair]
+  revision: [case_id, baseline_variant, candidate_variant, rule_id, asset_key, field]
+  duplicate_global_id: [case_id, rule_id, global_id, sorted_step_entity_ids]
+  ids_deduplication: [rule_id, asset_key, field]
+
+metrics:
+  primary:
+    - rule_level_precision
+    - rule_level_recall
+    - rule_level_f1
+    - family_macro_f1
+    - overall_micro_f1
+  controls:
+    - clean_false_positive_count
+    - authorized_false_positive_count
+    - corrected_issue_closure_rate
+    - corrected_new_issue_count
+  reproducibility:
+    repeated_runs: 10
+    canonical_json_hash_target: 10/10 identical
+  performance:
+    warmup_runs_excluded: 1
+    measured_runs_per_model: 10
+    summary: [median_ms, iqr_ms, p95_ms]
+  bootstrap:
+    iterations: 10000
+    confidence_level: 0.95
+    method: paired stratified bootstrap preserving layout ratio
+    seed: 20260820
+
+pre_registered_targets:
+  information_macro_f1: ">=0.95"
+  geometry_f1: ">=0.95 (conditional gate)"
+  revision_macro_f1: ">=0.95"
+  clean_false_positives: 0
+  authorized_false_positives: 0
+  p95_seconds_for_at_most_50_assets: "<5"
+  target_disclaimer: targets are not achieved results
+
+exclusion_policy:
+  - Pilot cases never enter final aggregate metrics.
+  - No raw result or generated table is manually edited.
+  - Parse failures remain in raw results and are not silently dropped.
+  - Any detector or truth change after this freeze requires a protocol version increment.
+  - If fewer than 12 held-out cases complete, no primary performance conclusion is reported.
+
+reproduction:
+  generate_command: >-
+    uv run python tools/generate_virtual_fab_fixtures.py --split all
+    --evaluation-per-layout 10 --verify-determinism
+  experiment_command: >-
+    uv run python tools/run_openbim_experiment.py --regenerate-dataset --split evaluation
+    --repeats 10 --bootstrap-iterations 10000

@@ -1,0 +1,140 @@
+{
+  "design_kind": "structural_frame_exchange",
+  "document": {
+    "datum": {
+      "origin": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "x_axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "y_axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "z_axis": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "document_id": "268435457",
+    "units": "mm"
+  },
+  "limits": {
+    "allowable_stress_mpa": 165.0,
+    "max_displacement": 25.4
+  },
+  "loads": [
+    {
+      "fx_n": 1500.0,
+      "fy_n": -12000.0,
+      "id": "roof-load",
+      "mz_n_document_unit": 0.0,
+      "point": [
+        6096.0,
+        3048.0,
+        0.0
+      ],
+      "source_object_id": "cf7281d9-7cdc-4f52-b504-f67982eb8dc7"
+    }
+  ],
+  "members": [
+    {
+      "end": [
+        6096.0,
+        3048.0,
+        0.0
+      ],
+      "id": "beam-top",
+      "locked": true,
+      "section_id": "W-demo-mm",
+      "source_object_id": "93df44d7-c546-4ce1-a8e8-ec38d7084a94",
+      "start": [
+        0.0,
+        3048.0,
+        0.0
+      ]
+    },
+    {
+      "end": [
+        0.0,
+        3048.0,
+        0.0
+      ],
+      "id": "column-left",
+      "locked": true,
+      "section_id": "W-demo-mm",
+      "source_object_id": "e4583b0b-761e-44c2-8731-e1e0ec478c02",
+      "start": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "end": [
+        6096.0,
+        0.0,
+        0.0
+      ],
+      "id": "column-right",
+      "locked": true,
+      "section_id": "W-demo-mm",
+      "source_object_id": "441ba744-fd41-40fe-ba8f-0637f311ac5f",
+      "start": [
+        6096.0,
+        3048.0,
+        0.0
+      ]
+    }
+  ],
+  "metadata": {
+    "notes": "Live Rhino 8 objects created through Cordyceps; screening evidence only.",
+    "project_name": "FrameGuard Cordyceps Round-Trip",
+    "revision": "A"
+  },
+  "node_merge_tolerance": 0.001,
+  "schema_version": "1.0.0",
+  "sections": [
+    {
+      "allowable_stress_mpa": 165.0,
+      "area": 6451.6,
+      "depth": 304.8,
+      "elastic_modulus_mpa": 200000.0,
+      "id": "W-demo-mm",
+      "inertia": 124869427.68
+    }
+  ],
+  "supports": [
+    {
+      "id": "support-left",
+      "point": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rz": true,
+      "source_object_id": "b9ff5b61-11a1-42c9-89f1-c9a043134482",
+      "ux": true,
+      "uy": true
+    },
+    {
+      "id": "support-right",
+      "point": [
+        6096.0,
+        0.0,
+        0.0
+      ],
+      "rz": true,
+      "source_object_id": "05164334-078e-431b-a0f3-bee321dbe653",
+      "ux": true,
+      "uy": true
+    }
+  ]
+}

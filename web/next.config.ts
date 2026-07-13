@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 function apiOrigin(): string {
   try {
     return new URL(
-      process.env.NEXT_PUBLIC_DATUMGUARD_API_URL || "http://localhost:8000",
+      process.env.NEXT_PUBLIC_DATUMGUARD_API_URL || "http://127.0.0.1:8000",
     ).origin;
   } catch {
     return "http://localhost:8000";

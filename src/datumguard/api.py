@@ -3,10 +3,11 @@ from __future__ import annotations
 import base64
 import os
 import re
+from collections.abc import Callable
 from typing import Annotated, Any
 
 import uvicorn
-from fastapi import FastAPI, File, Query, Request, UploadFile
+from fastapi import FastAPI, File, Form, Query, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -18,7 +19,25 @@ from . import __version__
 from .architecture_models import ArchitecturalPlanContract
 from .architecture_service import run_architecture_design, validate_architecture_contract
 from .artifact_service import MAX_ARTIFACT_BYTES, audit_artifact, compare_artifacts
+from .frame_cad_service import run_frame_cad_assurance
+from .frame_models import StructuralFrameContract
+from .frame_research_evidence import (
+    FrameResearchEvidenceError,
+    load_gnn_benchmark,
+    load_opensees_parity_report,
+)
+from .frame_rhino_adapter import RhinoFrameExchange, adapt_rhino_frame_exchange
+from .frame_roundtrip_service import FrameRhinoRoundTripResponse, run_frame_rhino_roundtrip
+from .frame_service import run_frame_design, validate_frame_contract
+from .frame_surrogate import predict_frame_surrogate
 from .models import DesignContract, RepairProposal, StrictModel, Violation
+from .openbim_service import (
+    MAX_IDS_BYTES,
+    MAX_IFC_BYTES,
+    MAX_OPENBIM_TOTAL_BYTES,
+    OpenBimServiceFailure,
+    run_openbim_evidence,
+)
 from .operations import (
     DEFAULT_MAX_BODY_BYTES,
     OPERATIONS,
@@ -98,9 +117,11 @@ app = FastAPI(
     title="DatumGuard API",
     version=__version__,
     description=(
-        "Contract-first architecture, plant piping, plate, and 3D solid generation with "
-        "independent serialized-DXF/STEP remeasurement and DXF/STEP/IFC artifact audit. "
-        "This MVP does not certify structural safety, codes, or industrial standards."
+        "Contract-first architecture, plant piping, plate, 3D solid generation, and "
+        "deterministic structural-frame screening with independent serialized-DXF/STEP "
+        "remeasurement and DXF/STEP/IFC artifact audit. Frame results support engineering "
+        "triage only; this MVP does not certify structural safety, codes, or industrial "
+        "standards."
     ),
     openapi_url="/api/v1/openapi.json",
     docs_url="/docs",
@@ -270,16 +291,30 @@ def engineering_domains() -> list[dict[str, str]]:
             "run_endpoint": "/api/v1/solid/designs/run",
         },
         {
+            "id": "structural_frame",
+            "design_kind": "structural_frame",
+            "web_route": "/frame",
+            "run_endpoint": "/api/v1/frame/designs/run",
+        },
+        {
             "id": "artifact_lab",
             "design_kind": "artifact_audit",
             "web_route": "/intake",
             "run_endpoint": "/api/v1/artifacts/audit",
+        },
+        {
+            "id": "openbim_evidence",
+            "design_kind": "openbim_evidence",
+            "web_route": "/openbim",
+            "run_endpoint": "/api/v1/openbim/evidence/run",
         },
     ]
     if not OPERATIONS.solid_enabled:
         domains = [item for item in domains if item["id"] != "solid_part"]
     if not OPERATIONS.artifact_lab_enabled:
         domains = [item for item in domains if item["id"] != "artifact_lab"]
+    if not OPERATIONS.openbim_enabled:
+        domains = [item for item in domains if item["id"] != "openbim_evidence"]
     return domains
 
 
@@ -313,6 +348,18 @@ def solid_part_contract_schema() -> dict[str, Any]:
     return SolidPartContract.model_json_schema()
 
 
+@app.get("/api/v1/schema/frame-contract")
+def frame_contract_schema() -> dict[str, Any]:
+    """Return the public contract for deterministic structural-frame screening."""
+    return StructuralFrameContract.model_json_schema()
+
+
+@app.get("/api/v1/schema/rhino-frame-exchange")
+def rhino_frame_exchange_schema() -> dict[str, Any]:
+    """Return the neutral Rhino/Grasshopper exchange contract."""
+    return RhinoFrameExchange.model_json_schema()
+
+
 @app.post("/api/v1/contracts/draft")
 def contract_draft(request: DraftRequest) -> dict[str, Any]:
     return draft_contract(request.contract, request.intent_text).model_dump(mode="json")
@@ -331,6 +378,26 @@ def architecture_contract_validate(contract: ArchitecturalPlanContract) -> dict[
 @app.post("/api/v1/piping/contracts/validate")
 def piping_contract_validate(contract: PipingPlanContract) -> dict[str, Any]:
     return validate_piping_contract(contract).model_dump(mode="json")
+
+
+@app.post("/api/v1/frame/contracts/validate")
+def frame_contract_validate(contract: StructuralFrameContract) -> dict[str, Any]:
+    return validate_frame_contract(contract).model_dump(mode="json")
+
+
+@app.post("/api/v1/frame/rhino/adapt")
+def frame_rhino_adapt(exchange: RhinoFrameExchange) -> dict[str, Any]:
+    """Normalize explicit Rhino units and datum into a structural frame contract."""
+    return adapt_rhino_frame_exchange(exchange).model_dump(mode="json")
+
+
+@app.post(
+    "/api/v1/frame/rhino/roundtrip",
+    response_model=FrameRhinoRoundTripResponse,
+)
+def frame_rhino_roundtrip(exchange: RhinoFrameExchange) -> FrameRhinoRoundTripResponse:
+    """Run a provenance-bound Rhino-to-DXF screening round trip in one request."""
+    return run_frame_rhino_roundtrip(exchange)
 
 
 @app.post("/api/v1/drawings/generate")
@@ -410,6 +477,65 @@ def architecture_design_run(
 @app.post("/api/v1/piping/designs/run")
 def piping_design_run(contract: PipingPlanContract) -> dict[str, Any]:
     return run_piping_design(contract).model_dump(mode="json")
+
+
+@app.post("/api/v1/frame/designs/run")
+def frame_design_run(
+    contract: StructuralFrameContract,
+    auto_repair: bool = Query(default=False),
+) -> dict[str, Any]:
+    """Screen a frame; the response is not a structural-safety certification."""
+    return run_frame_design(contract, auto_repair=auto_repair).model_dump(mode="json")
+
+
+@app.post("/api/v1/frame/cad/run")
+def frame_cad_run(contract: StructuralFrameContract) -> dict[str, Any]:
+    """Write, reopen, and remeasure a screening DXF before allowing download."""
+    return run_frame_cad_assurance(contract).model_dump(mode="json")
+
+
+@app.post("/api/v1/frame/surrogate/predict")
+def frame_surrogate_predict(contract: StructuralFrameContract) -> dict[str, Any]:
+    """Return a non-authoritative GNN estimate with an uncertainty review gate."""
+    return predict_frame_surrogate(contract).model_dump(mode="json")
+
+
+def _packaged_frame_evidence(
+    loader: Callable[[], dict[str, Any]],
+    *,
+    evidence_kind: str,
+) -> dict[str, Any]:
+    try:
+        report = loader()
+        if "status" not in report:
+            report["status"] = "COMPLETED"
+        return report
+    except FrameResearchEvidenceError as exc:
+        return {
+            "status": "UNAVAILABLE",
+            "evidence_kind": evidence_kind,
+            "authoritative": False,
+            "safety_certification": False,
+            "error": {"code": exc.code, "message": exc.message},
+        }
+
+
+@app.get("/api/v1/frame/benchmarks/opensees")
+def frame_opensees_benchmark() -> dict[str, Any]:
+    """Serve immutable parity evidence without loading OpenSees in production."""
+    return _packaged_frame_evidence(
+        load_opensees_parity_report,
+        evidence_kind="frame_opensees_parity_v1",
+    )
+
+
+@app.get("/api/v1/frame/benchmarks/gnn")
+def frame_gnn_benchmark() -> dict[str, Any]:
+    """Serve the topology-holdout GraphSAGE/GAT comparison artifact."""
+    return _packaged_frame_evidence(
+        load_gnn_benchmark,
+        evidence_kind="frame_gnn_benchmark_v1",
+    )
 
 
 @app.post("/api/v1/solid/designs/run", response_model=None)
@@ -508,6 +634,105 @@ async def artifact_compare(
         candidate.filename or "candidate",
         candidate_data,
     )
+    return result.model_dump(mode="json")
+
+
+@app.post("/api/v1/openbim/evidence/run", response_model=None)
+async def openbim_evidence_run(
+    request: Request,
+    baseline: Annotated[UploadFile, File()],
+    candidate: Annotated[UploadFile, File()],
+    requirements: Annotated[UploadFile, File()],
+    profile_id: Annotated[str, Form()],
+    include_html: Annotated[bool, Form()] = True,
+    include_bcf: Annotated[bool, Form()] = False,
+) -> dict[str, Any] | JSONResponse:
+    if not OPERATIONS.openbim_enabled:
+        return _error_response(
+            request,
+            status_code=503,
+            code="DG_CAPABILITY_DISABLED",
+            message="요청한 CAD 기능이 이 배포에서 비활성화되어 있습니다.",
+            details={"capability": "openbim"},
+            retry_after=60,
+        )
+    if include_bcf and not OPERATIONS.bcf_enabled:
+        return _error_response(
+            request,
+            status_code=503,
+            code="DG_CAPABILITY_DISABLED",
+            message="BCF packaging is disabled in this deployment.",
+            details={"capability": "openbim_bcf"},
+            retry_after=60,
+        )
+    filenames = {
+        "baseline": baseline.filename or "",
+        "candidate": candidate.filename or "",
+        "requirements": requirements.filename or "",
+    }
+    invalid_fields = [
+        field
+        for field, filename in filenames.items()
+        if not filename.lower().endswith(".ifc" if field != "requirements" else ".ids")
+    ]
+    if invalid_fields:
+        return _error_response(
+            request,
+            status_code=422,
+            code="DG_OPENBIM_INPUT_INVALID",
+            message="IFC baseline/candidate와 IDS requirements 파일이 필요합니다.",
+            details={"invalid_fields": invalid_fields},
+        )
+    baseline_data = await _read_upload_limited(baseline, max_bytes=MAX_IFC_BYTES)
+    candidate_data = await _read_upload_limited(candidate, max_bytes=MAX_IFC_BYTES)
+    requirements_data = await _read_upload_limited(requirements, max_bytes=MAX_IDS_BYTES)
+    sizes = {
+        "baseline": len(baseline_data),
+        "candidate": len(candidate_data),
+        "requirements": len(requirements_data),
+    }
+    limit_by_field = {
+        "baseline": MAX_IFC_BYTES,
+        "candidate": MAX_IFC_BYTES,
+        "requirements": MAX_IDS_BYTES,
+    }
+    oversized = [field for field, size in sizes.items() if size > limit_by_field[field]]
+    total_bytes = sum(sizes.values())
+    # OpenBIM has its own 20 + 20 + 1 MiB semantic input budget. The existing
+    # artifact comparison aggregate remains unchanged and does not govern this endpoint.
+    max_total_bytes = MAX_OPENBIM_TOTAL_BYTES
+    if oversized or total_bytes > max_total_bytes:
+        return _error_response(
+            request,
+            status_code=413,
+            code="DG_OPENBIM_TOO_LARGE",
+            message="OpenBIM 입력 파일 크기가 서버 제한을 초과했습니다.",
+            details={
+                "oversized_fields": oversized,
+                "max_ifc_bytes": MAX_IFC_BYTES,
+                "max_ids_bytes": MAX_IDS_BYTES,
+                "max_total_bytes": max_total_bytes,
+            },
+        )
+    try:
+        result = await run_in_threadpool(
+            run_openbim_evidence,
+            baseline_bytes=baseline_data,
+            candidate_bytes=candidate_data,
+            requirements_bytes=requirements_data,
+            profile=profile_id,
+            include_html=include_html,
+            include_bcf=include_bcf,
+        )
+    except OpenBimServiceFailure as exc:
+        return _error_response(
+            request,
+            status_code=exc.status_code,
+            code=exc.code,
+            message=exc.message,
+            details=exc.details,
+            retry_after=60 if exc.status_code == 503 else None,
+        )
     return result.model_dump(mode="json")
 
 

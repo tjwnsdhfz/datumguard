@@ -38,7 +38,7 @@ def test_health(monkeypatch) -> None:
     response = client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
-    assert response.json()["version"] == "0.2.1"
+    assert response.json()["version"] == "0.4.0"
     assert response.json()["release_sha"] == expected_sha
 
     monkeypatch.setenv("DATUMGUARD_RELEASE_SHA", "not-a-commit")
@@ -50,7 +50,7 @@ def test_liveness_readiness_and_metrics_are_public() -> None:
     assert client.get("/api/v1/live").status_code == 200
     ready = client.get("/api/v1/ready")
     assert ready.status_code == 200
-    assert ready.json()["version"] == "0.2.1"
+    assert ready.json()["version"] == "0.4.0"
     assert ready.json()["release_sha"] == "unknown"
     assert ready.json()["queue"]["active"] == 0
 
@@ -104,16 +104,20 @@ def test_engineering_domain_registry_lists_all_public_workspaces() -> None:
     assert {item["design_kind"] for item in payload} == {
         "architectural_plan",
         "artifact_audit",
+        "openbim_evidence",
         "piping_plan",
         "plate_panel",
         "solid_part",
+        "structural_frame",
     }
     assert {item["web_route"] for item in payload} == {
         "/",
         "/intake",
+        "/openbim",
         "/piping",
         "/plate",
         "/solid",
+        "/frame",
     }
 
 
@@ -134,6 +138,8 @@ def test_artifact_audit_endpoint_accepts_real_dxf_upload(
     assert payload["format"] == "dxf"
     assert payload["artifact_hash"].startswith("sha256:")
     assert payload["approval_eligible"] is False
+    assert payload["dxf_completeness"]["support_matrix_version"] == "2026-07-13.1"
+    assert payload["dxf_completeness"]["comparison_complete"] is True
 
 
 def test_solid_contract_schema_is_public() -> None:
@@ -267,17 +273,22 @@ def test_capability_kill_switches_hide_domains_and_return_stable_503(
     configure_operations(
         DATUMGUARD_ENABLE_SOLID="false",
         DATUMGUARD_ENABLE_ARTIFACT_LAB="false",
+        DATUMGUARD_ENABLE_OPENBIM="false",
     )
     domain_ids = {item["id"] for item in client.get("/api/v1/domains").json()}
     assert "solid_part" not in domain_ids
     assert "artifact_lab" not in domain_ids
+    assert "openbim_evidence" not in domain_ids
 
     solid = client.post("/api/v1/solid/designs/run", json={})
     artifact = client.post("/api/v1/artifacts/audit")
+    openbim = client.post("/api/v1/openbim/evidence/run")
     assert solid.status_code == 503
     assert artifact.status_code == 503
+    assert openbim.status_code == 503
     assert solid.json()["error"]["code"] == "DG_CAPABILITY_DISABLED"
     assert artifact.json()["error"]["code"] == "DG_CAPABILITY_DISABLED"
+    assert openbim.json()["error"]["code"] == "DG_CAPABILITY_DISABLED"
 
 
 def test_artifact_upload_part_limit_returns_413(

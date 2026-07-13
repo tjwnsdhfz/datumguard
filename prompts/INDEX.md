@@ -12,6 +12,9 @@
 | 6 | [06_mcp_api](./tasks/06_mcp_api.md) | DG-FR-014~015, DG-FR-017 | 1~5 | HTTP/MCP parity와 stateless 동작이 검증됨 |
 | 7 | [07_rhino_adapter](./tasks/07_rhino_adapter.md) | DG-FR-016 | 1~6 | Rhino absent/match/mismatch 처리 완료 |
 | 8 | [08_qa_release](./tasks/08_qa_release.md) | DG-FR-001~018, DG-NFR-001~010 | 1~7 | 100+50 benchmark, Docker, 문서, release 준비 완료 |
+| 9 | [09_frameguard_structural_screening](./tasks/09_frameguard_structural_screening.md) | DG-FRAME-FR-001~010 | 1~8 | Deterministic frame solver, API/MCP, PASS/FAIL UI와 screening boundary 검증 |
+| 10 | [10_frameguard_cad_bridge](./tasks/10_frameguard_cad_bridge.md) | DG-FRAME-FR-011~012, 017 | 9 | Rhino/GH unit·datum adapter와 0.001mm DXF re-open gate 검증 |
+| 11 | [11_frameguard_research_validation](./tasks/11_frameguard_research_validation.md) | DG-FRAME-FR-013~018 | 9~10 | OpenSees 6/6, PyG topology holdout, REVIEW_REQUIRED와 release gate 검증 |
 
 ## 공통 입력
 
@@ -26,7 +29,9 @@
 - 공개 타입을 후속 단계에서 임의 변경하지 않는다.
 - Breaking change가 필요하면 구현을 멈추고 PRD/TRD와 선행 테스트 영향도를 handoff에 기록한다.
 - 프롬프트 간 중복 구현보다 기존 application service를 재사용한다.
-- Rhino/LLM이 없어도 1~6단계 core와 benchmark는 실행 가능해야 한다.
+- Rhino/LLM이 없어도 1~6단계 core와 10단계 neutral exchange/DXF benchmark는 실행 가능해야 한다.
+- OpenSeesPy와 PyG는 선택형 research 환경에만 설치하고 base Docker dependency로 추가하지 않는다.
+- Surrogate는 `PASS`를 만들지 않으며 official solver와 serialized DXF gate를 우회하지 않는다.
 
 ## 요구사항 전체 추적표
 
@@ -50,3 +55,8 @@
 | DG-FR-016 | 07, 08 |
 | DG-FR-017 | 01, 04, 06, 08 |
 | DG-FR-018 | 08 |
+| DG-FRAME-FR-001~010 | 09 |
+| DG-FRAME-FR-011~012 | 10 |
+| DG-FRAME-FR-013~016 | 11 |
+| DG-FRAME-FR-017 | 10, 11 |
+| DG-FRAME-FR-018 | 11 |

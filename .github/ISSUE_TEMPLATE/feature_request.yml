@@ -1,0 +1,83 @@
+name: Feature request
+description: DatumGuard의 검증 범위, evidence 또는 developer experience 개선을 제안합니다.
+title: "[Feature]: "
+labels:
+  - enhancement
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        기능 목록보다 해결할 engineering failure와 검증 가능한 완료 조건을 먼저 설명해 주세요.
+        사용법 질문과 초기 아이디어 탐색은 GitHub Discussions가 더 적합합니다.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: 현재 workflow에서 누가 어떤 결정을 내리지 못하거나 어떤 failure를 놓치는지 설명합니다.
+      placeholder: 사용자는 unsupported DXF entity가 있을 때 revision comparison이 완전한지 알 수 없습니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: user_workflow
+    attributes:
+      label: User and workflow
+      description: 사용자, 입력 artifact, 수행 단계와 원하는 evidence를 적어 주세요.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_contract
+    attributes:
+      label: Proposed public contract
+      description: 필요한 field, API, status, error code와 fail-closed behavior를 가능한 범위에서 제안합니다.
+      placeholder: |
+        Input:
+        Output:
+        Status/error behavior:
+        Compatibility:
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: PASS, intended FAIL, ambiguity, mutation 또는 regression을 포함한 관찰 가능한 완료 조건입니다.
+      placeholder: |
+        - [ ] PASS fixture returns ...
+        - [ ] Unsupported entity returns ...
+        - [ ] Mutated artifact blocks official export ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: 현재 기능, 다른 open-source tool 또는 수동 검토로 해결할 수 있는지 적어 주세요.
+
+  - type: dropdown
+    id: structural_scope
+    attributes:
+      label: Structural safety scope
+      description: 구조 관련 제안이면 현재 preliminary screening 경계를 어떻게 유지합니까?
+      options:
+        - Not related to structural results
+        - Keeps preliminary screening and exact-solver gate
+        - Research-only result, never official PASS
+        - Would require certification or professional judgment and is out of current scope
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope_confirmation
+    attributes:
+      label: Scope and data confirmation
+      options:
+        - label: 공개 설명에 기밀·독점 CAD/BIM, 고객 정보, 개인정보 또는 secret을 포함하지 않았습니다.
+          required: true
+        - label: 이 제안이 arbitrary script execution이나 verifier 우회를 요구하지 않습니다.
+          required: true
+        - label: 새 dependency, telemetry, 외부 API 또는 유료 서비스가 필요하면 비용·privacy·failure mode를 구현 전에 제안하겠습니다.
+          required: true
