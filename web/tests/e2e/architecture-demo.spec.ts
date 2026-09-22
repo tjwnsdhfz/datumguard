@@ -3,6 +3,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 async function dragCenterToCenter(page: Page, sourceTestId: string, targetTestId: string) {
   const source = page.getByTestId(sourceTestId);
   const target = page.getByTestId(targetTestId);
+  await source.scrollIntoViewIfNeeded();
   const sourceBox = await source.boundingBox();
   const targetBox = await target.boundingBox();
   expect(sourceBox, `${sourceTestId} must be rendered`).not.toBeNull();
@@ -21,6 +22,7 @@ async function dragBy(
   deltaY: number,
   options: { xFraction?: number; yFraction?: number; shift?: boolean } = {},
 ) {
+  await source.scrollIntoViewIfNeeded();
   const box = await source.boundingBox();
   expect(box, "drag source must be rendered").not.toBeNull();
   if (!box) return;
@@ -98,7 +100,7 @@ test.describe("interactive architecture demo", () => {
     await expect(navigation).toBeVisible();
     const activeLink = navigation.getByRole("link", { name: "Architecture", exact: true });
     await expect(activeLink).toHaveAttribute("aria-current", "page");
-    await expect(activeLink).toHaveCSS("background-color", "rgb(27, 27, 30)");
+    await expect(activeLink).toHaveCSS("background-color", "rgb(229, 242, 236)");
     await expect(navigation.getByRole("link", { name: "Piping", exact: true })).toBeVisible();
     await expect(navigation.getByRole("link", { name: "Case Study", exact: true })).toBeVisible();
     await expectNoHorizontalPageOverflow(page);

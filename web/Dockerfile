@@ -19,6 +19,10 @@ RUN npm run build
 
 FROM base AS runtime
 WORKDIR /app
+# The standalone server runs directly with node; package managers and their
+# bundled dependency trees are build tools, not runtime dependencies.
+RUN rm -rf /usr/local/lib/node_modules/npm /opt/yarn* \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/yarn /usr/local/bin/yarnpkg
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \

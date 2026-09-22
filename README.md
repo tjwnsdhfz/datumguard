@@ -323,3 +323,7 @@ Render 배포 완료 뒤의 Production smoke는 health `release_sha`까지 대�
 ## License
 
 MIT
+
+## 2026-09-22 품질 점검
+
+변경 내용, 재현한 문제, 검증 범위와 남은 한계: [품질 점검 기록](docs/QUALITY_AUDIT_20260922.md).

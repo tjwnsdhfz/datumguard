@@ -11,6 +11,7 @@ import "@fontsource/noto-sans-kr/700.css";
 import "@fontsource/noto-sans-kr/800.css";
 import "./globals.css";
 import "./architecture.css";
+import "./service-refresh.css";
 
 import { PRODUCTION_ORIGIN } from "../lib/site-config";
 import SiteJsonLd from "./components/site-json-ld";
