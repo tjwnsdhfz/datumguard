@@ -15,3 +15,5 @@
 
 ## 의존성 검사
 Next.js/eslint-config-next 16.3.5 및 PostCSS 8.5.23 반영 후 npm audit 0건(2026-09-22). 업데이트 후 API 테스트 3개, lint, 프로덕션 빌드 재통과.
+
+Python 잠금의 anyio 4.15.1, aiohttp 3.14.3, cryptography 50.0.1, pip 26.2.1로 취약 버전을 갱신했다. 새 환경에 uv sync --frozen --extra dev --link-mode copy 설치 성공. 프로젝트 자체를 제외한 고정 의존성(dev 포함) export를 pip-audit --strict --no-deps --disable-pip로 검사하여 알려진 취약점 없음. Ruff 검사·포맷 및 mypy 46개 소스 검사 통과. 고정 환경 pytest 결과는 PR 검증 기록을 따른다.
