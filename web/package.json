@@ -3,7 +3,7 @@
   "version": "0.4.0",
   "private": true,
   "scripts": {
-    "test:unit": "node --experimental-strip-types --test tests/api-client.test.mjs",
+    "test:unit": "node --experimental-strip-types --test tests/*.test.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

@@ -1,0 +1,36 @@
+/* User-facing workbench: calm surfaces, readable controls, clear next actions. */
+:root { --arch-green: #126b61; --arch-paper: #f3f6f5; --arch-line: #d9e3df; }
+.project-entry { display:grid; grid-template-columns:1.2fr 1fr; gap:40px; padding:32px clamp(20px,4vw,64px); background:#f1f7f5; border-bottom:1px solid #d9e3df; }
+.project-entry-copy>span { color:#126b61; font-size:13px; font-weight:700; }
+.project-entry h2 { font-size:clamp(23px,2.5vw,34px); letter-spacing:-.045em; line-height:1.35; margin:12px 0; }
+.project-entry p { font-size:14px; line-height:1.7; margin:8px 0; max-width:62ch; color:#4b625b; }
+.project-entry ol { display:flex; flex-wrap:wrap; gap:8px 28px; padding-left:20px; font-size:12px; color:#126b61; margin-top:20px; }
+.project-file-tools { min-width:0; }
+.project-file-tools>label { display:grid; gap:6px; font-size:12px; font-weight:700; }
+.project-file-tools input { background:white; border-radius:8px; min-height:44px; }
+.project-file-actions { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+.project-file-tools button,.project-file-input { min-height:44px; padding:10px 16px; border:1px solid #bacfc5; border-radius:8px; background:white; color:#174f42; font-size:13px; font-weight:600; }
+.project-file-input { position:relative; cursor:pointer; display:inline-flex; align-items:center; }
+.project-file-input input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; }
+.project-file-input:focus-within { outline:3px solid #248271; outline-offset:3px; }
+.project-file-tools small { display:block; color:#51665e; font-size:12px; line-height:1.6; }
+.project-file-tools [role=alert] { color:#a12d23; background:#fff0ed; border-radius:8px; padding:10px; }
+.project-file-preview { margin:12px 0; padding:16px; border:1px solid #b8d2c6; border-radius:10px; background:white; }
+.project-file-preview button { margin-right:8px; }
+.architecture-app .arch-topbar { background:#fff; color:#152b24; border-color:#d9e3df; position:relative; }
+.architecture-app .arch-topbar { grid-template-columns:auto minmax(0,1fr); gap:20px; }
+.architecture-app .arch-title { display:none; }
+.architecture-app .arch-brand small,.architecture-app .arch-title small,.architecture-app .arch-topbar nav a { color:#4b625b; }
+.architecture-app .arch-topbar nav a:hover,.architecture-app .arch-topbar nav a[aria-current=page] { background:#e5f2ec; color:#126b61; border-radius:6px; }
+.architecture-app .arch-brand>span { border-radius:9px; background:#126b61; color:white; }
+.architecture-app .arch-commandbar { position:relative; top:auto; }
+.architecture-app .arch-panel-title span,.architecture-app .arch-tree h3 { font-size:11px; }
+.architecture-app .arch-presets button,.architecture-app .arch-tools button,.architecture-app .arch-history button { border-radius:7px; min-height:44px; }
+.architecture-app .arch-inspector input { border-radius:6px; min-height:44px; }
+.architecture-app .arch-run,.architecture-app .arch-download { border-radius:8px; background:#126b61; border-color:#126b61; letter-spacing:0; text-transform:none; min-height:46px; }
+.architecture-app .arch-run:hover:not(:disabled),.architecture-app .arch-download:hover:not(:disabled) { background:#0b534b; color:white; }
+.architecture-app button:focus-visible,.project-file-tools input:focus-visible { outline:3px solid #248271; outline-offset:3px; }
+.architecture-app button:disabled { cursor:not-allowed; }
+@media(max-width:900px) { .project-entry { grid-template-columns:1fr; gap:20px; padding:24px 18px; } }
+@media(max-width:600px) { .architecture-app .arch-topbar { grid-template-columns:1fr; gap:8px; } }
+@media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { transition:none!important; } }

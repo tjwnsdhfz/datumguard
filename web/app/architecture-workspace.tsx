@@ -7,6 +7,7 @@ import { WorkspaceNavigation, WorkspaceSkipLink } from "@/app/components/workspa
 import { apiErrorMessage, apiPostJson } from "@/lib/api-client";
 import { loadDraft, saveDraft } from "@/lib/draft-db";
 import { useBackendReadiness } from "@/lib/use-backend-readiness";
+import { MAX_PROJECT_BYTES, parseArchitecture, serializeArchitecture } from "@/lib/architecture-file";
 
 type Point = [number, number];
 type Tool = "select" | "pan" | "wall" | "column" | "door" | "window";
@@ -55,7 +56,7 @@ type RoomSeed = {
   expected_area?: number;
 };
 
-type ArchitectureDraft = {
+export type ArchitectureDraft = {
   presetId: "architecture-studio" | "architecture-open-loop";
   projectName: string;
   revision: string;
@@ -219,7 +220,7 @@ function architectureContract(draft: ArchitectureDraft) {
     ],
     free_parameters: [],
     drawing_profile: { id: "architecture-profile-default", sheet_size: "A3", scale_denominator: 100, include_dimensions: true, include_room_labels: true, title_block: true },
-    metadata: { project_name: draft.projectName, revision: draft.revision, notes: "Synthetic public architecture fixture" },
+    metadata: { project_name: draft.projectName, revision: draft.revision, notes: "User-editable architecture inputs; not professional certification" },
     contract_hash: null,
     intent_text: null,
   };
@@ -349,6 +350,30 @@ export default function ArchitectureWorkspace() {
   const [message, setMessage] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const [fileNotice, setFileNotice] = useState("");
+  const [fileError, setFileError] = useState("");
+  const [pendingDraft, setPendingDraft] = useState<ArchitectureDraft | null>(null);
+  const [readingFile, setReadingFile] = useState(false);
+  const verificationGeneration = useRef(0);
+
+  function saveProjectFile() {
+    const url = URL.createObjectURL(new Blob([serializeArchitecture(draft)], { type: "application/json" }));
+    const link = document.createElement("a"); link.href = url;
+    link.download = `${draft.projectName.replace(/[^\p{L}\p{N}_-]/gu, "_").slice(0, 80) || "project"}.datumguard.json`;
+    link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setFileNotice("작업 파일 다운로드를 요청했습니다. 검증 결과가 아닌 편집 가능한 입력 파일입니다.");
+  }
+
+  async function readProjectFile(file?: File) {
+    if (!file) return;
+    setReadingFile(true); setFileError(""); setPendingDraft(null);
+    try {
+      if (file.size > MAX_PROJECT_BYTES) throw new Error("1MB 이하의 DatumGuard 작업 JSON을 선택해 주세요.");
+      setPendingDraft(parseArchitecture(await file.text()));
+      setFileNotice("파일을 확인했습니다. 아래에서 열기를 선택하면 적용됩니다.");
+    } catch (error) { setFileError(error instanceof Error ? error.message : "파일을 열지 못했습니다."); }
+    finally { setReadingFile(false); }
+  }
   const readiness = useBackendReadiness("architecture");
   const health = readiness.state;
   const healthAttempts = readiness.attempts;
@@ -400,6 +425,7 @@ export default function ArchitectureWorkspace() {
   });
 
   function commit(next: ArchitectureDraft) {
+    verificationGeneration.current += 1;
     setHistory((items) => [...items, cloneDraft(draft)].slice(-50));
     setFuture([]);
     setDraft(next);
@@ -409,6 +435,7 @@ export default function ArchitectureWorkspace() {
   }
 
   function undo() {
+    verificationGeneration.current += 1;
     setHistory((items) => {
       if (!items.length) return items;
       const previous = items[items.length - 1];
@@ -420,6 +447,7 @@ export default function ArchitectureWorkspace() {
   }
 
   function redo() {
+    verificationGeneration.current += 1;
     setFuture((items) => {
       if (!items.length) return items;
       const next = items[0];
@@ -515,6 +543,7 @@ export default function ArchitectureWorkspace() {
         opening.offset = Math.max(0, Math.min(length - opening.width, snap(opening.offset + dx * ux + dy * uy, step)));
       }
     }
+    verificationGeneration.current += 1;
     setDraft(next);
   };
 
@@ -547,6 +576,7 @@ export default function ArchitectureWorkspace() {
       return;
     }
     setVerification("running");
+    const requestGeneration = ++verificationGeneration.current;
     setMessage("건축 검증 엔진이 contract를 잠그고 있습니다.");
     setResult(null);
     try {
@@ -555,10 +585,12 @@ export default function ArchitectureWorkspace() {
         architectureContract(draft),
         { timeoutMs: 60_000 },
       );
+      if (requestGeneration !== verificationGeneration.current) return;
       setResult(payload);
       setVerification(payload.status === "passed" ? "passed" : "failed");
       setMessage(payload.status === "passed" ? "독립 재측정과 approval gate를 통과했습니다." : payload.error?.message || "검증에 실패했습니다.");
     } catch (error) {
+      if (requestGeneration !== verificationGeneration.current) return;
       setVerification("failed");
       setMessage(apiErrorMessage(error, "건축 검증 요청에 실패했습니다."));
     }
@@ -692,6 +724,18 @@ export default function ArchitectureWorkspace() {
         <div className="arch-title"><span className="arch-live-dot" /> <b>{draft.projectName}</b><small>REV {draft.revision} · WCS XY · mm</small></div>
         <WorkspaceNavigation active="architecture" evidenceHref="#verification" />
       </header>
+
+      <section className="project-entry" aria-label="건축 작업 시작">
+        <div className="project-entry-copy"><span>DatumGuard · 건축 도면 검토</span><h2>도면을 고치고, 확인한 결과를 남기세요.</h2><p>객체를 선택해 치수를 수정한 뒤 검증하세요. 검증을 통과한 작업은 DXF·PDF·검증 기록으로 내려받습니다.</p><ol><li>작업 열기 또는 예제 편집</li><li>치수 수정과 검증</li><li>결과 묶음 다운로드</li></ol></div>
+        <div className="project-file-tools">
+          <label>프로젝트 이름<input maxLength={200} value={draft.projectName} onChange={e => commit({ ...draft, projectName: e.target.value })} /></label>
+          <div className="project-file-actions"><button type="button" disabled={!draft.projectName.trim()} onClick={saveProjectFile}>작업 파일 저장</button><label className="project-file-input">{readingFile ? "파일 확인 중…" : "작업 파일 선택"}<input aria-label="작업 파일 선택" type="file" accept=".json,application/json" disabled={readingFile} onChange={e => { const file = e.target.files?.[0]; e.target.value = ""; void readProjectFile(file); }} /></label></div>
+          <small>DatumGuard JSON · 최대 1MB · 파일 선택만으로 서버에 전송하지 않습니다. 임시 저장은 30일 후 만료되므로 작업 파일을 보관하세요.</small>
+          {pendingDraft && <div className="project-file-preview"><strong>{pendingDraft.projectName}</strong><p>벽 {pendingDraft.walls.length}개 · 기둥 {pendingDraft.columns.length}개 · 현재 작업은 실행 취소로 되돌릴 수 있습니다.</p><button type="button" onClick={() => { commit(pendingDraft); setSelectedId(pendingDraft.columns[0]?.id ?? pendingDraft.walls[0]?.id ?? ""); setViewBox(FIT_VIEW); setPendingDraft(null); setFileNotice("작업 파일을 열었습니다. 입력이 변경되어 다시 검증해야 합니다."); }}>이 작업 열기</button><button type="button" onClick={() => { setPendingDraft(null); setFileNotice("파일 열기를 취소했습니다."); }}>취소</button></div>}
+          {fileError && <p role="alert">{fileError} 현재 작업은 유지됩니다.</p>}
+          <p role="status">{fileNotice}</p>
+        </div>
+      </section>
 
       <section className="arch-commandbar" id="architecture-workspace-content" tabIndex={-1} aria-label="Architecture CAD tools">
         <div className="arch-tools" role="group" aria-label="Canvas tool">{(["select", "pan", "wall", "column", "door", "window"] as Tool[]).map((item) => <button key={item} type="button" className={tool === item ? "active" : ""} aria-pressed={tool === item} onClick={() => setTool(item)}><ArchitectureIcon name={item} /><span>{item}</span></button>)}</div>
