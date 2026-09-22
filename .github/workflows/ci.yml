@@ -51,6 +51,8 @@ jobs:
       - working-directory: web
         run: npm run typecheck
       - working-directory: web
+        run: npm run test:unit
+      - working-directory: web
         run: npm run lint
       - working-directory: web
         run: npm run build

@@ -81,12 +81,13 @@ async function requestJson<T>(
   if (signal?.aborted) abortFromCaller();
   else signal?.addEventListener("abort", abortFromCaller, { once: true });
 
-  const timeout = window.setTimeout(() => {
+  const timeout = globalThis.setTimeout(() => {
     timedOut = true;
     controller.abort("request-timeout");
   }, timeoutMs);
 
   let response: Response;
+  let raw: string;
   try {
     response = await fetch(`${API_URL}${path}`, {
       ...init,
@@ -94,6 +95,8 @@ async function requestJson<T>(
       headers: { Accept: "application/json", ...init.headers },
       signal: controller.signal,
     });
+    // Keep the deadline and cancellation active until the response body is read.
+    raw = await response.text();
   } catch (reason) {
     if (timedOut) {
       throw new ApiClientError(`요청이 ${Math.ceil(timeoutMs / 1000)}초 안에 완료되지 않았습니다.`, {
@@ -109,11 +112,10 @@ async function requestJson<T>(
       cause: reason,
     });
   } finally {
-    window.clearTimeout(timeout);
+    globalThis.clearTimeout(timeout);
     signal?.removeEventListener("abort", abortFromCaller);
   }
 
-  const raw = await response.text();
   let payload: unknown = null;
   if (raw) {
     try {
