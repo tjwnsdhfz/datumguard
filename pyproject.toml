@@ -50,6 +50,7 @@ dev = [
 ]
 
 [project.scripts]
+datumguard = "datumguard.cli:main"
 datumguard-api = "datumguard.api:main"
 datumguard-mcp = "datumguard.mcp_server:main"
 

@@ -5,6 +5,21 @@ Versioning and release dates use `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+
+- Added the `datumguard` CLI with fail-closed `verify`, `audit`, and `compare` commands.
+- Added a reusable root GitHub Action, deterministic PASS/FAIL self-tests, and a
+  Codespaces development container so users can run assurance without a central paid API.
+- Added a GitHub-first distribution and privacy guide for local, Actions, Codespaces,
+  and Docker execution.
+
+### Security
+
+- GitHub Action file inputs are restricted to supported repository-relative regular files;
+  absolute paths, traversal, repository-escaping symlinks, and root output writes fail closed.
+- Public repository CAD and Actions artifacts are explicitly treated as public data, while
+  confidential designs are directed to the local CLI or a caller-owned private repository.
+
 ## [0.4.0] - 2026-07-13
 
 ### Added

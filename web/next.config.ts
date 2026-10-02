@@ -11,6 +11,7 @@ function apiOrigin(): string {
 }
 
 const development = process.env.NODE_ENV !== "production";
+const localApiProxy = process.env.DATUMGUARD_LOCAL_API_PROXY === "true";
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${development ? " 'unsafe-eval'" : ""}`,
@@ -28,6 +29,15 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  async rewrites() {
+    if (!localApiProxy) return [];
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://127.0.0.1:8000/api/:path*",
+      },
+    ];
+  },
   async headers() {
     return [
       {

@@ -1,0 +1,135 @@
+name: DatumGuard CAD Assurance
+description: Verify DesignContract JSON or audit serialized DXF, STEP, and IFC files.
+author: DatumGuard
+
+branding:
+  icon: check-circle
+  color: blue
+
+inputs:
+  command:
+    description: verify, audit, or compare
+    required: false
+    default: verify
+  input:
+    description: Repository-relative contract or CAD path for verify/audit
+    required: false
+    default: ""
+  baseline:
+    description: Repository-relative baseline CAD path for compare
+    required: false
+    default: ""
+  candidate:
+    description: Repository-relative candidate CAD path for compare
+    required: false
+    default: ""
+  output_directory:
+    description: Repository-relative result directory
+    required: false
+    default: datumguard-results
+  allow_review:
+    description: Allow needs_confirmation to exit successfully for audit/compare
+    required: false
+    default: "false"
+
+outputs:
+  status:
+    description: DatumGuard status, including passed, audited, review, repair, or failure states
+    value: ${{ steps.datumguard.outputs.status }}
+  artifact_hash:
+    description: SHA-256 hash of the serialized CAD artifact, when available
+    value: ${{ steps.datumguard.outputs.artifact_hash }}
+  result_json:
+    description: Absolute path to verification-result.json
+    value: ${{ steps.datumguard.outputs.result_json }}
+  output_directory:
+    description: Absolute path to the result directory
+    value: ${{ steps.datumguard.outputs.output_directory }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python 3.12
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      with:
+        python-version: "3.12"
+
+    - name: Run fail-closed CAD assurance
+      id: datumguard
+      shell: bash
+      env:
+        DG_COMMAND: ${{ inputs.command }}
+        DG_INPUT: ${{ inputs.input }}
+        DG_BASELINE: ${{ inputs.baseline }}
+        DG_CANDIDATE: ${{ inputs.candidate }}
+        DG_OUTPUT: ${{ inputs.output_directory }}
+        DG_ALLOW_REVIEW: ${{ inputs.allow_review }}
+        UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/datumguard-action-venv
+        UV_CACHE_DIR: ${{ runner.temp }}/datumguard-uv-cache
+        UV_LINK_MODE: copy
+      run: |
+        set -euo pipefail
+
+        if [[ "${RUNNER_OS}" != "Linux" ]]; then
+          echo "DatumGuard Action currently supports ubuntu runners only." >&2
+          exit 1
+        fi
+
+        command="${DG_COMMAND,,}"
+        path_helper=(python -m datumguard.action_paths --workspace "${GITHUB_WORKSPACE}")
+        export PYTHONPATH="${GITHUB_ACTION_PATH}/src"
+        output_path="$("${path_helper[@]}" output "${DG_OUTPUT}")"
+
+        reject_input_inside_output() {
+          case "$1" in
+            "${output_path}"|"${output_path}"/*)
+              echo "Input files cannot be stored inside output_directory." >&2
+              exit 1
+              ;;
+          esac
+        }
+
+        python -m pip install --disable-pip-version-check --quiet uv==0.8.22
+
+        case "${command}" in
+          verify)
+            input_path="$("${path_helper[@]}" input "${DG_INPUT}" --suffix .json)"
+            reject_input_inside_output "${input_path}"
+            "${path_helper[@]}" output "${DG_OUTPUT}" --clean >/dev/null
+            uv run --project "${GITHUB_ACTION_PATH}" --frozen \
+              datumguard verify "${input_path}" --output "${output_path}"
+            ;;
+          audit)
+            input_path="$("${path_helper[@]}" input "${DG_INPUT}" \
+              --suffix .dxf --suffix .step --suffix .stp --suffix .p21 --suffix .ifc)"
+            reject_input_inside_output "${input_path}"
+            "${path_helper[@]}" output "${DG_OUTPUT}" --clean >/dev/null
+            review_args=()
+            if [[ "${DG_ALLOW_REVIEW,,}" = "true" ]]; then
+              review_args+=(--allow-review)
+            fi
+            uv run --project "${GITHUB_ACTION_PATH}" --frozen \
+              datumguard audit "${input_path}" --output "${output_path}" \
+              "${review_args[@]}"
+            ;;
+          compare)
+            baseline_path="$("${path_helper[@]}" input "${DG_BASELINE}" \
+              --suffix .dxf --suffix .step --suffix .stp --suffix .p21 --suffix .ifc)"
+            candidate_path="$("${path_helper[@]}" input "${DG_CANDIDATE}" \
+              --suffix .dxf --suffix .step --suffix .stp --suffix .p21 --suffix .ifc)"
+            reject_input_inside_output "${baseline_path}"
+            reject_input_inside_output "${candidate_path}"
+            "${path_helper[@]}" output "${DG_OUTPUT}" --clean >/dev/null
+            review_args=()
+            if [[ "${DG_ALLOW_REVIEW,,}" = "true" ]]; then
+              review_args+=(--allow-review)
+            fi
+            uv run --project "${GITHUB_ACTION_PATH}" --frozen \
+              datumguard compare "${baseline_path}" "${candidate_path}" \
+              --output "${output_path}" "${review_args[@]}"
+            ;;
+          *)
+            echo "command must be verify, audit, or compare." >&2
+            exit 1
+            ;;
+        esac
