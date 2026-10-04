@@ -13,7 +13,7 @@ dependencies = [
   "cadquery==2.8.0",
   "ezdxf>=1.3.5",
   "fastapi>=0.115.0",
-  "ifcopenshell==0.8.5",
+  "ifcopenshell==0.9.0",
   "mcp>=1.9.0",
   "numpy>=2.2.0,<3",
   "ortools>=9.11.0",
@@ -33,17 +33,17 @@ opensees = [
   "openseespy==3.8.0.0",
 ]
 openbim = [
-  "ifctester==0.8.5",
+  "ifctester==0.9.0",
 ]
 bcf = [
-  "bcf-client==0.8.5",
+  "bcf-client==0.9.0",
 ]
 dev = [
-  "bcf-client==0.8.5",
+  "bcf-client==0.9.0",
   "httpx>=0.28.0",
-  "ifctester==0.8.5",
+  "ifctester==0.9.0",
   "mypy>=1.14.0",
-  "pip-audit==2.9.0",
+  "pip-audit==2.10.1",
   "pytest>=8.3.0",
   "pytest-cov>=6.0.0",
   "ruff>=0.9.0",
