@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -403,7 +403,7 @@ function Field({
 }
 
 function PlateWorkspace() {
-  const [draft, setDraft] = useState<Draft>(DEFAULT_DRAFT);
+  const [draft, setDraftState] = useState<Draft>(DEFAULT_DRAFT);
   const [hydrated, setHydrated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ApiResult | null>(null);
@@ -411,16 +411,26 @@ function PlateWorkspace() {
   const [networkError, setNetworkError] = useState<string | null>(null);
   const [lastAction, setLastAction] = useState<"intent" | "verify" | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const verificationGeneration = useRef(0);
+  const setDraft = useCallback((next: SetStateAction<Draft>) => {
+    verificationGeneration.current += 1;
+    setDraftState(next);
+    setResult(null);
+    setIntentResult(null);
+    setNetworkError(null);
+    setLoading(false);
+  }, []);
   const readiness = useBackendReadiness("mechanical_ship_plate");
 
   useEffect(() => {
+    const initialGeneration = verificationGeneration.current;
     loadDraft<Draft>()
       .then((saved) => {
-        if (saved) setDraft(saved);
+        if (saved && verificationGeneration.current === initialGeneration) setDraft(saved);
       })
       .catch((error) => setStorageError(error instanceof Error ? error.message : "로컬 draft를 읽지 못했습니다."))
       .finally(() => setHydrated(true));
-  }, []);
+  }, [setDraft]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -477,12 +487,14 @@ function PlateWorkspace() {
     setLastAction("intent");
     setLoading(true);
     setNetworkError(null);
+    const requestGeneration = ++verificationGeneration.current;
     try {
-      setIntentResult(await request("/api/v1/contracts/draft", { contract, intent_text: draft.intentText }, 30_000));
+      const payload = await request("/api/v1/contracts/draft", { contract, intent_text: draft.intentText }, 30_000);
+      if (requestGeneration === verificationGeneration.current) setIntentResult(payload);
     } catch (error) {
-      setNetworkError(apiErrorMessage(error, "조건 모호성 확인 요청에 실패했습니다."));
+      if (requestGeneration === verificationGeneration.current) setNetworkError(apiErrorMessage(error, "조건 모호성 확인 요청에 실패했습니다."));
     } finally {
-      setLoading(false);
+      if (requestGeneration === verificationGeneration.current) setLoading(false);
     }
   }
 
@@ -496,12 +508,14 @@ function PlateWorkspace() {
     setLoading(true);
     setNetworkError(null);
     setResult(null);
+    const requestGeneration = ++verificationGeneration.current;
     try {
-      setResult(await request("/api/v1/designs/run?auto_repair=true", contract));
+      const payload = await request("/api/v1/designs/run?auto_repair=true", contract);
+      if (requestGeneration === verificationGeneration.current) setResult(payload);
     } catch (error) {
-      setNetworkError(apiErrorMessage(error, "Plate 검증 요청에 실패했습니다."));
+      if (requestGeneration === verificationGeneration.current) setNetworkError(apiErrorMessage(error, "Plate 검증 요청에 실패했습니다."));
     } finally {
-      setLoading(false);
+      if (requestGeneration === verificationGeneration.current) setLoading(false);
     }
   }
 

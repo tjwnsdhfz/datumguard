@@ -380,14 +380,14 @@ export default function ArchitectureWorkspace() {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
+    const initialGeneration = verificationGeneration.current;
     loadDraft<ArchitectureDraft>(DRAFT_KEY)
       .then((saved) => {
-        if (
-          saved &&
-          saved.walls.some((wall) => wall.id === "wall-service") &&
-          saved.roomSeeds.length === 4
-        ) {
-          setDraft(saved);
+        if (saved && verificationGeneration.current === initialGeneration) {
+          // IndexedDB is an input boundary too; imported projects need not have the demo's IDs.
+          const restored = parseArchitecture(serializeArchitecture(saved));
+          setDraft(restored);
+          setSelectedId(restored.columns[0]?.id ?? restored.walls[0]?.id ?? "");
         }
       })
       .catch((error) => setStorageError(error instanceof Error ? error.message : "로컬 draft를 읽지 못했습니다."))
@@ -435,6 +435,7 @@ export default function ArchitectureWorkspace() {
   }
 
   function undo() {
+    if (!history.length) return;
     verificationGeneration.current += 1;
     setHistory((items) => {
       if (!items.length) return items;
@@ -442,11 +443,14 @@ export default function ArchitectureWorkspace() {
       setFuture((redoItems) => [cloneDraft(draft), ...redoItems].slice(0, 50));
       setDraft(cloneDraft(previous));
       setVerification("idle");
+      setResult(null);
+      setMessage(null);
       return items.slice(0, -1);
     });
   }
 
   function redo() {
+    if (!future.length) return;
     verificationGeneration.current += 1;
     setFuture((items) => {
       if (!items.length) return items;
@@ -454,16 +458,22 @@ export default function ArchitectureWorkspace() {
       setHistory((past) => [...past, cloneDraft(draft)].slice(-50));
       setDraft(cloneDraft(next));
       setVerification("idle");
+      setResult(null);
+      setMessage(null);
       return items.slice(1);
     });
   }
 
   const pointFromEvent = (event: React.PointerEvent<SVGSVGElement>): Point => {
-    const bounds = svgRef.current?.getBoundingClientRect();
-    if (!bounds) return [0, 0];
-    const screenX = viewBox.x + ((event.clientX - bounds.left) / bounds.width) * viewBox.width;
-    const screenY = viewBox.y + ((event.clientY - bounds.top) / bounds.height) * viewBox.height;
-    return [screenX, PLAN_HEIGHT - screenY];
+    const svg = svgRef.current;
+    const matrix = svg?.getScreenCTM();
+    if (!svg || !matrix) return [0, 0];
+    // Include SVG letterboxing and CSS transforms instead of stretching the viewBox to its bounds.
+    const point = svg.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    const model = point.matrixTransform(matrix.inverse());
+    return [model.x, PLAN_HEIGHT - model.y];
   };
 
   const beginDrag = (
@@ -545,6 +555,9 @@ export default function ArchitectureWorkspace() {
     }
     verificationGeneration.current += 1;
     setDraft(next);
+    setVerification("idle");
+    setResult(null);
+    setMessage(null);
   };
 
   const pointerUp = (event: React.PointerEvent<SVGSVGElement>) => {
@@ -597,7 +610,7 @@ export default function ArchitectureWorkspace() {
   };
 
   const download = () => {
-    if (!result?.bundle_base64 || result.status !== "passed") return;
+    if (verification !== "passed" || drag || !result?.bundle_base64 || result.status !== "passed") return;
     const binary = window.atob(result.bundle_base64);
     const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
     const url = URL.createObjectURL(new Blob([bytes], { type: "application/zip" }));

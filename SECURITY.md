@@ -17,6 +17,13 @@ DatumGuard 공개 API는 stateless이며 계정·DB·장기 파일 저장을 사
 
 ## Supply chain과 공개 API
 
+Cloudflare 관련 header는 기본적으로 신뢰하지 않습니다. `DATUMGUARD_TRUST_CF_CONNECTING_IP=true`는
+클라이언트가 보낸 `CF-Connecting-IP`와 `CF-Ray`를 제거하고 검증된 값으로 덮어쓰는 ingress 뒤에서만
+사용하십시오. header 형식 검사는 proxy 인증이 아니며, 직접 접근 가능한 origin에서는 기본값 `false`를 유지합니다.
+
+2026-10-28의 의존성·MCP·편집 상태 검토 및 잔여 품질 기준은
+[`docs/quality/review-2026-10-28.md`](docs/quality/review-2026-10-28.md)에 기록합니다.
+
 - Python runtime dependency는 `uv.lock` frozen sync, web dependency는 `package-lock.json`의 `npm ci`를 사용합니다.
 - CI는 pip-audit/npm audit, dependency review, CodeQL, container SBOM/Trivy scan을 실행합니다.
 - GitHub Actions는 검증한 immutable commit SHA에 pin하고 Dependabot PR에서 갱신합니다.

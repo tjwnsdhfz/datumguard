@@ -365,11 +365,13 @@ export default function PipingWorkspace() {
   const [storageError, setStorageError] = useState<string | null>(null);
   const readiness = useBackendReadiness("plant_piping");
   const svgRef = useRef<SVGSVGElement>(null);
+  const verificationGeneration = useRef(0);
 
   useEffect(() => {
+    const initialGeneration = verificationGeneration.current;
     loadDraft<PipingDraft>(DRAFT_KEY)
       .then((saved) => {
-        if (saved && Array.isArray(saved.segments) && Array.isArray(saved.nodes)) setDraft(saved);
+        if (saved && verificationGeneration.current === initialGeneration && Array.isArray(saved.segments) && Array.isArray(saved.nodes)) setDraft(saved);
       })
       .catch((error) => setStorageError(error instanceof Error ? error.message : "로컬 draft를 읽지 못했습니다."))
       .finally(() => setHydrated(true));
@@ -386,6 +388,7 @@ export default function PipingWorkspace() {
   }, [draft, hydrated]);
 
   function clearVerification() {
+    verificationGeneration.current += 1;
     setVerification("idle");
     setResult(null);
     setMessage("Draft changed. Run verification to refresh independent evidence.");
@@ -441,11 +444,14 @@ export default function PipingWorkspace() {
   });
 
   const pointFromEvent = (event: React.PointerEvent<SVGSVGElement>): Point => {
-    const bounds = svgRef.current?.getBoundingClientRect();
-    if (!bounds) return [0, 0];
-    const screenX = viewBox.x + ((event.clientX - bounds.left) / bounds.width) * viewBox.width;
-    const screenY = viewBox.y + ((event.clientY - bounds.top) / bounds.height) * viewBox.height;
-    return [screenX, PLAN_HEIGHT - screenY];
+    const svg = svgRef.current;
+    const matrix = svg?.getScreenCTM();
+    if (!svg || !matrix) return [0, 0];
+    const point = svg.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    const model = point.matrixTransform(matrix.inverse());
+    return [model.x, PLAN_HEIGHT - model.y];
   };
 
   const beginValveDrag = (event: React.PointerEvent<SVGGElement>, component: ValveComponent) => {
@@ -493,6 +499,7 @@ export default function PipingWorkspace() {
     const nextComponent = next.inlineComponents.find((item) => item.id === drag.id);
     if (nextComponent) nextComponent.offset = nextOffset;
     setDraft(next);
+    clearVerification();
   };
 
   const pointerUp = (event: React.PointerEvent<SVGSVGElement>) => {
@@ -531,12 +538,14 @@ export default function PipingWorkspace() {
     setVerification("running");
     setResult(null);
     setMessage("Contract locked. The DXF writer and independent reader are running.");
+    const requestGeneration = ++verificationGeneration.current;
     try {
       const payload = await apiPostJson<PipingResult>(
         "/api/v1/piping/designs/run",
         contract,
         { timeoutMs: 60_000 },
       );
+      if (requestGeneration !== verificationGeneration.current) return;
       setResult(payload);
       if (payload.status === "passed") {
         setVerification("passed");
@@ -546,6 +555,7 @@ export default function PipingWorkspace() {
         setMessage(payload.error?.message || payload.violations?.[0]?.message || "Required piping checks failed. Official output is blocked.");
       }
     } catch (error) {
+      if (requestGeneration !== verificationGeneration.current) return;
       setVerification("failed");
       setMessage(apiErrorMessage(error, "Piping verification request failed."));
     }

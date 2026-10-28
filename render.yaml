@@ -39,4 +39,5 @@ services:
       - key: DATUMGUARD_MAX_UPLOAD_TOTAL_BYTES
         value: '41943040'
       - key: DATUMGUARD_TRUST_CF_CONNECTING_IP
-        value: 'true'
+        # Enable only behind an ingress that strips client-supplied Cloudflare headers.
+        value: 'false'

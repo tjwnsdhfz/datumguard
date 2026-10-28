@@ -1,13 +1,39 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from math import hypot, isfinite
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class StrictModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+
+def validate_constraint_parameters(value: dict[str, Any]) -> dict[str, Any]:
+    """Reject numeric values that can bypass comparisons after float coercion."""
+    numeric_keys = {
+        "tolerance",
+        "target",
+        "axis_value",
+        "minimum_edge_distance",
+        "minimum_ligament",
+        "minimum_clearance",
+        "maximum_spacing",
+        "max_support_spacing",
+    }
+    for key in numeric_keys & value.keys():
+        item = value[key]
+        try:
+            number = float(item)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"constraint parameter {key} must be a finite number") from exc
+        if isinstance(item, bool) or not isfinite(number):
+            raise ValueError(f"constraint parameter {key} must be a finite number")
+        if key not in {"axis_value", "target"} and number < 0:
+            raise ValueError(f"constraint parameter {key} must be non-negative")
+    return value
 
 
 class ContractStatus(StrEnum):
@@ -41,8 +67,8 @@ class Datum(StrictModel):
     @model_validator(mode="after")
     def validate_axes(self) -> Datum:
         dot = self.x_axis[0] * self.y_axis[0] + self.x_axis[1] * self.y_axis[1]
-        x_len = self.x_axis[0] ** 2 + self.x_axis[1] ** 2
-        y_len = self.y_axis[0] ** 2 + self.y_axis[1] ** 2
+        x_len = hypot(*self.x_axis)
+        y_len = hypot(*self.y_axis)
         if abs(dot) > 1e-9 or abs(x_len - 1.0) > 1e-9 or abs(y_len - 1.0) > 1e-9:
             raise ValueError("datum axes must be orthonormal unit vectors")
         return self
@@ -113,8 +139,8 @@ class LinearPattern(StrictModel):
     @field_validator("direction")
     @classmethod
     def validate_direction(cls, value: tuple[float, float]) -> tuple[float, float]:
-        length = (value[0] ** 2 + value[1] ** 2) ** 0.5
-        if length <= 1e-12:
+        length = hypot(*value)
+        if not isfinite(length) or length <= 1e-12:
             raise ValueError("pattern direction must be non-zero")
         return (value[0] / length, value[1] / length)
 
@@ -163,6 +189,8 @@ class Constraint(StrictModel):
     entity_ids: list[str] = Field(min_length=1)
     parameters: dict[str, Any] = Field(default_factory=dict)
     required: bool = True
+
+    _finite_parameters = field_validator("parameters")(validate_constraint_parameters)
 
 
 class FreeParameter(StrictModel):

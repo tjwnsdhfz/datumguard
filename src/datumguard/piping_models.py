@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from .models import (
     ArtifactStatus,
@@ -16,6 +16,7 @@ from .models import (
     RunStatus,
     StrictModel,
     Violation,
+    validate_constraint_parameters,
 )
 
 
@@ -127,6 +128,8 @@ class PipingConstraint(StrictModel):
     entity_ids: list[str] = Field(default_factory=list, max_length=250)
     parameters: dict[str, Any] = Field(default_factory=dict)
     required: bool = True
+
+    _finite_parameters = field_validator("parameters")(validate_constraint_parameters)
 
 
 class PipingFreeParameter(StrictModel):

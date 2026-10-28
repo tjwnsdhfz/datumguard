@@ -185,7 +185,10 @@ def test_rate_limit_returns_429_retry_after_and_uses_trusted_cf_ip(
     sample_contract: DesignContract,
     configure_operations: Callable[..., None],
 ) -> None:
-    configure_operations(DATUMGUARD_ANON_RATE_LIMIT_PER_MINUTE="1")
+    configure_operations(
+        DATUMGUARD_ANON_RATE_LIMIT_PER_MINUTE="1",
+        DATUMGUARD_TRUST_CF_CONNECTING_IP="true",
+    )
     route = "/api/v1/contracts/validate"
     payload = sample_contract.model_dump(mode="json")
     first_ip = {

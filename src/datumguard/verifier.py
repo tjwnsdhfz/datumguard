@@ -16,6 +16,7 @@ from shapely.geometry.base import BaseGeometry
 
 from .artifacts import DXF_LAYERS, XDATA_APP_ID
 from .core import compute_artifact_hash
+from .dxf_planar import supports_flat_xy
 from .models import (
     CircularPattern,
     DesignContract,
@@ -164,6 +165,19 @@ def _read_entities(
                 Violation(
                     code="DG_DXF_ID_DUPLICATE",
                     message="CUT/OUTLINE entity의 feature ID가 중복됩니다.",
+                    entity_ids=[feature_id],
+                )
+            )
+            continue
+
+        # A 2D projection is not evidence for an arbitrary OCS/3D primitive. The
+        # writer emits flat XY circles and straight, zero-width polylines only.
+        # Reject geometry the independent reader does not reconstruct faithfully.
+        if not supports_flat_xy(entity):
+            violations.append(
+                Violation(
+                    code="DG_DXF_ENTITY_UNSUPPORTED",
+                    message="DXF entity is not a flat XY primitive supported by this verifier.",
                     entity_ids=[feature_id],
                 )
             )
