@@ -1,5 +1,12 @@
 # DatumGuard Prompt Design
 
+> 구현 상태 (2026-10-28): 이 문서는 향후 LLM Requirements Compiler의 설계 명세다.
+> 현재 `service.draft_contract`는 정규식 기반의 보수적인 모호성·숫자 guard이며 실제 API는
+> `ContractValidationResponse`를 반환한다. 아래 `ContractDraftResult`, evidence citation 검증,
+> prompt versioning은 아직 런타임에 구현되지 않았다. 동일한 모호성 문형의 숫자를 바꾸는
+> 50개 회귀 테스트는 존재하지만, 다양한 실제 요청에 대한 50문항 compiler 평가는 완료되지 않았다.
+> 사용자는 구조화 폼으로 치수와 좌표를 입력하고 독립 verifier로 결과를 확인할 수 있다.
+
 | 항목 | 내용 |
 |---|---|
 | Prompt package version | 1.0.0 |
@@ -76,7 +83,7 @@ Do not perform unit conversion, CAD generation, verification, repair, or approva
 
 ## 5. Structured Output Schema
 
-아래 JSON Schema를 실제 API structured output schema로 사용한다.
+아래 JSON Schema는 향후 compiler API의 목표 structured output schema다. 현재 API 응답 schema로 사용하지 않는다.
 
 ```json
 {
@@ -195,6 +202,12 @@ Do not perform unit conversion, CAD generation, verification, repair, or approva
 
 입력 intent: `네 모서리에서 10mm 떨어진 곳에 지름 6mm 홀을 같은 간격으로 배치해줘.`
 
+이 예시는 기존 폼에서 외곽 치수·datum·공차·제조 조건을 사용자가 이미 확인한 경우다.
+또한 폼에서 `10mm`가 각 홀 중심과 인접한 두 외곽 변의 거리이며, "같은 간격"이 같은
+edge offset을 뜻한다고 확인했다. 이 전제가 없는 텍스트 단독 요청은
+`needs_confirmation=true`와 필요한 질문을 반환해야 한다.
+`intent:start-end`는 Unicode code point 기준의 0-based 반개구간 `[start, end)`이다.
+
 ```json
 {
   "prompt_version": "1.0.0",
@@ -226,7 +239,7 @@ Do not perform unit conversion, CAD generation, verification, repair, or approva
     {
       "evidence_id": "evidence-intent-1",
       "source_type": "intent_text",
-      "source_ref": "intent:0-39",
+      "source_ref": "intent:0-43",
       "exact_text": "네 모서리에서 10mm 떨어진 곳에 지름 6mm 홀을 같은 간격으로 배치해줘.",
       "numbers": [
         {"lexeme": "10mm", "value": 10.0, "unit": "mm"},
@@ -278,7 +291,7 @@ Requirements Compiler가 사용할 수 있는 도구:
 
 ## 10. 사후 검증
 
-서버는 LLM 결과 저장 전 다음을 검사한다.
+향후 compiler를 구현할 때 서버는 LLM 결과 저장 전 다음을 검사해야 한다. 현재 guard에는 이 파이프라인이 구현되어 있지 않다.
 
 1. JSON Schema 일치
 2. Prompt/schema version 일치

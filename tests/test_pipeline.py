@@ -77,6 +77,36 @@ def test_independent_verifier_detects_serialized_dxf_tampering(
     assert any(item.code == "DG_TOLERANCE_EXCEEDED" for item in result.violations)
 
 
+@pytest.mark.parametrize("tamper", ["circle_z", "extrusion", "bulge", "elevation", "width"])
+def test_independent_verifier_does_not_approve_flat_projection_of_modified_geometry(
+    sample_contract: DesignContract,
+    tamper: str,
+) -> None:
+    normalized = normalize_to_mm(sample_contract)
+    raw = generate_dxf(normalized, compute_contract_hash(normalized))
+    document = ezdxf.read(io.StringIO(raw.decode("utf-8")))
+    if tamper == "circle_z":
+        entity = next(item for item in document.modelspace() if item.dxftype() == "CIRCLE")
+        entity.dxf.center = (entity.dxf.center.x, entity.dxf.center.y, 1000.0)
+    else:
+        entity = next(item for item in document.modelspace() if item.dxf.layer == "OUTLINE")
+        if tamper == "extrusion":
+            entity.dxf.extrusion = (0, 1, 0)
+        elif tamper == "elevation":
+            entity.dxf.elevation = 1000.0
+        elif tamper == "width":
+            entity.dxf.const_width = 5.0
+        else:
+            points = list(entity.get_points("xyb"))
+            points[0] = (points[0][0], points[0][1], 1.0)
+            entity.set_points(points, format="xyb")
+    stream = io.StringIO(newline="\n")
+    document.write(stream)
+    result = verify_only(normalized, stream.getvalue().encode("utf-8"))
+    assert result.status == RunStatus.FAILED
+    assert any(item.code == "DG_DXF_ENTITY_UNSUPPORTED" for item in result.violations)
+
+
 def test_locked_conflict_is_infeasible_and_never_exports(sample_contract: DesignContract) -> None:
     data = sample_contract.model_dump(mode="python")
     data["dimensions"][0]["target"] = 130.0

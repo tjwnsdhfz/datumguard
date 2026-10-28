@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import os
+import tempfile
 from pathlib import Path
 from typing import Any, cast
 
@@ -16,6 +17,7 @@ from .architecture_service import (
     validate_architecture_contract,
     verify_architecture_only,
 )
+from .artifact_service import MAX_ARTIFACT_BYTES
 from .artifact_service import audit_artifact as audit_artifact_core
 from .artifact_service import compare_artifacts as compare_artifacts_core
 from .frame_cad_service import run_frame_cad_assurance
@@ -65,6 +67,65 @@ mcp = FastMCP(
 PublicContract = (
     DesignContract | ArchitecturalPlanContract | PipingPlanContract | StructuralFrameContract
 )
+
+MAX_DXF_VERIFY_BYTES = 6_000_000
+
+
+class PayloadError(ValueError):
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+
+
+def _decode_payload(value: str, *, max_bytes: int) -> bytes:
+    # Check the encoded bound before allocating a decoded CAD payload.
+    if len(value) > 4 * ((max_bytes + 2) // 3):
+        raise PayloadError("DG_ARTIFACT_TOO_LARGE", "CAD payload exceeds the byte limit.")
+    try:
+        content = base64.b64decode(value, validate=True)
+    except ValueError as exc:
+        raise PayloadError("DG_INPUT_INVALID", "CAD payload is not valid base64.") from exc
+    if len(content) > max_bytes:
+        raise PayloadError("DG_ARTIFACT_TOO_LARGE", "CAD payload exceeds the byte limit.")
+    return content
+
+
+def _payload_error(exc: PayloadError) -> dict[str, Any]:
+    return {
+        **_base_envelope("sha256:not-applicable", status="failed_verification"),
+        "error": {
+            "code": exc.code,
+            "message": str(exc),
+            "details": {},
+            "correlation_id": "mcp-payload-validation",
+        },
+    }
+
+
+def _write_workspace_bundle(root: Path, run_id: str, content: bytes) -> Path:
+    """Refuse pre-existing link escapes and publish the bundle atomically."""
+    root.mkdir(parents=True, exist_ok=True)
+    directory = root
+    for component in (".datumguard", "runs", run_id):
+        directory = directory / component
+        if directory.is_symlink() or directory.is_junction():
+            raise ValueError("workspace output directory must not be a link")
+        if not directory.resolve().is_relative_to(root):
+            raise ValueError("workspace path escapes the approved root")
+        directory.mkdir(exist_ok=True)
+    bundle_path = directory / "datumguard-verified.zip"
+    if bundle_path.is_symlink() or bundle_path.is_junction():
+        raise ValueError("workspace output file must not be a link")
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=directory, suffix=".tmp", delete=False) as handle:
+            temporary = Path(handle.name)
+            handle.write(content)
+        os.replace(temporary, bundle_path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+    return bundle_path
 
 
 def _contract(value: dict[str, Any]) -> PublicContract:
@@ -157,7 +218,10 @@ def drawing_generate(contract: dict[str, Any]) -> dict[str, Any]:
 
 @mcp.tool(description="Independently re-read and remeasure serialized DXF bytes.")
 def drawing_verify(contract: dict[str, Any], dxf_base64: str) -> dict[str, Any]:
-    dxf_bytes = base64.b64decode(dxf_base64, validate=True)
+    try:
+        dxf_bytes = _decode_payload(dxf_base64, max_bytes=MAX_DXF_VERIFY_BYTES)
+    except PayloadError as exc:
+        return _payload_error(exc)
     source = _contract(contract)
     if isinstance(source, StructuralFrameContract):
         return _frame_tool_unsupported(source, tool_name="drawing_verify")
@@ -176,17 +240,9 @@ def drawing_verify(contract: dict[str, Any], dxf_base64: str) -> dict[str, Any]:
 )
 def artifact_audit(filename: str, content_base64: str) -> dict[str, Any]:
     try:
-        content = base64.b64decode(content_base64, validate=True)
-    except ValueError as exc:
-        return {
-            **_base_envelope("sha256:not-applicable", status="failed_verification"),
-            "error": {
-                "code": "DG_INPUT_INVALID",
-                "message": "content_base64 is invalid.",
-                "details": {},
-                "correlation_id": type(exc).__name__,
-            },
-        }
+        content = _decode_payload(content_base64, max_bytes=MAX_ARTIFACT_BYTES)
+    except PayloadError as exc:
+        return _payload_error(exc)
     return audit_artifact_core(filename, content).model_dump(mode="json")
 
 
@@ -203,18 +259,10 @@ def artifact_compare(
     candidate_base64: str,
 ) -> dict[str, Any]:
     try:
-        baseline = base64.b64decode(baseline_base64, validate=True)
-        candidate = base64.b64decode(candidate_base64, validate=True)
-    except ValueError as exc:
-        return {
-            **_base_envelope("sha256:not-applicable", status="failed_verification"),
-            "error": {
-                "code": "DG_INPUT_INVALID",
-                "message": "One or more artifact payloads are not valid base64.",
-                "details": {},
-                "correlation_id": type(exc).__name__,
-            },
-        }
+        baseline = _decode_payload(baseline_base64, max_bytes=MAX_ARTIFACT_BYTES)
+        candidate = _decode_payload(candidate_base64, max_bytes=MAX_ARTIFACT_BYTES)
+    except PayloadError as exc:
+        return _payload_error(exc)
     return compare_artifacts_core(
         baseline_filename,
         baseline,
@@ -625,14 +673,11 @@ def export_bundle(
         return result
 
     root = Path(workspace).expanduser().resolve()
-    root.mkdir(parents=True, exist_ok=True)
-    run_directory = root / ".datumguard" / "runs" / str(result["contract_hash"])[7:19]
-    run_directory.mkdir(parents=True, exist_ok=True)
-    resolved_run_directory = run_directory.resolve()
-    if not resolved_run_directory.is_relative_to(root) or resolved_run_directory.is_symlink():
-        raise ValueError("workspace path escapes the approved root")
-    bundle_path = resolved_run_directory / "datumguard-verified.zip"
-    bundle_path.write_bytes(base64.b64decode(str(result["bundle_base64"])))
+    bundle_path = _write_workspace_bundle(
+        root,
+        str(result["contract_hash"])[7:19],
+        base64.b64decode(str(result["bundle_base64"])),
+    )
     result["bundle_path"] = str(bundle_path)
     result["bundle_base64"] = None
     return result

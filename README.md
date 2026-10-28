@@ -13,6 +13,9 @@ DatumGuard는 요구사항을 versioned contract로 잠그고 저장된 DXF·STE
 검증된 파일만 내보내는 오픈소스 Engineering Design Assurance 도구입니다.
 **Fail-closed verification for AI-assisted CAD workflows.**
 
+[2026-10-28 품질·취약점 검토](docs/quality/review-2026-10-28.md): CAD/MCP 비교군의 설치·검증 기준,
+수정한 결함, 재현 명령과 남은 개선 항목을 확인할 수 있습니다.
+
 **[검증된 Frame 실행 →](https://datumguard-tjwnsdhfz.vercel.app/frame)** · **[60초 Case Study →](https://datumguard-tjwnsdhfz.vercel.app/case-study)** · [v0.4.0 release evidence →](https://github.com/tjwnsdhfz/datumguard/releases/tag/v0.4.0) · [Benchmark 재현 →](docs/frameguard-gnn.md#8-재현-명령)
 
 > **Safety boundary:** FrameGuard는 제한된 2D 선형 탄성 frame의 초기 screening이며 구조 안전 인증이나 전문 구조 검토를 대체하지 않습니다. `/openbim`은 `research_validation_only=true`, `approval_eligible=false`인 합성 연구 preview입니다.

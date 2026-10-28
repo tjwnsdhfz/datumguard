@@ -16,6 +16,7 @@ from .models import (
     RunStatus,
     StrictModel,
     Violation,
+    validate_constraint_parameters,
 )
 
 
@@ -128,6 +129,8 @@ class ArchitecturalConstraint(StrictModel):
     entity_ids: list[str] = Field(default_factory=list, max_length=250)
     parameters: dict[str, Any] = Field(default_factory=dict)
     required: bool = True
+
+    _finite_parameters = field_validator("parameters")(validate_constraint_parameters)
 
 
 class ArchitecturalFreeParameter(StrictModel):

@@ -23,8 +23,20 @@ jobs:
           uv sync --frozen --extra dev
       - run: uv run --frozen ruff format --check src tests tools
       - run: uv run --frozen ruff check src tests tools
-      - run: uv run --frozen mypy src/datumguard
+      - run: uv run --frozen mypy src/datumguard tools/smoke_installed_package.py
       - run: uv run --frozen pytest
+      - name: Build and smoke-test the installed wheel outside the checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_dir="$(mktemp -d "${RUNNER_TEMP}/datumguard-package.XXXXXX")"
+          uv build --wheel --out-dir "${package_dir}/dist"
+          wheels=( "${package_dir}"/dist/*.whl )
+          test "${#wheels[@]}" -eq 1
+          uv run --isolated --no-project --directory "${package_dir}" \
+            --with "${wheels[0]}" python -I \
+            "${GITHUB_WORKSPACE}/tools/smoke_installed_package.py" \
+            "${GITHUB_WORKSPACE}/fixtures/examples/design_contract.json"
 
   web:
     runs-on: ubuntu-latest

@@ -458,7 +458,7 @@ class OperationalControls:
         self.api_keys = _configured_api_keys()
         self.trust_cf_connecting_ip = env_flag(
             "DATUMGUARD_TRUST_CF_CONNECTING_IP",
-            True,
+            False,
         )
         self.rate_limiter = BoundedRateLimiter(
             window_seconds=self.rate_window_seconds,

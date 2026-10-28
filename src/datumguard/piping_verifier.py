@@ -18,6 +18,7 @@ from shapely.geometry import LineString, Point, Polygon
 from shapely.geometry.base import BaseGeometry
 
 from .core import compute_artifact_hash
+from .dxf_planar import supports_flat_xy
 from .models import Evidence, Measurement, RunStatus, Violation
 from .piping_models import PipingPlanContract
 
@@ -115,6 +116,8 @@ def _read_geometry_entity(
     feature_id: str,
 ) -> tuple[BaseGeometry, dict[str, float]]:
     layer = entity.dxf.layer
+    if not supports_flat_xy(entity, allow_constant_width=layer == "P-PIPE"):
+        raise PipingDxfReadError(f"primitive {feature_id} is not supported flat XY geometry")
     if layer == "P-PIPE":
         if not isinstance(entity, LWPolyline):
             raise PipingDxfReadError(f"pipe segment {feature_id} is not an LWPOLYLINE")

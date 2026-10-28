@@ -21,6 +21,7 @@ from shapely.ops import polygonize, unary_union
 
 from .architecture_models import ArchitecturalPlanContract, RectangularColumn
 from .core import compute_artifact_hash
+from .dxf_planar import supports_flat_xy
 from .models import Evidence, Measurement, RunStatus, Violation
 
 VERIFY_EPSILON_MM = 0.001
@@ -189,6 +190,15 @@ def _read_serialized_entities(
 
         geometry: BaseGeometry
         values: dict[str, float]
+        if not supports_flat_xy(entity):
+            violations.append(
+                Violation(
+                    code="DG_ARCH_DXF_ENTITY_UNSUPPORTED",
+                    message="DXF primitive cannot be faithfully remeasured as flat XY geometry.",
+                    entity_ids=[feature_id],
+                )
+            )
+            continue
         if isinstance(entity, Line):
             start = entity.dxf.start
             end = entity.dxf.end
@@ -280,6 +290,8 @@ def _measure_serialized_entity(
     entity: DXFEntity,
     entity_id: str,
 ) -> tuple[BaseGeometry, dict[str, float]]:
+    if not supports_flat_xy(entity):
+        raise ArchitecturalDxfReadError(f"primitive {entity_id} is not supported flat XY geometry")
     if isinstance(entity, Line):
         start = entity.dxf.start
         end = entity.dxf.end

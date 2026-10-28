@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
 
 import BackendReadinessNotice from "./components/backend-readiness";
 import LocalDraftNotice from "./components/local-draft-notice";
@@ -143,24 +143,33 @@ function Field({ label, value, unit = "mm", onChange, min = 0.001, step = 1 }: {
 }
 
 export default function SolidWorkspace() {
-  const [draft, setDraft] = useState<Draft>(PLATE);
+  const [draft, setDraftState] = useState<Draft>(PLATE);
   const [result, setResult] = useState<SolidResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const verificationGeneration = useRef(0);
+  const setDraft = useCallback((next: SetStateAction<Draft>) => {
+    verificationGeneration.current += 1;
+    setDraftState(next);
+    setResult(null);
+    setError(null);
+    setLoading(false);
+  }, []);
   const readiness = useBackendReadiness("solid_part");
   const contract = useMemo(() => buildContract(draft), [draft]);
   const setNumber = (key: keyof Draft, value: number) => setDraft((current) => ({ ...current, [key]: value }));
 
   useEffect(() => {
+    const initialGeneration = verificationGeneration.current;
     loadDraft<Draft>(DRAFT_KEY)
       .then((saved) => {
-        if (saved && saved.family in PRESETS) setDraft(saved);
+        if (saved && verificationGeneration.current === initialGeneration && saved.family in PRESETS) setDraft(saved);
       })
       .catch((reason) => setStorageError(reason instanceof Error ? reason.message : "로컬 draft를 읽지 못했습니다."))
       .finally(() => setHydrated(true));
-  }, []);
+  }, [setDraft]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -179,16 +188,17 @@ export default function SolidWorkspace() {
       return;
     }
     setLoading(true); setError(null); setResult(null);
+    const requestGeneration = ++verificationGeneration.current;
     try {
       const payload = await apiPostJson<SolidResult>(
         "/api/v1/solid/designs/run",
         contract,
         { timeoutMs: 210_000 },
       );
-      setResult(payload);
+      if (requestGeneration === verificationGeneration.current) setResult(payload);
     } catch (reason) {
-      setError(apiErrorMessage(reason, "STEP generation failed"));
-    } finally { setLoading(false); }
+      if (requestGeneration === verificationGeneration.current) setError(apiErrorMessage(reason, "STEP generation failed"));
+    } finally { if (requestGeneration === verificationGeneration.current) setLoading(false); }
   }
 
   const pipeline = result?.status === "passed" ? ["locked", "written", "reopened", "measured", "approved"] : loading ? ["locked", "running", "waiting", "waiting", "blocked"] : ["waiting", "waiting", "waiting", "waiting", "blocked"];
