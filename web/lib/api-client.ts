@@ -176,6 +176,12 @@ export function apiPostForm<T>(
   return requestJson<T>(path, { method: "POST", body }, options);
 }
 
+function isUnavailableCapability(error: unknown): boolean {
+  return error instanceof ApiClientError && (
+    error.code === "DG_CAPABILITY_UNAVAILABLE" || error.code === "DG_CAPABILITY_DISABLED"
+  );
+}
+
 export function apiErrorMessage(error: unknown, fallback: string): string {
   if (!(error instanceof ApiClientError)) {
     return error instanceof Error ? error.message : fallback;
@@ -183,7 +189,7 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
   if (error.kind === "timeout") {
     return `${error.message} 서버 작업이 계속 중일 수 있어 자동 재실행하지 않았습니다. 상태를 확인한 뒤 수동으로 다시 시도하세요.`;
   }
-  if (error.code === "DG_CAPABILITY_UNAVAILABLE") {
+  if (isUnavailableCapability(error)) {
     return "이 배포에서는 요청한 CAD 기능이 비활성화되어 있습니다. 로컬 실행 또는 용량이 검증된 backend를 사용하세요.";
   }
   const wait = error.retryAfterMs
@@ -269,7 +275,7 @@ export async function waitForBackendReadiness({
       return { version: readiness.version || "unknown" };
     } catch (error) {
       if (error instanceof ApiClientError && error.kind === "aborted") throw error;
-      if (error instanceof ApiClientError && error.code === "DG_CAPABILITY_UNAVAILABLE") {
+      if (isUnavailableCapability(error)) {
         throw error;
       }
       lastError = error;
